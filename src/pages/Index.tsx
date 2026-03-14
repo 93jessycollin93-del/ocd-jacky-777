@@ -1,25 +1,24 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import ReactMarkdown from "react-markdown";
+import { streamChat, type ChatMessage } from "@/lib/jackie-stream";
+import { toast } from "sonner";
 
 interface Message {
   id: string;
-  role: "user" | "jackie";
+  role: "user" | "assistant";
   content: string;
   timestamp: Date;
   memoryTier?: 1 | 2 | 3;
   securityFlag?: string;
 }
 
-const INITIAL_MESSAGES: Message[] = [
-  {
-    id: "1",
-    role: "jackie",
-    content: "Core foundation files saved. Identity, behavior rules, memory model, security principles, architecture, roadmap, prompts, and knowledge vault structure — all locked in.\n\nJackie has a spine now. Ready to build on it.",
-    timestamp: new Date(),
-    memoryTier: 3,
-  },
-];
-
-const Sidebar = ({ activeFolder, onFolderClick }: { activeFolder: string; onFolderClick: (f: string) => void }) => {
+const Sidebar = ({
+  activeFolder,
+  onFolderClick,
+}: {
+  activeFolder: string;
+  onFolderClick: (f: string) => void;
+}) => {
   const folders = [
     { name: "chats/", path: "chats" },
     { name: "notes/", path: "notes" },
@@ -37,10 +36,12 @@ const Sidebar = ({ activeFolder, onFolderClick }: { activeFolder: string; onFold
   ];
 
   return (
-    <aside className="w-[280px] min-h-screen border-r border-border bg-sidebar flex flex-col">
+    <aside className="hidden md:flex w-[280px] min-h-screen border-r border-border bg-sidebar flex-col">
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-lg font-bold text-primary tracking-wider">J</span>
+          <span className="font-mono text-lg font-bold text-primary tracking-wider">
+            J
+          </span>
           <span className="font-mono text-xs uppercase tracking-widest text-sidebar-foreground">
             Knowledge Vault
           </span>
@@ -118,8 +119,8 @@ const JackieMessage = ({ message }: { message: Message }) => (
       </div>
     )}
 
-    <div className="text-foreground leading-relaxed whitespace-pre-wrap">
-      {message.content}
+    <div className="text-foreground leading-relaxed prose prose-invert prose-sm max-w-none">
+      <ReactMarkdown>{message.content}</ReactMarkdown>
     </div>
 
     <div className="font-mono text-[10px] text-muted-foreground">
@@ -130,7 +131,7 @@ const JackieMessage = ({ message }: { message: Message }) => (
 
 const UserMessage = ({ message }: { message: Message }) => (
   <div className="space-y-2">
-    <div className="text-muted-foreground leading-relaxed whitespace-pre-wrap text-sm">
+    <div className="text-muted-foreground leading-relaxed text-sm whitespace-pre-wrap">
       {message.content}
     </div>
     <div className="font-mono text-[10px] text-muted-foreground/50">
@@ -140,54 +141,95 @@ const UserMessage = ({ message }: { message: Message }) => (
 );
 
 const Index = () => {
-  const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [activeFolder, setActiveFolder] = useState("chats");
   const [isProcessing, setIsProcessing] = useState(false);
+  const feedRef = useRef<HTMLDivElement>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const scrollToBottom = () => {
+    setTimeout(() => {
+      feedRef.current?.scrollTo({
+        top: feedRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }, 50);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isProcessing) return;
 
+    const userText = input.trim();
     const userMsg: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: input.trim(),
+      content: userText,
       timestamp: new Date(),
     };
 
+    const newHistory: ChatMessage[] = [
+      ...chatHistory,
+      { role: "user", content: userText },
+    ];
+
     setMessages((prev) => [...prev, userMsg]);
+    setChatHistory(newHistory);
     setInput("");
     setIsProcessing(true);
+    scrollToBottom();
 
-    // Simulate Jackie response
-    setTimeout(() => {
-      const hasSecurityKeyword = input.toLowerCase().includes("api key") || input.toLowerCase().includes("password") || input.toLowerCase().includes("secret");
+    const assistantId = (Date.now() + 1).toString();
+    let assistantContent = "";
 
-      const jackieMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "jackie",
-        content: hasSecurityKeyword
-          ? "I've analyzed what you sent. There's a security concern here — hardcoded credentials should never live in source code. Use environment variables and a secrets manager. Let me show you the safer pattern."
-          : "Understood. I've processed that and stored it in the appropriate memory tier. What's the next move?",
+    // Create placeholder assistant message
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: assistantId,
+        role: "assistant",
+        content: "",
         timestamp: new Date(),
-        memoryTier: hasSecurityKeyword ? 2 : 1,
-        securityFlag: hasSecurityKeyword ? "Hardcoded Secret Detected" : undefined,
-      };
+        memoryTier: 1,
+      },
+    ]);
 
-      setMessages((prev) => [...prev, jackieMsg]);
-      setIsProcessing(false);
-    }, 800);
+    await streamChat({
+      messages: newHistory,
+      onDelta: (chunk) => {
+        assistantContent += chunk;
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId ? { ...m, content: assistantContent } : m
+          )
+        );
+        scrollToBottom();
+      },
+      onDone: () => {
+        setChatHistory((prev) => [
+          ...prev,
+          { role: "assistant", content: assistantContent },
+        ]);
+        setIsProcessing(false);
+      },
+      onError: (err) => {
+        toast.error(err);
+        // Remove the empty assistant message
+        setMessages((prev) => prev.filter((m) => m.id !== assistantId));
+        setIsProcessing(false);
+      },
+    });
   };
 
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar activeFolder={activeFolder} onFolderClick={setActiveFolder} />
 
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col min-h-screen">
         {/* Processing bar */}
         {isProcessing && (
-          <div className="h-[2px] bg-secondary overflow-hidden">
+          <div className="h-[2px] bg-secondary overflow-hidden flex-shrink-0">
             <div
               className="h-full bg-primary"
               style={{
@@ -198,10 +240,24 @@ const Index = () => {
         )}
 
         {/* Feed */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto" ref={feedRef}>
           <div className="max-w-[768px] p-4 space-y-6">
+            {messages.length === 0 && (
+              <div className="flex flex-col items-start justify-center min-h-[60vh] space-y-4">
+                <span className="font-mono text-4xl font-bold text-primary">
+                  J
+                </span>
+                <div className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                  System_Status: Grounded. Memory: Active.
+                </div>
+                <p className="text-muted-foreground text-sm max-w-md">
+                  Jackie is ready. Type a command, ask a question, paste some
+                  code, or start building.
+                </p>
+              </div>
+            )}
             {messages.map((msg) =>
-              msg.role === "jackie" ? (
+              msg.role === "assistant" ? (
                 <JackieMessage key={msg.id} message={msg} />
               ) : (
                 <UserMessage key={msg.id} message={msg} />
@@ -211,10 +267,12 @@ const Index = () => {
         </div>
 
         {/* Command line input */}
-        <div className="border-t border-border p-4">
+        <div className="border-t border-border p-4 flex-shrink-0">
           <form onSubmit={handleSubmit} className="max-w-[768px]">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs text-muted-foreground select-none">›</span>
+              <span className="font-mono text-xs text-muted-foreground select-none">
+                ›
+              </span>
               <input
                 type="text"
                 value={input}
@@ -223,7 +281,9 @@ const Index = () => {
                 className="jackie-input flex-1"
                 disabled={isProcessing}
               />
-              <span className="font-mono text-xs text-muted-foreground select-none">⏎</span>
+              <span className="font-mono text-xs text-muted-foreground select-none">
+                ⏎
+              </span>
             </div>
           </form>
         </div>
@@ -235,6 +295,13 @@ const Index = () => {
           50% { width: 60%; margin-left: 20%; }
           100% { width: 0%; margin-left: 100%; }
         }
+        .prose pre { background: hsl(220 15% 8%); border: 1px solid hsl(220 15% 15%); border-radius: 2px; }
+        .prose code { font-family: var(--font-mono); font-size: 13px; }
+        .prose p code { background: hsl(220 15% 12%); padding: 2px 6px; border-radius: 2px; }
+        .prose a { color: hsl(150 100% 50%); }
+        .prose strong { color: hsl(220 10% 95%); }
+        .prose h1, .prose h2, .prose h3 { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em; color: hsl(220 10% 90%); }
+        .prose ul, .prose ol { color: hsl(220 10% 80%); }
       `}</style>
     </div>
   );

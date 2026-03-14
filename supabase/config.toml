@@ -1,0 +1,4 @@
+project_id = "rkwhhbxgjdpehfuxsult"
+
+[functions.jackie-chat]
+verify_jwt = false
