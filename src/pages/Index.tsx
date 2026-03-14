@@ -1,110 +1,139 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import { streamChat, type ChatMessage } from "@/lib/jackie-stream";
+import {
+  listConversations,
+  createConversation,
+  deleteConversation,
+  getMessages,
+  saveMessage,
+  generateTitle,
+  updateConversationTitle,
+  type Conversation,
+  type StoredMessage,
+} from "@/lib/jackie-db";
+import { detectSecurityFlag, detectMemoryTier } from "@/lib/jackie-security";
 import { toast } from "sonner";
+import { Plus, Trash2, MessageSquare } from "lucide-react";
 
-interface Message {
+interface DisplayMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
   memoryTier?: 1 | 2 | 3;
-  securityFlag?: string;
+  securityFlag?: string | null;
 }
 
+// ─── Sidebar ───────────────────────────────────────────────
+
 const Sidebar = ({
-  activeFolder,
-  onFolderClick,
+  conversations,
+  activeId,
+  onSelect,
+  onNew,
+  onDelete,
+  coreFiles,
 }: {
-  activeFolder: string;
-  onFolderClick: (f: string) => void;
-}) => {
-  const folders = [
-    { name: "chats/", path: "chats" },
-    { name: "notes/", path: "notes" },
-    { name: "decisions/", path: "decisions" },
-    { name: "transcripts/", path: "transcripts" },
-  ];
-
-  const coreFiles = [
-    "CORE_IDENTITY.md",
-    "BEHAVIOR_RULES.md",
-    "MEMORY_MODEL.md",
-    "SECURITY_PRINCIPLES.md",
-    "ARCHITECTURE.md",
-    "ROADMAP.md",
-  ];
-
-  return (
-    <aside className="hidden md:flex w-[280px] min-h-screen border-r border-border bg-sidebar flex-col">
-      <div className="p-4 border-b border-border">
+  conversations: Conversation[];
+  activeId: string | null;
+  onSelect: (id: string) => void;
+  onNew: () => void;
+  onDelete: (id: string) => void;
+  coreFiles: string[];
+}) => (
+  <aside className="hidden md:flex w-[280px] min-h-screen border-r border-border bg-sidebar flex-col">
+    <div className="p-4 border-b border-border">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-lg font-bold text-primary tracking-wider">
-            J
-          </span>
+          <span className="font-mono text-lg font-bold text-primary tracking-wider">J</span>
           <span className="font-mono text-xs uppercase tracking-widest text-sidebar-foreground">
-            Knowledge Vault
+            Jackie
           </span>
         </div>
+        <button
+          onClick={onNew}
+          className="p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-secondary btn-mechanical transition-colors duration-150"
+          title="New conversation"
+        >
+          <Plus size={14} />
+        </button>
       </div>
+    </div>
 
-      <div className="p-4 space-y-1">
-        <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-2">
-          Knowledge
-        </div>
-        {folders.map((folder) => (
+    {/* Conversations */}
+    <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
+      <div className="px-2 py-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+        Conversations
+      </div>
+      {conversations.length === 0 && (
+        <div className="px-2 py-2 text-xs text-muted-foreground">No conversations yet.</div>
+      )}
+      {conversations.map((conv) => (
+        <div
+          key={conv.id}
+          className={`group flex items-center gap-1 rounded-sm transition-colors duration-150 ${
+            activeId === conv.id
+              ? "bg-secondary text-foreground"
+              : "text-sidebar-foreground hover:bg-secondary/50"
+          }`}
+        >
           <button
-            key={folder.path}
-            onClick={() => onFolderClick(folder.path)}
-            className={`w-full text-left px-2 py-1.5 font-mono text-sm btn-mechanical rounded-sm transition-colors duration-150 ${
-              activeFolder === folder.path
-                ? "bg-secondary text-foreground"
-                : "text-sidebar-foreground hover:bg-secondary/50"
-            }`}
+            onClick={() => onSelect(conv.id)}
+            className="flex-1 text-left px-2 py-1.5 font-mono text-xs truncate btn-mechanical flex items-center gap-2"
           >
-            {folder.name}
+            <MessageSquare size={12} className="flex-shrink-0 text-muted-foreground" />
+            {conv.title}
           </button>
-        ))}
-      </div>
-
-      <div className="p-4 space-y-1 border-t border-border">
-        <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-2">
-          Core
-        </div>
-        {coreFiles.map((file) => (
-          <div
-            key={file}
-            className="px-2 py-1 font-mono text-xs text-muted-foreground truncate"
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(conv.id);
+            }}
+            className="opacity-0 group-hover:opacity-100 p-1 mr-1 text-muted-foreground hover:text-destructive transition-opacity duration-150"
           >
-            {file}
-          </div>
-        ))}
-      </div>
+            <Trash2 size={12} />
+          </button>
+        </div>
+      ))}
+    </div>
 
-      <div className="mt-auto p-4 border-t border-border">
-        <div className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-          System_Status: Grounded
-        </div>
-        <div className="font-mono text-[10px] uppercase tracking-wider text-primary mt-1">
-          Memory: Active
-        </div>
+    {/* Core files */}
+    <div className="p-2 border-t border-border space-y-0.5">
+      <div className="px-2 py-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+        Core
       </div>
-    </aside>
-  );
-};
+      {coreFiles.map((file) => (
+        <div key={file} className="px-2 py-1 font-mono text-[11px] text-muted-foreground truncate">
+          {file}
+        </div>
+      ))}
+    </div>
+
+    <div className="p-4 border-t border-border">
+      <div className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+        System_Status: Grounded
+      </div>
+      <div className="font-mono text-[10px] uppercase tracking-wider text-primary mt-1">
+        Memory: Active
+      </div>
+    </div>
+  </aside>
+);
+
+// ─── Memory Dots ───────────────────────────────────────────
 
 const MemoryDots = ({ tier }: { tier: 1 | 2 | 3 }) => (
-  <div className="flex gap-1 items-center">
+  <div className="flex gap-1 items-center" title={`Memory tier: ${["Ephemeral", "Durable", "Gold"][tier - 1]}`}>
     {[1, 2, 3].map((i) => (
-      <span
-        key={i}
-        className={`memory-dot ${i <= tier ? "active" : ""}`}
-      />
+      <span key={i} className={`memory-dot ${i <= tier ? "active" : ""}`} />
     ))}
   </div>
 );
 
-const JackieMessage = ({ message }: { message: Message }) => (
+// ─── Messages ──────────────────────────────────────────────
+
+const JackieMessage = ({ message }: { message: DisplayMessage }) => (
   <div className="space-y-3 stagger-enter">
     <div className="flex items-center justify-between">
       <span className="jackie-badge">Jackie here—</span>
@@ -114,7 +143,7 @@ const JackieMessage = ({ message }: { message: Message }) => (
     {message.securityFlag && (
       <div className="jackie-security-flag">
         <div className="font-mono text-xs font-semibold uppercase tracking-wider mb-1">
-          Critical: {message.securityFlag}
+          ⚠ {message.securityFlag}
         </div>
       </div>
     )}
@@ -129,7 +158,7 @@ const JackieMessage = ({ message }: { message: Message }) => (
   </div>
 );
 
-const UserMessage = ({ message }: { message: Message }) => (
+const UserMessage = ({ message }: { message: DisplayMessage }) => (
   <div className="space-y-2">
     <div className="text-muted-foreground leading-relaxed text-sm whitespace-pre-wrap">
       {message.content}
@@ -140,20 +169,92 @@ const UserMessage = ({ message }: { message: Message }) => (
   </div>
 );
 
+// ─── Main Page ─────────────────────────────────────────────
+
+const CORE_FILES = [
+  "CORE_IDENTITY.md",
+  "BEHAVIOR_RULES.md",
+  "MEMORY_MODEL.md",
+  "SECURITY_PRINCIPLES.md",
+  "ARCHITECTURE.md",
+  "ROADMAP.md",
+];
+
 const Index = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConvId, setActiveConvId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
-  const [activeFolder, setActiveFolder] = useState("chats");
   const [isProcessing, setIsProcessing] = useState(false);
   const feedRef = useRef<HTMLDivElement>(null);
 
+  // Load conversations on mount
+  useEffect(() => {
+    loadConversations();
+  }, []);
+
+  const loadConversations = async () => {
+    try {
+      const convs = await listConversations();
+      setConversations(convs);
+    } catch (e) {
+      console.error("Failed to load conversations:", e);
+    }
+  };
+
+  const loadMessages = useCallback(async (convId: string) => {
+    try {
+      const msgs = await getMessages(convId);
+      const display: DisplayMessage[] = msgs.map((m) => ({
+        id: m.id,
+        role: m.role as "user" | "assistant",
+        content: m.content,
+        timestamp: new Date(m.created_at),
+        memoryTier: (m.memory_tier as 1 | 2 | 3) ?? 1,
+        securityFlag: m.security_flag,
+      }));
+      setMessages(display);
+      setChatHistory(
+        msgs.map((m) => ({ role: m.role as "user" | "assistant", content: m.content }))
+      );
+    } catch (e) {
+      console.error("Failed to load messages:", e);
+    }
+  }, []);
+
+  const selectConversation = useCallback(
+    (id: string) => {
+      setActiveConvId(id);
+      loadMessages(id);
+    },
+    [loadMessages]
+  );
+
+  const startNewConversation = async () => {
+    setActiveConvId(null);
+    setMessages([]);
+    setChatHistory([]);
+    setInput("");
+  };
+
+  const handleDeleteConversation = async (id: string) => {
+    try {
+      await deleteConversation(id);
+      if (activeConvId === id) {
+        setActiveConvId(null);
+        setMessages([]);
+        setChatHistory([]);
+      }
+      await loadConversations();
+    } catch {
+      toast.error("Failed to delete conversation.");
+    }
+  };
+
   const scrollToBottom = () => {
     setTimeout(() => {
-      feedRef.current?.scrollTo({
-        top: feedRef.current.scrollHeight,
-        behavior: "smooth",
-      });
+      feedRef.current?.scrollTo({ top: feedRef.current.scrollHeight, behavior: "smooth" });
     }, 50);
   };
 
@@ -162,37 +263,50 @@ const Index = () => {
     if (!input.trim() || isProcessing) return;
 
     const userText = input.trim();
-    const userMsg: Message = {
+    setInput("");
+    setIsProcessing(true);
+
+    // Ensure we have a conversation
+    let convId = activeConvId;
+    if (!convId) {
+      try {
+        const conv = await createConversation(generateTitle(userText));
+        convId = conv.id;
+        setActiveConvId(convId);
+        await loadConversations();
+      } catch {
+        toast.error("Failed to create conversation.");
+        setIsProcessing(false);
+        return;
+      }
+    }
+
+    // Save user message
+    const userMsg: DisplayMessage = {
       id: Date.now().toString(),
       role: "user",
       content: userText,
       timestamp: new Date(),
     };
-
-    const newHistory: ChatMessage[] = [
-      ...chatHistory,
-      { role: "user", content: userText },
-    ];
-
     setMessages((prev) => [...prev, userMsg]);
-    setChatHistory(newHistory);
-    setInput("");
-    setIsProcessing(true);
     scrollToBottom();
 
-    const assistantId = (Date.now() + 1).toString();
-    let assistantContent = "";
+    try {
+      await saveMessage({ conversation_id: convId, role: "user", content: userText });
+    } catch {
+      console.error("Failed to persist user message");
+    }
+
+    const newHistory: ChatMessage[] = [...chatHistory, { role: "user", content: userText }];
+    setChatHistory(newHistory);
 
     // Create placeholder assistant message
+    const assistantTempId = (Date.now() + 1).toString();
+    let assistantContent = "";
+
     setMessages((prev) => [
       ...prev,
-      {
-        id: assistantId,
-        role: "assistant",
-        content: "",
-        timestamp: new Date(),
-        memoryTier: 1,
-      },
+      { id: assistantTempId, role: "assistant", content: "", timestamp: new Date(), memoryTier: 1 },
     ]);
 
     await streamChat({
@@ -200,23 +314,47 @@ const Index = () => {
       onDelta: (chunk) => {
         assistantContent += chunk;
         setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId ? { ...m, content: assistantContent } : m
-          )
+          prev.map((m) => (m.id === assistantTempId ? { ...m, content: assistantContent } : m))
         );
         scrollToBottom();
       },
-      onDone: () => {
-        setChatHistory((prev) => [
-          ...prev,
-          { role: "assistant", content: assistantContent },
-        ]);
+      onDone: async () => {
+        const securityFlag = detectSecurityFlag(assistantContent);
+        const memoryTier = detectMemoryTier(assistantContent, userText);
+
+        // Update display with final analysis
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantTempId ? { ...m, securityFlag, memoryTier } : m
+          )
+        );
+
+        setChatHistory((prev) => [...prev, { role: "assistant", content: assistantContent }]);
+
+        // Persist
+        try {
+          await saveMessage({
+            conversation_id: convId!,
+            role: "assistant",
+            content: assistantContent,
+            memory_tier: memoryTier,
+            security_flag: securityFlag,
+          });
+
+          // Update conversation title if this was the first exchange
+          if (newHistory.length === 1) {
+            await updateConversationTitle(convId!, generateTitle(userText));
+            await loadConversations();
+          }
+        } catch {
+          console.error("Failed to persist assistant message");
+        }
+
         setIsProcessing(false);
       },
       onError: (err) => {
         toast.error(err);
-        // Remove the empty assistant message
-        setMessages((prev) => prev.filter((m) => m.id !== assistantId));
+        setMessages((prev) => prev.filter((m) => m.id !== assistantTempId));
         setIsProcessing(false);
       },
     });
@@ -224,18 +362,20 @@ const Index = () => {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar activeFolder={activeFolder} onFolderClick={setActiveFolder} />
+      <Sidebar
+        conversations={conversations}
+        activeId={activeConvId}
+        onSelect={selectConversation}
+        onNew={startNewConversation}
+        onDelete={handleDeleteConversation}
+        coreFiles={CORE_FILES}
+      />
 
       <main className="flex-1 flex flex-col min-h-screen">
         {/* Processing bar */}
         {isProcessing && (
           <div className="h-[2px] bg-secondary overflow-hidden flex-shrink-0">
-            <div
-              className="h-full bg-primary"
-              style={{
-                animation: "progressSlide 1.5s ease-in-out infinite",
-              }}
-            />
+            <div className="h-full bg-primary" style={{ animation: "progressSlide 1.5s ease-in-out infinite" }} />
           </div>
         )}
 
@@ -244,15 +384,12 @@ const Index = () => {
           <div className="max-w-[768px] p-4 space-y-6">
             {messages.length === 0 && (
               <div className="flex flex-col items-start justify-center min-h-[60vh] space-y-4">
-                <span className="font-mono text-4xl font-bold text-primary">
-                  J
-                </span>
+                <span className="font-mono text-4xl font-bold text-primary">J</span>
                 <div className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
                   System_Status: Grounded. Memory: Active.
                 </div>
                 <p className="text-muted-foreground text-sm max-w-md">
-                  Jackie is ready. Type a command, ask a question, paste some
-                  code, or start building.
+                  Jackie is ready. Type a command, ask a question, paste some code, or start building.
                 </p>
               </div>
             )}
@@ -270,9 +407,7 @@ const Index = () => {
         <div className="border-t border-border p-4 flex-shrink-0">
           <form onSubmit={handleSubmit} className="max-w-[768px]">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs text-muted-foreground select-none">
-                ›
-              </span>
+              <span className="font-mono text-xs text-muted-foreground select-none">›</span>
               <input
                 type="text"
                 value={input}
@@ -281,9 +416,7 @@ const Index = () => {
                 className="jackie-input flex-1"
                 disabled={isProcessing}
               />
-              <span className="font-mono text-xs text-muted-foreground select-none">
-                ⏎
-              </span>
+              <span className="font-mono text-xs text-muted-foreground select-none">⏎</span>
             </div>
           </form>
         </div>
