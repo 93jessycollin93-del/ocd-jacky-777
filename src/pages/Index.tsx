@@ -46,7 +46,7 @@ const Sidebar = ({
   userEmail: string;
   coreFiles: string[];
 }) => (
-  <aside className="hidden md:flex w-[280px] min-h-screen border-r border-border bg-sidebar flex-col">
+  <aside className="w-[280px] min-h-screen border-r border-border bg-sidebar flex-col hidden md:flex data-[mobile=true]:flex data-[mobile=true]:fixed data-[mobile=true]:inset-0 data-[mobile=true]:z-50 data-[mobile=true]:w-full data-[mobile=true]:border-r-0" data-mobile={false}>
     <div className="p-4 border-b border-border">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
