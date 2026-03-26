@@ -14,7 +14,7 @@ import {
 import { detectSecurityFlag, detectMemoryTier } from "@/lib/jackie-security";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Plus, Trash2, MessageSquare, LogOut, Send } from "lucide-react";
+import { Plus, Trash2, MessageSquare, LogOut, Send, Menu, X } from "lucide-react";
 
 interface DisplayMessage {
   id: string;
