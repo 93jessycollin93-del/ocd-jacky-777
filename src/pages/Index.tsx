@@ -420,9 +420,23 @@ const Index = () => {
         onSignOut={signOut}
         userEmail={user?.email ?? ""}
         coreFiles={CORE_FILES}
+        isMobileOpen={sidebarOpen}
+        onCloseMobile={() => setSidebarOpen(false)}
       />
 
       <main className="flex-1 flex flex-col min-h-screen">
+        {/* Mobile header */}
+        <div className="flex items-center gap-2 p-3 border-b border-border md:hidden flex-shrink-0">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-secondary btn-mechanical transition-colors"
+          >
+            <Menu size={18} />
+          </button>
+          <span className="font-mono text-sm font-bold text-primary tracking-wider">J</span>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Jackie</span>
+        </div>
+
         {isProcessing && (
           <div className="h-[2px] bg-secondary overflow-hidden flex-shrink-0">
             <div className="h-full bg-primary" style={{ animation: "progressSlide 1.5s ease-in-out infinite" }} />
