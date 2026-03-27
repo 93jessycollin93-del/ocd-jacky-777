@@ -461,6 +461,8 @@ const Index = () => {
         coreFiles={CORE_FILES}
         isMobileOpen={sidebarOpen}
         onCloseMobile={() => setSidebarOpen(false)}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       <main className="flex-1 flex flex-col min-h-screen">
