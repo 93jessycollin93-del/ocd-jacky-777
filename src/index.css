@@ -5,7 +5,8 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @layer base {
-  :root {
+  :root,
+  .dark {
     --background: 220 15% 5%;
     --foreground: 220 10% 90%;
 
@@ -44,6 +45,52 @@
     --sidebar-accent-foreground: 220 10% 80%;
     --sidebar-border: 220 15% 15%;
     --sidebar-ring: 150 100% 50%;
+
+    --font-mono: "JetBrains Mono", "Geist Mono", monospace;
+    --font-sans: "IBM Plex Sans", sans-serif;
+
+    --shadow-none: none;
+  }
+
+  .light {
+    --background: 0 0% 98%;
+    --foreground: 220 15% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 15% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 15% 10%;
+
+    --primary: 150 80% 35%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 10% 92%;
+    --secondary-foreground: 220 15% 25%;
+
+    --muted: 220 10% 94%;
+    --muted-foreground: 220 10% 45%;
+
+    --accent: 35 90% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 10% 85%;
+    --input: 220 10% 92%;
+    --ring: 150 80% 35%;
+
+    --radius: 2px;
+
+    --sidebar-background: 0 0% 97%;
+    --sidebar-foreground: 220 10% 35%;
+    --sidebar-primary: 150 80% 35%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 10% 92%;
+    --sidebar-accent-foreground: 220 15% 25%;
+    --sidebar-border: 220 10% 85%;
+    --sidebar-ring: 150 80% 35%;
 
     --font-mono: "JetBrains Mono", "Geist Mono", monospace;
     --font-sans: "IBM Plex Sans", sans-serif;

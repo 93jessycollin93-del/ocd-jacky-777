@@ -13,8 +13,10 @@ import {
 } from "@/lib/jackie-db";
 import { detectSecurityFlag, detectMemoryTier } from "@/lib/jackie-security";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/hooks/useTheme";
+import { voiceManager } from "@/lib/voice-manager";
 import { toast } from "sonner";
-import { Plus, Trash2, MessageSquare, LogOut, Send, Menu, X } from "lucide-react";
+import { Plus, Trash2, MessageSquare, LogOut, Send, Menu, X, Sun, Moon, Volume2, VolumeX } from "lucide-react";
 
 interface DisplayMessage {
   id: string;
@@ -38,6 +40,8 @@ const Sidebar = ({
   coreFiles,
   isMobileOpen,
   onCloseMobile,
+  theme,
+  onToggleTheme,
 }: {
   conversations: Conversation[];
   activeId: string | null;
@@ -49,6 +53,8 @@ const Sidebar = ({
   coreFiles: string[];
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
+  theme: string;
+  onToggleTheme: () => void;
 }) => {
   const handleSelect = (id: string) => {
     onSelect(id);
@@ -83,6 +89,13 @@ const Sidebar = ({
                 title="New conversation"
               >
                 <Plus size={14} />
+              </button>
+              <button
+                onClick={onToggleTheme}
+                className="p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-secondary btn-mechanical transition-colors duration-150"
+                title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+              >
+                {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
               </button>
               {isMobileOpen && (
                 <button
@@ -147,13 +160,15 @@ const Sidebar = ({
           <div className="font-mono text-[10px] text-muted-foreground truncate" title={userEmail}>
             {userEmail}
           </div>
-          <button
-            onClick={onSignOut}
-            className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground hover:text-destructive transition-colors"
-          >
-            <LogOut size={10} />
-            Sign Out
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onSignOut}
+              className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground hover:text-destructive transition-colors"
+            >
+              <LogOut size={10} />
+              Sign Out
+            </button>
+          </div>
         </div>
       </aside>
     </>
@@ -172,30 +187,60 @@ const MemoryDots = ({ tier }: { tier: 1 | 2 | 3 }) => (
 
 // ─── Messages ──────────────────────────────────────────────
 
-const JackieMessage = ({ message }: { message: DisplayMessage }) => (
-  <div className="space-y-3 stagger-enter">
-    <div className="flex items-center justify-between">
-      <span className="jackie-badge">Jackie here—</span>
-      {message.memoryTier && <MemoryDots tier={message.memoryTier} />}
-    </div>
+const JackieMessage = ({ message }: { message: DisplayMessage }) => {
+  const [speaking, setSpeaking] = useState(false);
 
-    {message.securityFlag && (
-      <div className="jackie-security-flag">
-        <div className="font-mono text-xs font-semibold uppercase tracking-wider mb-1">
-          ⚠ {message.securityFlag}
+  const toggleSpeak = async () => {
+    if (speaking) {
+      voiceManager.stop();
+      setSpeaking(false);
+    } else {
+      setSpeaking(true);
+      try {
+        await voiceManager.speak(message.content);
+      } catch {
+        // ignore
+      }
+      setSpeaking(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3 stagger-enter">
+      <div className="flex items-center justify-between">
+        <span className="jackie-badge">Jackie here—</span>
+        <div className="flex items-center gap-2">
+          {voiceManager.isSupported() && (
+            <button
+              onClick={toggleSpeak}
+              className="p-1 rounded-sm text-muted-foreground hover:text-primary transition-colors"
+              title={speaking ? "Stop speaking" : "Read aloud"}
+            >
+              {speaking ? <VolumeX size={12} /> : <Volume2 size={12} />}
+            </button>
+          )}
+          {message.memoryTier && <MemoryDots tier={message.memoryTier} />}
         </div>
       </div>
-    )}
 
-    <div className="text-foreground leading-relaxed prose prose-invert prose-sm max-w-none">
-      <ReactMarkdown>{message.content}</ReactMarkdown>
-    </div>
+      {message.securityFlag && (
+        <div className="jackie-security-flag">
+          <div className="font-mono text-xs font-semibold uppercase tracking-wider mb-1">
+            ⚠ {message.securityFlag}
+          </div>
+        </div>
+      )}
 
-    <div className="font-mono text-[10px] text-muted-foreground">
-      {message.timestamp.toLocaleTimeString("en-US", { hour12: false })}
+      <div className="text-foreground leading-relaxed prose prose-sm max-w-none dark:prose-invert">
+        <ReactMarkdown>{message.content}</ReactMarkdown>
+      </div>
+
+      <div className="font-mono text-[10px] text-muted-foreground">
+        {message.timestamp.toLocaleTimeString("en-US", { hour12: false })}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const UserMessage = ({ message }: { message: DisplayMessage }) => (
   <div className="space-y-2">
@@ -221,6 +266,7 @@ const CORE_FILES = [
 
 const Index = () => {
   const { user, signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
@@ -422,6 +468,8 @@ const Index = () => {
         coreFiles={CORE_FILES}
         isMobileOpen={sidebarOpen}
         onCloseMobile={() => setSidebarOpen(false)}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       <main className="flex-1 flex flex-col min-h-screen">
@@ -434,7 +482,14 @@ const Index = () => {
             <Menu size={18} />
           </button>
           <span className="font-mono text-sm font-bold text-primary tracking-wider">J</span>
-          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Jackie</span>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground flex-1">Jackie</span>
+          <button
+            onClick={toggleTheme}
+            className="p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-secondary btn-mechanical transition-colors"
+            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          >
+            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
         </div>
 
         {isProcessing && (
@@ -504,13 +559,13 @@ const Index = () => {
           50% { width: 60%; margin-left: 20%; }
           100% { width: 0%; margin-left: 100%; }
         }
-        .prose pre { background: hsl(220 15% 8%); border: 1px solid hsl(220 15% 15%); border-radius: 2px; }
+        .prose pre { background: hsl(var(--secondary)); border: 1px solid hsl(var(--border)); border-radius: 2px; }
         .prose code { font-family: var(--font-mono); font-size: 13px; }
-        .prose p code { background: hsl(220 15% 12%); padding: 2px 6px; border-radius: 2px; }
-        .prose a { color: hsl(150 100% 50%); }
-        .prose strong { color: hsl(220 10% 95%); }
-        .prose h1, .prose h2, .prose h3 { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em; color: hsl(220 10% 90%); }
-        .prose ul, .prose ol { color: hsl(220 10% 80%); }
+        .prose p code { background: hsl(var(--secondary)); padding: 2px 6px; border-radius: 2px; }
+        .prose a { color: hsl(var(--primary)); }
+        .prose strong { color: hsl(var(--foreground)); }
+        .prose h1, .prose h2, .prose h3 { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em; color: hsl(var(--foreground)); }
+        .prose ul, .prose ol { color: hsl(var(--foreground) / 0.8); }
       `}</style>
     </div>
   );
