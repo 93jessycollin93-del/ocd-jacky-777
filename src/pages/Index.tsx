@@ -40,6 +40,8 @@ const Sidebar = ({
   coreFiles,
   isMobileOpen,
   onCloseMobile,
+  theme,
+  onToggleTheme,
 }: {
   conversations: Conversation[];
   activeId: string | null;
@@ -51,6 +53,8 @@ const Sidebar = ({
   coreFiles: string[];
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
+  theme: string;
+  onToggleTheme: () => void;
 }) => {
   const handleSelect = (id: string) => {
     onSelect(id);
