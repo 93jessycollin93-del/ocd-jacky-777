@@ -13,8 +13,10 @@ import {
 } from "@/lib/jackie-db";
 import { detectSecurityFlag, detectMemoryTier } from "@/lib/jackie-security";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/hooks/useTheme";
+import { voiceManager } from "@/lib/voice-manager";
 import { toast } from "sonner";
-import { Plus, Trash2, MessageSquare, LogOut, Send, Menu, X } from "lucide-react";
+import { Plus, Trash2, MessageSquare, LogOut, Send, Menu, X, Sun, Moon, Volume2, VolumeX } from "lucide-react";
 
 interface DisplayMessage {
   id: string;
