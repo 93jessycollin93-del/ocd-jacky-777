@@ -90,6 +90,13 @@ const Sidebar = ({
               >
                 <Plus size={14} />
               </button>
+              <button
+                onClick={onToggleTheme}
+                className="p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-secondary btn-mechanical transition-colors duration-150"
+                title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+              >
+                {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+              </button>
               {isMobileOpen && (
                 <button
                   onClick={onCloseMobile}
