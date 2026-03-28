@@ -67,10 +67,17 @@ const Sidebar = ({
   theme: string;
   onToggleTheme: () => void;
 }) => {
+  const [searchQuery, setSearchQuery] = useState("");
   const handleSelect = (id: string) => {
     onSelect(id);
     onCloseMobile?.();
   };
+
+  const filtered = searchQuery.trim()
+    ? conversations.filter((c) =>
+        c.title.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : conversations;
 
   return (
     <>
@@ -118,16 +125,29 @@ const Sidebar = ({
               )}
             </div>
           </div>
+          {/* Search */}
+          <div className="mt-3 relative">
+            <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search conversations…"
+              className="w-full pl-7 pr-2 py-1.5 rounded-sm bg-secondary/50 border border-border font-mono text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+            />
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
           <div className="px-2 py-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            Conversations
+            Conversations {searchQuery && `(${filtered.length})`}
           </div>
-          {conversations.length === 0 && (
-            <div className="px-2 py-2 text-xs text-muted-foreground">No conversations yet.</div>
+          {filtered.length === 0 && (
+            <div className="px-2 py-2 text-xs text-muted-foreground">
+              {searchQuery ? "No matches found." : "No conversations yet."}
+            </div>
           )}
-          {conversations.map((conv) => (
+          {filtered.map((conv) => (
             <div
               key={conv.id}
               className={`group flex items-center gap-1 rounded-sm transition-colors duration-150 ${
