@@ -3,12 +3,12 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/jackie-chat`
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 
 export const JACKIE_MODELS = [
-  { id: "google/gemini-2.5-pro", label: "Gemini Pro", description: "Top-tier reasoning" },
-  { id: "google/gemini-2.5-flash", label: "Gemini Flash", description: "Fast & capable" },
-  { id: "google/gemini-2.5-flash-lite", label: "Gemini Lite", description: "Fastest & cheapest" },
-  { id: "google/gemini-3-flash-preview", label: "Gemini 3 Flash", description: "Next-gen balanced" },
-  { id: "openai/gpt-5", label: "GPT-5", description: "Powerful all-rounder" },
-  { id: "openai/gpt-5-mini", label: "GPT-5 Mini", description: "Strong & efficient" },
+  { id: "google/gemini-2.5-pro", label: "Gemini Pro", description: "Top-tier reasoning", cost: 3, speed: 1 },
+  { id: "google/gemini-2.5-flash", label: "Gemini Flash", description: "Fast & capable", cost: 2, speed: 2 },
+  { id: "google/gemini-2.5-flash-lite", label: "Gemini Lite", description: "Fastest & cheapest", cost: 1, speed: 3 },
+  { id: "google/gemini-3-flash-preview", label: "Gemini 3 Flash", description: "Next-gen balanced", cost: 2, speed: 2 },
+  { id: "openai/gpt-5", label: "GPT-5", description: "Powerful all-rounder", cost: 3, speed: 1 },
+  { id: "openai/gpt-5-mini", label: "GPT-5 Mini", description: "Strong & efficient", cost: 2, speed: 2 },
 ] as const;
 
 export type JackieModelId = (typeof JACKIE_MODELS)[number]["id"];

@@ -24,7 +24,7 @@ import { ChatMediaBar, type PendingFile } from "@/components/ChatMediaBar";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { AttachmentDisplay } from "@/components/AttachmentDisplay";
 import { toast } from "sonner";
-import { Plus, Trash2, MessageSquare, LogOut, Send, Menu, X, Sun, Moon, Volume2, VolumeX, Download, Mic, ChevronDown } from "lucide-react";
+import { Plus, Trash2, MessageSquare, LogOut, Send, Menu, X, Sun, Moon, Volume2, VolumeX, Download, Mic, ChevronDown, Zap, DollarSign } from "lucide-react";
 
 interface DisplayMessage {
   id: string;
@@ -730,22 +730,41 @@ const Index = () => {
                 {modelMenuOpen && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setModelMenuOpen(false)} />
-                    <div className="absolute bottom-full left-0 mb-1 z-50 bg-popover border border-border rounded-sm shadow-lg py-1 min-w-[200px]">
-                      {JACKIE_MODELS.map((m) => (
-                        <button
-                          key={m.id}
-                          onClick={() => {
-                            setSelectedModel(m.id);
-                            setModelMenuOpen(false);
-                          }}
-                          className={`w-full text-left px-3 py-1.5 font-mono text-xs hover:bg-secondary transition-colors flex items-center justify-between gap-4 ${
-                            selectedModel === m.id ? "text-primary" : "text-popover-foreground"
-                          }`}
-                        >
-                          <span>{m.label}</span>
-                          <span className="text-[10px] text-muted-foreground">{m.description}</span>
-                        </button>
-                      ))}
+                    <div className="absolute bottom-full left-0 mb-1 z-50 bg-popover border border-border rounded-sm shadow-lg py-1 min-w-[260px]">
+                      {JACKIE_MODELS.map((m) => {
+                        const costLabel = ["$", "$$", "$$$"][m.cost - 1];
+                        const speedDots = Array.from({ length: 3 }, (_, i) => i < m.speed);
+                        return (
+                          <button
+                            key={m.id}
+                            onClick={() => {
+                              setSelectedModel(m.id);
+                              setModelMenuOpen(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 font-mono text-xs hover:bg-secondary transition-colors flex items-center gap-3 ${
+                              selectedModel === m.id ? "text-primary bg-secondary/50" : "text-popover-foreground"
+                            }`}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold">{m.label}</span>
+                                {selectedModel === m.id && <span className="text-[9px] text-primary">●</span>}
+                              </div>
+                              <span className="text-[10px] text-muted-foreground">{m.description}</span>
+                            </div>
+                            <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                              <span className={`text-[10px] font-semibold ${m.cost === 1 ? "text-green-500" : m.cost === 2 ? "text-yellow-500" : "text-orange-500"}`}>
+                                {costLabel}
+                              </span>
+                              <div className="flex gap-0.5" title={`Speed: ${m.speed}/3`}>
+                                {speedDots.map((active, i) => (
+                                  <Zap key={i} size={8} className={active ? "text-primary fill-primary" : "text-muted-foreground/30"} />
+                                ))}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
                     </div>
                   </>
                 )}
