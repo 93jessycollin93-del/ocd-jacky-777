@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_attachments: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          file_name: string
+          file_size: number
+          file_type: string
+          id: string
+          message_id: string | null
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          file_name: string
+          file_size: number
+          file_type: string
+          id?: string
+          message_id?: string | null
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          file_name?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          message_id?: string | null
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_attachments_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages: {
         Row: {
           content: string

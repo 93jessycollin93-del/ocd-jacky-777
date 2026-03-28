@@ -11,12 +11,19 @@ import {
   updateConversationTitle,
   type Conversation,
 } from "@/lib/jackie-db";
+import {
+  uploadAttachment,
+  getMessageAttachments,
+  type Attachment,
+} from "@/lib/jackie-attachments";
 import { detectSecurityFlag, detectMemoryTier } from "@/lib/jackie-security";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { voiceManager } from "@/lib/voice-manager";
+import { ChatMediaBar, type PendingFile } from "@/components/ChatMediaBar";
+import { AttachmentDisplay } from "@/components/AttachmentDisplay";
 import { toast } from "sonner";
-import { Plus, Trash2, MessageSquare, LogOut, Send, Menu, X, Sun, Moon, Volume2, VolumeX } from "lucide-react";
+import { Plus, Trash2, MessageSquare, LogOut, Send, Menu, X, Sun, Moon, Volume2, VolumeX, Download } from "lucide-react";
 
 interface DisplayMessage {
   id: string;
@@ -25,6 +32,7 @@ interface DisplayMessage {
   timestamp: Date;
   memoryTier?: 1 | 2 | 3;
   securityFlag?: string | null;
+  attachments?: Attachment[];
 }
 
 // ─── Sidebar ───────────────────────────────────────────────
@@ -235,6 +243,10 @@ const JackieMessage = ({ message }: { message: DisplayMessage }) => {
         <ReactMarkdown>{message.content}</ReactMarkdown>
       </div>
 
+      {message.attachments && message.attachments.length > 0 && (
+        <AttachmentDisplay attachments={message.attachments} />
+      )}
+
       <div className="font-mono text-[10px] text-muted-foreground">
         {message.timestamp.toLocaleTimeString("en-US", { hour12: false })}
       </div>
@@ -247,6 +259,9 @@ const UserMessage = ({ message }: { message: DisplayMessage }) => (
     <div className="text-muted-foreground leading-relaxed text-sm whitespace-pre-wrap">
       {message.content}
     </div>
+    {message.attachments && message.attachments.length > 0 && (
+      <AttachmentDisplay attachments={message.attachments} />
+    )}
     <div className="font-mono text-[10px] text-muted-foreground/50">
       {message.timestamp.toLocaleTimeString("en-US", { hour12: false })}
     </div>
@@ -274,6 +289,7 @@ const Index = () => {
   const [input, setInput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const feedRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -301,14 +317,23 @@ const Index = () => {
   const loadMessages = useCallback(async (convId: string) => {
     try {
       const msgs = await getMessages(convId);
-      const display: DisplayMessage[] = msgs.map((m) => ({
-        id: m.id,
-        role: m.role as "user" | "assistant",
-        content: m.content,
-        timestamp: new Date(m.created_at),
-        memoryTier: (m.memory_tier as 1 | 2 | 3) ?? 1,
-        securityFlag: m.security_flag,
-      }));
+      const display: DisplayMessage[] = await Promise.all(
+        msgs.map(async (m) => {
+          let attachments: Attachment[] = [];
+          try {
+            attachments = await getMessageAttachments(m.id);
+          } catch { /* no attachments */ }
+          return {
+            id: m.id,
+            role: m.role as "user" | "assistant",
+            content: m.content,
+            timestamp: new Date(m.created_at),
+            memoryTier: (m.memory_tier as 1 | 2 | 3) ?? 1,
+            securityFlag: m.security_flag,
+            attachments,
+          };
+        })
+      );
       setMessages(display);
       setChatHistory(
         msgs.map((m) => ({ role: m.role as "user" | "assistant", content: m.content }))
@@ -354,16 +379,18 @@ const Index = () => {
   };
 
   const handleSubmit = async () => {
-    if (!input.trim() || isProcessing) return;
+    if ((!input.trim() && pendingFiles.length === 0) || isProcessing) return;
 
     const userText = input.trim();
+    const filesToUpload = [...pendingFiles];
     setInput("");
+    setPendingFiles([]);
     setIsProcessing(true);
 
     let convId = activeConvId;
     if (!convId) {
       try {
-        const conv = await createConversation(generateTitle(userText));
+        const conv = await createConversation(generateTitle(userText || "Attachment"));
         convId = conv.id;
         setActiveConvId(convId);
         await loadConversations();
@@ -374,22 +401,39 @@ const Index = () => {
       }
     }
 
+    // Upload attachments
+    let uploadedAttachments: Attachment[] = [];
+    if (filesToUpload.length > 0) {
+      try {
+        uploadedAttachments = await Promise.all(
+          filesToUpload.map((pf) => uploadAttachment(pf.file, convId!))
+        );
+        // Clean up previews
+        filesToUpload.forEach((pf) => { if (pf.preview) URL.revokeObjectURL(pf.preview); });
+      } catch {
+        toast.error("Failed to upload attachments.");
+      }
+    }
+
+    const displayContent = userText || (uploadedAttachments.length > 0 ? `[${uploadedAttachments.length} file(s) attached]` : "");
+
     const userMsg: DisplayMessage = {
       id: Date.now().toString(),
       role: "user",
-      content: userText,
+      content: displayContent,
       timestamp: new Date(),
+      attachments: uploadedAttachments,
     };
     setMessages((prev) => [...prev, userMsg]);
     scrollToBottom();
 
     try {
-      await saveMessage({ conversation_id: convId, role: "user", content: userText });
+      await saveMessage({ conversation_id: convId, role: "user", content: displayContent });
     } catch {
       console.error("Failed to persist user message");
     }
 
-    const newHistory: ChatMessage[] = [...chatHistory, { role: "user", content: userText }];
+    const newHistory: ChatMessage[] = [...chatHistory, { role: "user", content: displayContent }];
     setChatHistory(newHistory);
 
     const assistantTempId = (Date.now() + 1).toString();
@@ -455,6 +499,22 @@ const Index = () => {
     }
   };
 
+  const exportChat = () => {
+    if (messages.length === 0) return;
+    const conv = conversations.find((c) => c.id === activeConvId);
+    const lines = messages.map(
+      (m) => `[${m.timestamp.toISOString()}] ${m.role.toUpperCase()}: ${m.content}`
+    );
+    const blob = new Blob([lines.join("\n\n")], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `jackie-chat_${conv?.title || "export"}_${new Date().toISOString().slice(0, 10)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Chat exported.");
+  };
+
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar
@@ -483,6 +543,15 @@ const Index = () => {
           </button>
           <span className="font-mono text-sm font-bold text-primary tracking-wider">J</span>
           <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground flex-1">Jackie</span>
+          {messages.length > 0 && (
+            <button
+              onClick={exportChat}
+              className="p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-secondary btn-mechanical transition-colors"
+              title="Export chat"
+            >
+              <Download size={16} />
+            </button>
+          )}
           <button
             onClick={toggleTheme}
             className="p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-secondary btn-mechanical transition-colors"
@@ -524,6 +593,12 @@ const Index = () => {
         {/* Command input */}
         <div className="border-t border-border p-4 flex-shrink-0">
           <div className="max-w-[768px]">
+            <ChatMediaBar
+              pendingFiles={pendingFiles}
+              onFilesAdded={(files) => setPendingFiles((prev) => [...prev, ...files])}
+              onFileRemoved={(id) => setPendingFiles((prev) => prev.filter((f) => f.id !== id))}
+              disabled={isProcessing}
+            />
             <div className="flex items-end gap-2">
               <span className="font-mono text-xs text-muted-foreground select-none pb-3">›</span>
               <textarea
@@ -539,7 +614,7 @@ const Index = () => {
               />
               <button
                 onClick={handleSubmit}
-                disabled={isProcessing || !input.trim()}
+                disabled={isProcessing || (!input.trim() && pendingFiles.length === 0)}
                 className="p-3 rounded-sm bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-30 transition-opacity btn-mechanical flex-shrink-0"
                 title="Send (Enter)"
               >
@@ -547,7 +622,7 @@ const Index = () => {
               </button>
             </div>
             <div className="font-mono text-[10px] text-muted-foreground mt-1.5 ml-5">
-              Enter to send · Shift+Enter for new line
+              Enter to send · Shift+Enter for new line · Attach files, photos, or record video
             </div>
           </div>
         </div>
