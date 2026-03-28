@@ -688,6 +688,7 @@ const Index = () => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
+                onPaste={handlePaste}
                 placeholder="..."
                 className="jackie-input flex-1 resize-none overflow-hidden"
                 style={{ minHeight: "44px", maxHeight: "200px" }}
