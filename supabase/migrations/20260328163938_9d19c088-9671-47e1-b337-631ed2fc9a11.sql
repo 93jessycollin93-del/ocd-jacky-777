@@ -1,0 +1,1 @@
+ALTER TABLE public.conversations ADD COLUMN model text DEFAULT NULL;

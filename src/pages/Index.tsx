@@ -9,6 +9,8 @@ import {
   saveMessage,
   generateTitle,
   updateConversationTitle,
+  updateConversationModel,
+  getConversationModel,
   type Conversation,
 } from "@/lib/jackie-db";
 import {
@@ -292,6 +294,13 @@ const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [selectedModel, setSelectedModel] = useState<JackieModelId>("google/gemini-2.5-pro");
+
+  const changeModel = useCallback(async (model: JackieModelId) => {
+    setSelectedModel(model);
+    if (activeConvId) {
+      try { await updateConversationModel(activeConvId, model); } catch { /* best effort */ }
+    }
+  }, [activeConvId]);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const dragCounter = useRef(0);
@@ -353,9 +362,13 @@ const Index = () => {
   }, []);
 
   const selectConversation = useCallback(
-    (id: string) => {
+    async (id: string) => {
       setActiveConvId(id);
       loadMessages(id);
+      try {
+        const model = await getConversationModel(id);
+        if (model) setSelectedModel(model as JackieModelId);
+      } catch { /* use current */ }
     },
     [loadMessages]
   );
@@ -402,6 +415,7 @@ const Index = () => {
         const conv = await createConversation(generateTitle(userText || "Attachment"));
         convId = conv.id;
         setActiveConvId(convId);
+        await updateConversationModel(convId, selectedModel);
         await loadConversations();
       } catch {
         toast.error("Failed to create conversation.");
@@ -738,7 +752,7 @@ const Index = () => {
                           <button
                             key={m.id}
                             onClick={() => {
-                              setSelectedModel(m.id);
+                              changeModel(m.id);
                               setModelMenuOpen(false);
                             }}
                             className={`w-full text-left px-3 py-2 font-mono text-xs hover:bg-secondary transition-colors flex items-center gap-3 ${
