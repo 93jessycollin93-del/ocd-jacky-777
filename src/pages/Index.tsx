@@ -24,7 +24,7 @@ import { ChatMediaBar, type PendingFile } from "@/components/ChatMediaBar";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { AttachmentDisplay } from "@/components/AttachmentDisplay";
 import { toast } from "sonner";
-import { Plus, Trash2, MessageSquare, LogOut, Send, Menu, X, Sun, Moon, Volume2, VolumeX, Download } from "lucide-react";
+import { Plus, Trash2, MessageSquare, LogOut, Send, Menu, X, Sun, Moon, Volume2, VolumeX, Download, Mic } from "lucide-react";
 
 interface DisplayMessage {
   id: string;
