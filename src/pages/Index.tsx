@@ -506,6 +506,41 @@ const Index = () => {
     }
   };
 
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current++;
+    if (e.dataTransfer.types.includes("Files")) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current--;
+    if (dragCounter.current === 0) setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current = 0;
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
+    const newPending: PendingFile[] = files.map((file) => ({
+      file,
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      preview: file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined,
+    }));
+    setPendingFiles((prev) => [...prev, ...newPending]);
+    toast.success(`${files.length} file${files.length > 1 ? "s" : ""} added`);
+  };
+
   const exportChat = () => {
     if (messages.length === 0) return;
     const conv = conversations.find((c) => c.id === activeConvId);
