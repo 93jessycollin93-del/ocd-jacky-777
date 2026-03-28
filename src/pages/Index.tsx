@@ -295,7 +295,7 @@ const Index = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    loadConversations();
+    loadConversations(true);
   }, []);
 
   // Auto-resize textarea
