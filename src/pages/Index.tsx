@@ -543,6 +543,15 @@ const Index = () => {
           </button>
           <span className="font-mono text-sm font-bold text-primary tracking-wider">J</span>
           <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground flex-1">Jackie</span>
+          {messages.length > 0 && (
+            <button
+              onClick={exportChat}
+              className="p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-secondary btn-mechanical transition-colors"
+              title="Export chat"
+            >
+              <Download size={16} />
+            </button>
+          )}
           <button
             onClick={toggleTheme}
             className="p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-secondary btn-mechanical transition-colors"
