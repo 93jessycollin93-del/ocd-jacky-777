@@ -243,6 +243,10 @@ const JackieMessage = ({ message }: { message: DisplayMessage }) => {
         <ReactMarkdown>{message.content}</ReactMarkdown>
       </div>
 
+      {message.attachments && message.attachments.length > 0 && (
+        <AttachmentDisplay attachments={message.attachments} />
+      )}
+
       <div className="font-mono text-[10px] text-muted-foreground">
         {message.timestamp.toLocaleTimeString("en-US", { hour12: false })}
       </div>
