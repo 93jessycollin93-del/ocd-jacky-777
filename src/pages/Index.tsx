@@ -415,6 +415,7 @@ const Index = () => {
         const conv = await createConversation(generateTitle(userText || "Attachment"));
         convId = conv.id;
         setActiveConvId(convId);
+        await updateConversationModel(convId, selectedModel);
         await loadConversations();
       } catch {
         toast.error("Failed to create conversation.");
