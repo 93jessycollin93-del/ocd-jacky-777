@@ -11,12 +11,19 @@ import {
   updateConversationTitle,
   type Conversation,
 } from "@/lib/jackie-db";
+import {
+  uploadAttachment,
+  getMessageAttachments,
+  type Attachment,
+} from "@/lib/jackie-attachments";
 import { detectSecurityFlag, detectMemoryTier } from "@/lib/jackie-security";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { voiceManager } from "@/lib/voice-manager";
+import { ChatMediaBar, type PendingFile } from "@/components/ChatMediaBar";
+import { AttachmentDisplay } from "@/components/AttachmentDisplay";
 import { toast } from "sonner";
-import { Plus, Trash2, MessageSquare, LogOut, Send, Menu, X, Sun, Moon, Volume2, VolumeX } from "lucide-react";
+import { Plus, Trash2, MessageSquare, LogOut, Send, Menu, X, Sun, Moon, Volume2, VolumeX, Download } from "lucide-react";
 
 interface DisplayMessage {
   id: string;
@@ -25,6 +32,7 @@ interface DisplayMessage {
   timestamp: Date;
   memoryTier?: 1 | 2 | 3;
   securityFlag?: string | null;
+  attachments?: Attachment[];
 }
 
 // ─── Sidebar ───────────────────────────────────────────────
