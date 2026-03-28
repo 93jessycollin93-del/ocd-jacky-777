@@ -317,14 +317,23 @@ const Index = () => {
   const loadMessages = useCallback(async (convId: string) => {
     try {
       const msgs = await getMessages(convId);
-      const display: DisplayMessage[] = msgs.map((m) => ({
-        id: m.id,
-        role: m.role as "user" | "assistant",
-        content: m.content,
-        timestamp: new Date(m.created_at),
-        memoryTier: (m.memory_tier as 1 | 2 | 3) ?? 1,
-        securityFlag: m.security_flag,
-      }));
+      const display: DisplayMessage[] = await Promise.all(
+        msgs.map(async (m) => {
+          let attachments: Attachment[] = [];
+          try {
+            attachments = await getMessageAttachments(m.id);
+          } catch { /* no attachments */ }
+          return {
+            id: m.id,
+            role: m.role as "user" | "assistant",
+            content: m.content,
+            timestamp: new Date(m.created_at),
+            memoryTier: (m.memory_tier as 1 | 2 | 3) ?? 1,
+            securityFlag: m.security_flag,
+            attachments,
+          };
+        })
+      );
       setMessages(display);
       setChatHistory(
         msgs.map((m) => ({ role: m.role as "user" | "assistant", content: m.content }))
