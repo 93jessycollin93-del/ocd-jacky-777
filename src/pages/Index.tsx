@@ -634,7 +634,7 @@ const Index = () => {
               </button>
             </div>
             <div className="font-mono text-[10px] text-muted-foreground mt-1.5 ml-5">
-              Enter to send · Shift+Enter for new line · Attach files, photos, or record video
+              Enter to send · Shift+Enter for new line · Attach files, photos, or voice
             </div>
           </div>
         </div>
