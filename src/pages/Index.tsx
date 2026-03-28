@@ -9,6 +9,8 @@ import {
   saveMessage,
   generateTitle,
   updateConversationTitle,
+  updateConversationModel,
+  getConversationModel,
   type Conversation,
 } from "@/lib/jackie-db";
 import {

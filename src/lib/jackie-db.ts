@@ -60,6 +60,24 @@ export async function updateConversationTitle(id: string, title: string): Promis
   if (error) throw error;
 }
 
+export async function updateConversationModel(id: string, model: string): Promise<void> {
+  const { error } = await supabase
+    .from("conversations")
+    .update({ model } as any)
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function getConversationModel(id: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("conversations")
+    .select("model" as any)
+    .eq("id", id)
+    .single();
+  if (error) throw error;
+  return (data as any)?.model ?? null;
+}
+
 export async function getMessages(conversationId: string): Promise<StoredMessage[]> {
   const { data, error } = await supabase
     .from("chat_messages")
