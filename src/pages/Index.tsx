@@ -506,6 +506,30 @@ const Index = () => {
     }
   };
 
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = Array.from(e.clipboardData.items);
+    const imageItems = items.filter((item) => item.type.startsWith("image/"));
+    if (imageItems.length === 0) return;
+
+    e.preventDefault();
+    const newPending: PendingFile[] = imageItems
+      .map((item) => {
+        const file = item.getAsFile();
+        if (!file) return null;
+        return {
+          file,
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          preview: URL.createObjectURL(file),
+        };
+      })
+      .filter(Boolean) as PendingFile[];
+
+    if (newPending.length > 0) {
+      setPendingFiles((prev) => [...prev, ...newPending]);
+      toast.success(`${newPending.length} image${newPending.length > 1 ? "s" : ""} pasted`);
+    }
+  };
+
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
