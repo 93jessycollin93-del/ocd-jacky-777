@@ -2,13 +2,26 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/jackie-chat`
 
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 
+export const JACKIE_MODELS = [
+  { id: "google/gemini-2.5-pro", label: "Gemini Pro", description: "Top-tier reasoning" },
+  { id: "google/gemini-2.5-flash", label: "Gemini Flash", description: "Fast & capable" },
+  { id: "google/gemini-2.5-flash-lite", label: "Gemini Lite", description: "Fastest & cheapest" },
+  { id: "google/gemini-3-flash-preview", label: "Gemini 3 Flash", description: "Next-gen balanced" },
+  { id: "openai/gpt-5", label: "GPT-5", description: "Powerful all-rounder" },
+  { id: "openai/gpt-5-mini", label: "GPT-5 Mini", description: "Strong & efficient" },
+] as const;
+
+export type JackieModelId = (typeof JACKIE_MODELS)[number]["id"];
+
 export async function streamChat({
   messages,
+  model,
   onDelta,
   onDone,
   onError,
 }: {
   messages: ChatMessage[];
+  model?: JackieModelId;
   onDelta: (text: string) => void;
   onDone: () => void;
   onError: (error: string) => void;
@@ -20,7 +33,7 @@ export async function streamChat({
         "Content-Type": "application/json",
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ messages }),
+      body: JSON.stringify({ messages, ...(model ? { model } : {}) }),
     });
 
     if (!resp.ok) {

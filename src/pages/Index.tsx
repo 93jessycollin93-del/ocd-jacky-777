@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
-import { streamChat, type ChatMessage } from "@/lib/jackie-stream";
+import { streamChat, JACKIE_MODELS, type ChatMessage, type JackieModelId } from "@/lib/jackie-stream";
 import {
   listConversations,
   createConversation,
@@ -24,7 +24,7 @@ import { ChatMediaBar, type PendingFile } from "@/components/ChatMediaBar";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { AttachmentDisplay } from "@/components/AttachmentDisplay";
 import { toast } from "sonner";
-import { Plus, Trash2, MessageSquare, LogOut, Send, Menu, X, Sun, Moon, Volume2, VolumeX, Download, Mic } from "lucide-react";
+import { Plus, Trash2, MessageSquare, LogOut, Send, Menu, X, Sun, Moon, Volume2, VolumeX, Download, Mic, ChevronDown } from "lucide-react";
 
 interface DisplayMessage {
   id: string;
@@ -291,6 +291,8 @@ const Index = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+  const [selectedModel, setSelectedModel] = useState<JackieModelId>("google/gemini-2.5-pro");
+  const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const dragCounter = useRef(0);
   const feedRef = useRef<HTMLDivElement>(null);
@@ -453,6 +455,7 @@ const Index = () => {
 
     await streamChat({
       messages: newHistory,
+      model: selectedModel,
       onDelta: (chunk) => {
         assistantContent += chunk;
         setMessages((prev) =>
@@ -715,8 +718,41 @@ const Index = () => {
                 <Send size={16} />
               </button>
             </div>
-            <div className="font-mono text-[10px] text-muted-foreground mt-1.5 ml-5">
-              Enter to send · Shift+Enter for new line · Attach files, photos, or voice
+            <div className="flex items-center justify-between mt-1.5 ml-5">
+              <div className="relative">
+                <button
+                  onClick={() => setModelMenuOpen((prev) => !prev)}
+                  className="flex items-center gap-1 font-mono text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {JACKIE_MODELS.find((m) => m.id === selectedModel)?.label ?? "Model"}
+                  <ChevronDown size={10} />
+                </button>
+                {modelMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setModelMenuOpen(false)} />
+                    <div className="absolute bottom-full left-0 mb-1 z-50 bg-popover border border-border rounded-sm shadow-lg py-1 min-w-[200px]">
+                      {JACKIE_MODELS.map((m) => (
+                        <button
+                          key={m.id}
+                          onClick={() => {
+                            setSelectedModel(m.id);
+                            setModelMenuOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-1.5 font-mono text-xs hover:bg-secondary transition-colors flex items-center justify-between gap-4 ${
+                            selectedModel === m.id ? "text-primary" : "text-popover-foreground"
+                          }`}
+                        >
+                          <span>{m.label}</span>
+                          <span className="text-[10px] text-muted-foreground">{m.description}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+              <span className="font-mono text-[10px] text-muted-foreground">
+                Enter to send · Shift+Enter for new line
+              </span>
             </div>
           </div>
         </div>
