@@ -455,6 +455,7 @@ const Index = () => {
 
     await streamChat({
       messages: newHistory,
+      model: selectedModel,
       onDelta: (chunk) => {
         assistantContent += chunk;
         setMessages((prev) =>
