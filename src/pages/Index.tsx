@@ -21,9 +21,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { voiceManager } from "@/lib/voice-manager";
 import { ChatMediaBar, type PendingFile } from "@/components/ChatMediaBar";
+import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { AttachmentDisplay } from "@/components/AttachmentDisplay";
 import { toast } from "sonner";
-import { Plus, Trash2, MessageSquare, LogOut, Send, Menu, X, Sun, Moon, Volume2, VolumeX, Download } from "lucide-react";
+import { Plus, Trash2, MessageSquare, LogOut, Send, Menu, X, Sun, Moon, Volume2, VolumeX, Download, Mic } from "lucide-react";
 
 interface DisplayMessage {
   id: string;
@@ -612,6 +613,17 @@ const Index = () => {
                 disabled={isProcessing}
                 rows={1}
               />
+              <VoiceRecorder
+                onRecordingComplete={(file) => {
+                  const pf: PendingFile = {
+                    file,
+                    id: `${Date.now()}-voice`,
+                    preview: URL.createObjectURL(file),
+                  };
+                  setPendingFiles((prev) => [...prev, pf]);
+                }}
+                disabled={isProcessing}
+              />
               <button
                 onClick={handleSubmit}
                 disabled={isProcessing || (!input.trim() && pendingFiles.length === 0)}
@@ -622,7 +634,7 @@ const Index = () => {
               </button>
             </div>
             <div className="font-mono text-[10px] text-muted-foreground mt-1.5 ml-5">
-              Enter to send · Shift+Enter for new line · Attach files, photos, or record video
+              Enter to send · Shift+Enter for new line · Attach files, photos, or voice
             </div>
           </div>
         </div>
