@@ -77,18 +77,38 @@ const Sidebar = ({
   onCloseMobile?: () => void;
   theme: string;
   onToggleTheme: () => void;
+  tags: TagType[];
+  tagMap: Record<string, string[]>;
+  activeTagFilter: string | null;
+  onSetTagFilter: (tagId: string | null) => void;
+  onCreateTag: (name: string, color: string) => void;
+  onDeleteTag: (id: string) => void;
+  onToggleTag: (convId: string, tagId: string, has: boolean) => void;
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [showNewTag, setShowNewTag] = useState(false);
+  const [newTagName, setNewTagName] = useState("");
+  const [newTagColor, setNewTagColor] = useState<string>("blue");
+  const [tagMenuConvId, setTagMenuConvId] = useState<string | null>(null);
   const handleSelect = (id: string) => {
     onSelect(id);
     onCloseMobile?.();
   };
 
-  const filtered = searchQuery.trim()
+  let filtered = searchQuery.trim()
     ? conversations.filter((c) =>
         c.title.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : conversations;
+
+  if (activeTagFilter) {
+    const taggedConvIds = new Set(
+      Object.entries(tagMap)
+        .filter(([, tids]) => tids.includes(activeTagFilter))
+        .map(([cid]) => cid)
+    );
+    filtered = filtered.filter((c) => taggedConvIds.has(c.id));
+  }
 
   return (
     <>
