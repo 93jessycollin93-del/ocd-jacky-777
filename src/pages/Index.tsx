@@ -456,6 +456,9 @@ const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [selectedModel, setSelectedModel] = useState<JackieModelId>("google/gemini-2.5-pro");
+  const [tags, setTags] = useState<TagType[]>([]);
+  const [tagMap, setTagMap] = useState<Record<string, string[]>>({});
+  const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
 
   const changeModel = useCallback(async (model: JackieModelId) => {
     setSelectedModel(model);
