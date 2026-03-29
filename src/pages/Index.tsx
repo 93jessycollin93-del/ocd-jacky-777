@@ -174,44 +174,148 @@ const Sidebar = ({
               className="w-full pl-7 pr-2 py-1.5 rounded-sm bg-secondary/50 border border-border font-mono text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
             />
           </div>
+          {/* Tag filters */}
+          {tags.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {tags.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => onSetTagFilter(activeTagFilter === t.id ? null : t.id)}
+                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm font-mono text-[10px] border transition-all ${
+                    TAG_COLOR_MAP[t.color] || TAG_COLOR_MAP.blue
+                  } ${activeTagFilter === t.id ? "ring-1 ring-primary" : "opacity-70 hover:opacity-100"}`}
+                >
+                  {t.name}
+                  {activeTagFilter === t.id && <X size={8} />}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
-          <div className="px-2 py-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            Conversations {searchQuery && `(${filtered.length})`}
+          <div className="px-2 py-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground flex items-center justify-between">
+            <span>Conversations {(searchQuery || activeTagFilter) && `(${filtered.length})`}</span>
           </div>
           {filtered.length === 0 && (
             <div className="px-2 py-2 text-xs text-muted-foreground">
-              {searchQuery ? "No matches found." : "No conversations yet."}
+              {searchQuery || activeTagFilter ? "No matches found." : "No conversations yet."}
             </div>
           )}
-          {filtered.map((conv) => (
-            <div
-              key={conv.id}
-              className={`group flex items-center gap-1 rounded-sm transition-colors duration-150 ${
-                activeId === conv.id
-                  ? "bg-secondary text-foreground"
-                  : "text-sidebar-foreground hover:bg-secondary/50"
-              }`}
-            >
-              <button
-                onClick={() => handleSelect(conv.id)}
-                className="flex-1 text-left px-2 py-1.5 font-mono text-xs truncate btn-mechanical flex items-center gap-2"
+          {filtered.map((conv) => {
+            const convTags = (tagMap[conv.id] || []).map((tid) => tags.find((t) => t.id === tid)).filter(Boolean) as TagType[];
+            return (
+              <div
+                key={conv.id}
+                className={`group flex flex-col rounded-sm transition-colors duration-150 ${
+                  activeId === conv.id
+                    ? "bg-secondary text-foreground"
+                    : "text-sidebar-foreground hover:bg-secondary/50"
+                }`}
               >
-                <MessageSquare size={12} className="flex-shrink-0 text-muted-foreground" />
-                {conv.title}
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(conv.id);
-                }}
-                className="opacity-0 group-hover:opacity-100 p-1 mr-1 text-muted-foreground hover:text-destructive transition-opacity duration-150"
-              >
-                <Trash2 size={12} />
-              </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handleSelect(conv.id)}
+                    className="flex-1 text-left px-2 py-1.5 font-mono text-xs truncate btn-mechanical flex items-center gap-2"
+                  >
+                    <MessageSquare size={12} className="flex-shrink-0 text-muted-foreground" />
+                    {conv.title}
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setTagMenuConvId(tagMenuConvId === conv.id ? null : conv.id); }}
+                    className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-foreground transition-opacity duration-150"
+                    title="Manage tags"
+                  >
+                    <Tag size={10} />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onDelete(conv.id); }}
+                    className="opacity-0 group-hover:opacity-100 p-1 mr-1 text-muted-foreground hover:text-destructive transition-opacity duration-150"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+                {/* Tag badges */}
+                {convTags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 px-2 pb-1">
+                    {convTags.map((t) => (
+                      <span key={t.id} className={`px-1 py-0 rounded-sm font-mono text-[9px] border ${TAG_COLOR_MAP[t.color] || TAG_COLOR_MAP.blue}`}>
+                        {t.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {/* Tag menu */}
+                {tagMenuConvId === conv.id && (
+                  <div className="mx-2 mb-1 p-2 bg-popover border border-border rounded-sm space-y-1">
+                    {tags.map((t) => {
+                      const has = (tagMap[conv.id] || []).includes(t.id);
+                      return (
+                        <button
+                          key={t.id}
+                          onClick={() => onToggleTag(conv.id, t.id, has)}
+                          className={`w-full text-left px-2 py-1 rounded-sm font-mono text-[10px] flex items-center gap-2 hover:bg-secondary transition-colors ${has ? "text-foreground" : "text-muted-foreground"}`}
+                        >
+                          <span className={`w-2 h-2 rounded-full ${has ? "bg-primary" : "bg-muted-foreground/30"}`} />
+                          <span className={`px-1 rounded-sm border ${TAG_COLOR_MAP[t.color] || TAG_COLOR_MAP.blue}`}>{t.name}</span>
+                        </button>
+                      );
+                    })}
+                    {tags.length === 0 && <div className="text-[10px] text-muted-foreground">No tags yet</div>}
+                    <button
+                      onClick={() => setShowNewTag(true)}
+                      className="w-full text-left px-2 py-1 font-mono text-[10px] text-primary hover:bg-secondary rounded-sm"
+                    >
+                      + New tag
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* New tag popover */}
+          {showNewTag && (
+            <div className="mx-2 mt-2 p-2 bg-popover border border-border rounded-sm space-y-2">
+              <input
+                type="text"
+                value={newTagName}
+                onChange={(e) => setNewTagName(e.target.value)}
+                placeholder="Tag name"
+                className="w-full px-2 py-1 bg-secondary/50 border border-border rounded-sm font-mono text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                autoFocus
+              />
+              <div className="flex flex-wrap gap-1">
+                {TAG_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setNewTagColor(c)}
+                    className={`w-4 h-4 rounded-full border-2 ${newTagColor === c ? "border-foreground" : "border-transparent"} ${TAG_COLOR_MAP[c]?.split(" ")[0] || "bg-blue-500/20"}`}
+                  />
+                ))}
+              </div>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => {
+                    if (newTagName.trim()) {
+                      onCreateTag(newTagName.trim(), newTagColor);
+                      setNewTagName("");
+                      setShowNewTag(false);
+                    }
+                  }}
+                  className="px-2 py-1 bg-primary text-primary-foreground font-mono text-[10px] rounded-sm hover:opacity-90"
+                >
+                  Create
+                </button>
+                <button
+                  onClick={() => { setShowNewTag(false); setNewTagName(""); }}
+                  className="px-2 py-1 font-mono text-[10px] text-muted-foreground hover:text-foreground"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
-          ))}
+          )}
         </div>
 
         <div className="p-2 border-t border-border space-y-0.5">
