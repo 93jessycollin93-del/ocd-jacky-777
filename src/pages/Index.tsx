@@ -64,6 +64,13 @@ const Sidebar = ({
   onCloseMobile,
   theme,
   onToggleTheme,
+  tags,
+  tagMap,
+  activeTagFilter,
+  onSetTagFilter,
+  onCreateTag,
+  onDeleteTag,
+  onToggleTag,
 }: {
   conversations: Conversation[];
   activeId: string | null;
