@@ -812,6 +812,13 @@ const Index = () => {
         onCloseMobile={() => setSidebarOpen(false)}
         theme={theme}
         onToggleTheme={toggleTheme}
+        tags={tags}
+        tagMap={tagMap}
+        activeTagFilter={activeTagFilter}
+        onSetTagFilter={setActiveTagFilter}
+        onCreateTag={handleCreateTag}
+        onDeleteTag={handleDeleteTag}
+        onToggleTag={handleToggleTag}
       />
 
       <main
