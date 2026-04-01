@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Design from "./pages/Design";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
