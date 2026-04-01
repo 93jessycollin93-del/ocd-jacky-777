@@ -319,6 +319,9 @@ const Sidebar = ({
         </div>
 
         <div className="p-2 border-t border-border space-y-0.5">
+          <a href="/design" className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors">
+            🎮 Game Design Hub
+          </a>
           <div className="px-2 py-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
             Core
           </div>

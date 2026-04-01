@@ -196,6 +196,102 @@ export type Database = {
         }
         Relationships: []
       }
+      game_design_entries: {
+        Row: {
+          category: Database["public"]["Enums"]["design_entry_category"]
+          content: string
+          created_at: string
+          id: string
+          parent_id: string | null
+          project_id: string
+          sort_order: number
+          status: Database["public"]["Enums"]["design_entry_status"]
+          tags: string[] | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["design_entry_category"]
+          content?: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          project_id: string
+          sort_order?: number
+          status?: Database["public"]["Enums"]["design_entry_status"]
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["design_entry_category"]
+          content?: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          project_id?: string
+          sort_order?: number
+          status?: Database["public"]["Enums"]["design_entry_status"]
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_design_entries_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "game_design_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_design_entries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "game_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_projects: {
+        Row: {
+          created_at: string
+          description: string | null
+          genre: string | null
+          id: string
+          name: string
+          status: string
+          updated_at: string
+          user_id: string
+          vision_statement: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          genre?: string | null
+          id?: string
+          name: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          vision_statement?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          genre?: string | null
+          id?: string
+          name?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          vision_statement?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -204,7 +300,23 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      design_entry_category:
+        | "lore"
+        | "mechanic"
+        | "unit"
+        | "building"
+        | "resource"
+        | "tech_tree"
+        | "faction"
+        | "event"
+        | "economy_rule"
+        | "battle_system"
+        | "alliance"
+        | "monetization"
+        | "quest"
+        | "map"
+        | "general"
+      design_entry_status: "draft" | "approved" | "implemented"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -331,6 +443,25 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      design_entry_category: [
+        "lore",
+        "mechanic",
+        "unit",
+        "building",
+        "resource",
+        "tech_tree",
+        "faction",
+        "event",
+        "economy_rule",
+        "battle_system",
+        "alliance",
+        "monetization",
+        "quest",
+        "map",
+        "general",
+      ],
+      design_entry_status: ["draft", "approved", "implemented"],
+    },
   },
 } as const

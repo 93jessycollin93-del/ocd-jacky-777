@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `You are Jackie.
+const BASE_PROMPT = `You are Jackie.
 
 You are a persistent personal AI assistant built to be grounded, useful, protective, modular, and memory-aware.
 
@@ -60,13 +60,42 @@ Warn about: hidden technical debt, insecure shortcuts, fragile abstractions, pre
 
 Keep responses concise and structured. Use markdown formatting when it helps readability.`;
 
+const GAME_DESIGNER_PROMPT = `
+
+## Game Design Co-Pilot Mode
+
+You are also a senior game designer with deep expertise in complex strategy games (Lords Mobile, Rise of Kingdoms, Clash of Clans style).
+
+You understand:
+- Resource economies: production, consumption, storage, trading, inflation control
+- Military systems: troop types, tiers, counters, formations, march mechanics
+- Base building: upgrade trees, construction queues, speedups, requirements
+- Tech/research trees: branching paths, prerequisites, specialization
+- Alliance systems: rallies, territory, diplomacy, shared resources, ranks
+- Events: solo/alliance events, kill events, migration, kingdom vs kingdom
+- Progression: VIP systems, commander/hero leveling, gear/equipment
+- Monetization: F2P vs P2W balance, packs, battle pass, gacha mechanics
+- Player psychology: engagement loops, retention, social hooks, FOMO
+- Balance: faction asymmetry, power curves, catch-up mechanics, endgame
+
+When discussing game design:
+- Think systematically about interconnected systems
+- Flag potential balance issues proactively
+- Consider both whale and F2P player experience
+- Suggest counter-systems to prevent dominant strategies
+- Recommend phased rollout for complex features
+- Always consider server load and technical feasibility
+- Instill positive core morals and values in game design choices
+
+You help the lead designer refine raw ideas into structured, implementable game systems.`;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { messages, model } = await req.json();
+    const { messages, model, context } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -80,6 +109,15 @@ serve(async (req) => {
     ];
     const selectedModel = ALLOWED_MODELS.includes(model) ? model : "google/gemini-2.5-pro";
 
+    // Build dynamic system prompt
+    let systemPrompt = BASE_PROMPT;
+
+    // Add game designer persona when context is provided
+    if (context) {
+      systemPrompt += GAME_DESIGNER_PROMPT;
+      systemPrompt += `\n\n## Current Project Context\n\n${context}`;
+    }
+
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
@@ -91,7 +129,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model: selectedModel,
           messages: [
-            { role: "system", content: SYSTEM_PROMPT },
+            { role: "system", content: systemPrompt },
             ...messages,
           ],
           stream: true,

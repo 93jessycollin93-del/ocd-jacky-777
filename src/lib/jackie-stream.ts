@@ -19,12 +19,14 @@ export async function streamChat({
   onDelta,
   onDone,
   onError,
+  context,
 }: {
   messages: ChatMessage[];
   model?: JackieModelId;
   onDelta: (text: string) => void;
   onDone: () => void;
   onError: (error: string) => void;
+  context?: string;
 }) {
   try {
     const resp = await fetch(CHAT_URL, {
@@ -33,7 +35,7 @@ export async function streamChat({
         "Content-Type": "application/json",
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ messages, ...(model ? { model } : {}) }),
+      body: JSON.stringify({ messages, ...(model ? { model } : {}), ...(context ? { context } : {}) }),
     });
 
     if (!resp.ok) {
