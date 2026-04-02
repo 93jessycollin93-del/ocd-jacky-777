@@ -73,9 +73,15 @@ export async function getMessageAttachments(messageId: string): Promise<Attachme
   return (data ?? []) as Attachment[];
 }
 
-export function getAttachmentUrl(storagePath: string): string {
-  const { data } = supabase.storage.from("chat-attachments").getPublicUrl(storagePath);
-  return data.publicUrl;
+export async function getAttachmentUrl(storagePath: string): Promise<string> {
+  const { data, error } = await supabase.storage
+    .from("chat-attachments")
+    .createSignedUrl(storagePath, 3600); // 1 hour expiry
+  if (error || !data?.signedUrl) {
+    console.error("Failed to create signed URL:", error);
+    return "";
+  }
+  return data.signedUrl;
 }
 
 export async function deleteAttachment(id: string, storagePath: string): Promise<void> {
