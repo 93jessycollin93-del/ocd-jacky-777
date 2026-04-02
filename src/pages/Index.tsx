@@ -178,16 +178,26 @@ const Sidebar = ({
           {tags.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1">
               {tags.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => onSetTagFilter(activeTagFilter === t.id ? null : t.id)}
-                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm font-mono text-[10px] border transition-all ${
-                    TAG_COLOR_MAP[t.color] || TAG_COLOR_MAP.blue
-                  } ${activeTagFilter === t.id ? "ring-1 ring-primary" : "opacity-70 hover:opacity-100"}`}
-                >
-                  {t.name}
-                  {activeTagFilter === t.id && <X size={8} />}
-                </button>
+                <div key={t.id} className="group/tag inline-flex items-center gap-0.5">
+                  <button
+                    onClick={() => onSetTagFilter(activeTagFilter === t.id ? null : t.id)}
+                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-l-sm font-mono text-[10px] border border-r-0 transition-all ${
+                      TAG_COLOR_MAP[t.color] || TAG_COLOR_MAP.blue
+                    } ${activeTagFilter === t.id ? "ring-1 ring-primary" : "opacity-70 hover:opacity-100"}`}
+                  >
+                    {t.name}
+                    {activeTagFilter === t.id && <X size={8} />}
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onDeleteTag(t.id); }}
+                    className={`px-0.5 py-0.5 rounded-r-sm font-mono text-[10px] border transition-all opacity-0 group-hover/tag:opacity-100 hover:!text-destructive ${
+                      TAG_COLOR_MAP[t.color] || TAG_COLOR_MAP.blue
+                    }`}
+                    title={`Delete "${t.name}" tag`}
+                  >
+                    <Trash2 size={8} />
+                  </button>
+                </div>
               ))}
             </div>
           )}
