@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import ReactMarkdown from "react-markdown";
+import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { streamChat, JACKIE_MODELS, type ChatMessage, type JackieModelId } from "@/lib/jackie-stream";
 import {
   listConversations,
@@ -332,6 +332,9 @@ const Sidebar = ({
           <a href="/design" className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors">
             🎮 Game Design Hub
           </a>
+          <a href="https://eru-1.base44.app" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors">
+            🔥 FORGE
+          </a>
           <div className="px-2 py-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
             Core
           </div>
@@ -417,9 +420,7 @@ const JackieMessage = ({ message }: { message: DisplayMessage }) => {
         </div>
       )}
 
-      <div className="text-foreground leading-relaxed prose prose-sm max-w-none dark:prose-invert">
-        <ReactMarkdown>{message.content}</ReactMarkdown>
-      </div>
+      <MarkdownRenderer content={message.content} />
 
       {message.attachments && message.attachments.length > 0 && (
         <AttachmentDisplay attachments={message.attachments} />
