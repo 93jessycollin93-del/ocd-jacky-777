@@ -266,6 +266,39 @@ const Auth = () => {
             >
               {view === "login" ? "Need an account? Sign up" : "Already have an account? Sign in"}
             </button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center">
+                <span className="bg-background px-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                  or try it free
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={async () => {
+                setLoading(true);
+                try {
+                  const { error } = await supabase.auth.signInAnonymously();
+                  if (error) throw error;
+                  toast.success("Demo mode — progress won't be saved after you log out.");
+                } catch (err: any) {
+                  toast.error(err.message || "Demo login failed.");
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              disabled={loading}
+              className="w-full py-3 rounded-sm font-mono text-sm uppercase tracking-wider border border-dashed border-primary/40 bg-primary/5 text-primary hover:bg-primary/10 transition-colors disabled:opacity-50 btn-mechanical flex items-center justify-center gap-2"
+            >
+              🎮 Try Free Demo
+            </button>
+            <p className="font-mono text-[9px] text-muted-foreground text-center">
+              No account needed · Progress resets on logout
+            </p>
           </>
         )}
       </div>
