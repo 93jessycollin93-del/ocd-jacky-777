@@ -417,9 +417,7 @@ const JackieMessage = ({ message }: { message: DisplayMessage }) => {
         </div>
       )}
 
-      <div className="text-foreground leading-relaxed prose prose-sm max-w-none dark:prose-invert">
-        <ReactMarkdown>{message.content}</ReactMarkdown>
-      </div>
+      <MarkdownRenderer content={message.content} />
 
       {message.attachments && message.attachments.length > 0 && (
         <AttachmentDisplay attachments={message.attachments} />
