@@ -1,0 +1,1 @@
+export default function GachaPage() { return <div className="p-4 text-foreground"><h2 className="font-display text-xl">🎰 Lootcrates</h2><p className="text-muted-foreground mt-2">Pull from rotating banners for items and hero skins.</p></div>; }

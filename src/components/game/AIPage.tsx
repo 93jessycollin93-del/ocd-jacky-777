@@ -1,0 +1,1 @@
+export default function AIPage() { return <div className="p-4 text-foreground"><h2 className="font-display text-xl">🔮 Oracle</h2><p className="text-muted-foreground mt-2">Consult the AI Oracle for strategic insights.</p></div>; }
