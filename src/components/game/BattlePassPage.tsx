@@ -1,0 +1,1 @@
+export default function BattlePassPage() { return <div className="p-4 text-foreground"><h2 className="font-display text-xl">⚔️ Battle Pass</h2><p className="text-muted-foreground mt-2">Earn XP and claim tier rewards.</p></div>; }

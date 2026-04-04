@@ -1,0 +1,1 @@
+export default function PremiumStorePage() { return <div className="p-4 text-foreground"><h2 className="font-display text-xl">💎 Premium Store</h2><p className="text-muted-foreground mt-2">Exclusive items and premium packs.</p></div>; }

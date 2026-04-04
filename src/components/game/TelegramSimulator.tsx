@@ -1,0 +1,1 @@
+export default function TelegramSimulator() { return <div className="p-4 text-foreground"><h2 className="font-display text-xl">🤖 Telegram</h2><p className="text-muted-foreground mt-2">Telegram integration coming soon.</p></div>; }
