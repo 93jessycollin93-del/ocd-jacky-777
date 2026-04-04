@@ -1,7 +1,7 @@
-import { useGame } from '../game/GameContext';
-import { useI18n } from '../game/i18n';
-import { RESOURCE_ICONS } from '../game/data';
-import { Resources } from '../game/types';
+import { useGame } from '@/game/GameContext';
+import { useI18n } from '@/game/i18n';
+import { RESOURCE_ICONS } from '@/game/data';
+import { Resources } from '@/game/types';
 
 export default function ResourceBar() {
   const { state } = useGame();

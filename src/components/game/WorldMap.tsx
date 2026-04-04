@@ -1,8 +1,8 @@
 import { useState, useRef, useCallback, useEffect, useMemo, lazy, Suspense } from 'react';
-import { useGame } from '../game/GameContext';
-import { useI18n } from '../game/i18n';
-import { EXPEDITIONS, LEGENDARY_CREATURES } from '../game/data';
-import { useAudio, AmbientType } from './AudioSystem';
+import { useGame } from '@/game/GameContext';
+import { useI18n } from '@/game/i18n';
+import { EXPEDITIONS, LEGENDARY_CREATURES } from '@/game/data';
+import { useAudio, AmbientType } from '@/game/AudioSystem';
 
 const WorldMap3D = lazy(() => import('./WorldMap3D'));
 

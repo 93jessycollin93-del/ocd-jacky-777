@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { useGame } from '../game/GameContext';
-import { useI18n } from '../game/i18n';
-import { EXPEDITIONS, TROOPS, HEROES, getMaxMarchSize, RESOURCE_ICONS } from '../game/data';
-import { MarchSpeed, MarchFormation } from '../game/types';
-import TooltipWrapper from './TooltipWrapper';
+import { useGame } from '@/game/GameContext';
+import { useI18n } from '@/game/i18n';
+import { EXPEDITIONS, TROOPS, HEROES, getMaxMarchSize, RESOURCE_ICONS } from '@/game/data';
+import { MarchSpeed, MarchFormation } from '@/game/types';
+import TooltipWrapper from '@/components/game/TooltipWrapper';
 
 const SPEED_OPTIONS: { id: MarchSpeed; icon: string; timeMult: string; lossMult: string }[] = [
   { id: 'cautious', icon: '🐢', timeMult: '×1.5', lossMult: '−30% losses' },

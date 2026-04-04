@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useGame } from '../game/GameContext';
-import { useI18n } from '../game/i18n';
-import { HEROES } from '../game/data';
-import type { GearSlot, GearRarity } from '../game/types';
+import { useGame } from '@/game/GameContext';
+import { useI18n } from '@/game/i18n';
+import { HEROES } from '@/game/data';
+import type { GearSlot, GearRarity } from '@/game/types';
 
 const RARITY_COLORS: Record<GearRarity, string> = {
   common: 'text-muted-foreground',

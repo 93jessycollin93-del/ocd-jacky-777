@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useGame } from '../game/GameContext';
-import { useI18n } from '../game/i18n';
+import { useGame } from '@/game/GameContext';
+import { useI18n } from '@/game/i18n';
 
 export default function StartScreen() {
   const { startGame } = useGame();

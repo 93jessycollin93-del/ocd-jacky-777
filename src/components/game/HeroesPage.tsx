@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useGame } from '../game/GameContext';
-import { useI18n } from '../game/i18n';
-import { HEROES, GEAR_CRAFT_RECIPES, GEAR_UPGRADE_RECIPES, RARITY_ORDER, CRAFTING_MATERIAL_ICONS } from '../game/data';
-import { GearSlot, GearRarity, GearItem } from '../game/types';
+import { useGame } from '@/game/GameContext';
+import { useI18n } from '@/game/i18n';
+import { HEROES, GEAR_CRAFT_RECIPES, GEAR_UPGRADE_RECIPES, RARITY_ORDER, CRAFTING_MATERIAL_ICONS } from '@/game/data';
+import { GearSlot, GearRarity, GearItem } from '@/game/types';
 
 const RARITY_COLORS: Record<GearRarity, string> = {
   common: 'text-muted-foreground',

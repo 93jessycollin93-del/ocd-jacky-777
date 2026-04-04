@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useRef } from 'react';
-import { useGame } from '../game/GameContext';
-import { useI18n } from '../game/i18n';
+import { useGame } from '@/game/GameContext';
+import { useI18n } from '@/game/i18n';
 
 interface Territory {
   id: string;

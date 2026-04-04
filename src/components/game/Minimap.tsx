@@ -1,6 +1,6 @@
-import { useGame } from '../game/GameContext';
-import { useI18n } from '../game/i18n';
-import { EXPEDITIONS } from '../game/data';
+import { useGame } from '@/game/GameContext';
+import { useI18n } from '@/game/i18n';
+import { EXPEDITIONS } from '@/game/data';
 import { useEffect, useRef, useState } from 'react';
 
 export default function Minimap() {

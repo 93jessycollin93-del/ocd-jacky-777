@@ -1,8 +1,8 @@
-import { useGame } from '../game/GameContext';
-import { useI18n } from '../game/i18n';
-import { RESEARCH, getResearchCost, getUpgradeTime, RESOURCE_ICONS } from '../game/data';
-import { ResearchCategory } from '../game/types';
-import CountdownTimer from './CountdownTimer';
+import { useGame } from '@/game/GameContext';
+import { useI18n } from '@/game/i18n';
+import { RESEARCH, getResearchCost, getUpgradeTime, RESOURCE_ICONS } from '@/game/data';
+import { ResearchCategory } from '@/game/types';
+import CountdownTimer from '@/components/game/CountdownTimer';
 import { useState } from 'react';
 
 function ArcaneTreeDiagram({ state, t }: { state: any; t: (key: string, ...args: any[]) => string }) {

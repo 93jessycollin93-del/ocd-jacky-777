@@ -1,9 +1,9 @@
-import { useGame } from '../game/GameContext';
-import { useI18n } from '../game/i18n';
-import { BUILDINGS, TROOPS, EXPEDITIONS, RESOURCE_ICONS } from '../game/data';
-import Minimap from './Minimap';
-import HeroRoster from './HeroRoster';
-import DashboardWorldMap from './DashboardWorldMap';
+import { useGame } from '@/game/GameContext';
+import { useI18n } from '@/game/i18n';
+import { BUILDINGS, TROOPS, EXPEDITIONS, RESOURCE_ICONS } from '@/game/data';
+import Minimap from '@/components/game/Minimap';
+import HeroRoster from '@/components/game/HeroRoster';
+import DashboardWorldMap from '@/components/game/DashboardWorldMap';
 
 export default function DashboardPage() {
   const { state, completeMarch, getBuildingLevel } = useGame();

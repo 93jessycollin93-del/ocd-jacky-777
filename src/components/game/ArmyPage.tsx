@@ -1,9 +1,9 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useGame } from '../game/GameContext';
-import { useI18n } from '../game/i18n';
-import { TROOPS, RESOURCE_ICONS, BUILDINGS } from '../game/data';
-import CountdownTimer from './CountdownTimer';
-import TooltipWrapper from './TooltipWrapper';
+import { useGame } from '@/game/GameContext';
+import { useI18n } from '@/game/i18n';
+import { TROOPS, RESOURCE_ICONS, BUILDINGS } from '@/game/data';
+import CountdownTimer from '@/components/game/CountdownTimer';
+import TooltipWrapper from '@/components/game/TooltipWrapper';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const CLASS_COLORS: Record<string, string> = {

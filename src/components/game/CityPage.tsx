@@ -1,8 +1,8 @@
-import { useGame } from '../game/GameContext';
-import { useI18n } from '../game/i18n';
-import { BUILDINGS, getBuildingCost, getUpgradeTime, getProductionRate, RESOURCE_ICONS } from '../game/data';
-import TooltipWrapper from './TooltipWrapper';
-import CountdownTimer from './CountdownTimer';
+import { useGame } from '@/game/GameContext';
+import { useI18n } from '@/game/i18n';
+import { BUILDINGS, getBuildingCost, getUpgradeTime, getProductionRate, RESOURCE_ICONS } from '@/game/data';
+import TooltipWrapper from '@/components/game/TooltipWrapper';
+import CountdownTimer from '@/components/game/CountdownTimer';
 
 export default function CityPage() {
   const { state, upgradeBuilding, canAfford, getBuildingLevel, getResearchBonus } = useGame();
