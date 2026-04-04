@@ -1,65 +1,81 @@
 
 
-# Enhanced Jackie Output Visualization + FORGE Link + Testing
+# Merge Dragon Veil + Emperors of the Last Kingdom into Jackie
 
-## Summary
+## Vision
 
-Three things to build:
+Jackie becomes the **hub** — the AI chat companion and stress-relief layer — while the full strategy game (merged from Dragon Veil and Emperors) lives as a playable experience accessible from within Jackie. Players chat with Jackie, design their game world, and then **play** it — all in one app.
 
-1. **Rich markdown/code output rendering** — upgrade Jackie's message display from basic `ReactMarkdown` to a proper REPL-style output with syntax-highlighted code blocks, copy buttons, collapsible sections, and table rendering.
+## Architecture
 
-2. **FORGE link in sidebar** — add a link to `https://eru-1.base44.app` in the sidebar navigation.
-
-3. **Testing** — demo login, tag deletion, and FORGE link verification.
-
----
-
-## Step 1: Enhanced Output Visualization
-
-Currently, Jackie renders responses via `<ReactMarkdown>{message.content}</ReactMarkdown>` with basic CSS prose styling (lines 420-422). This needs upgrading to a proper REPL-quality output.
-
-**Changes:**
-- Install `react-syntax-highlighter` for code block highlighting
-- Create a `MarkdownRenderer` component that provides custom renderers to `ReactMarkdown`:
-  - **Code blocks**: syntax-highlighted with language label, copy-to-clipboard button, line numbers for blocks > 5 lines
-  - **Inline code**: styled pill with monospace font
-  - **Tables**: styled with borders and alternating row colors
-  - **Blockquotes**: styled as callout panels
-  - **Lists**: properly spaced with custom markers
-- Replace the raw `<ReactMarkdown>` call in `JackieMessage` with the new component
-
-**New file:** `src/components/MarkdownRenderer.tsx`
-
-**Modified file:** `src/pages/Index.tsx` — swap `ReactMarkdown` usage in `JackieMessage`
-
-## Step 2: FORGE Link in Sidebar
-
-Add a link below the "Game Design Hub" link in the sidebar (around line 332):
+```text
+┌─────────────────────────────────────────────┐
+│                   Jackie App                 │
+│                                              │
+│  /          → Jackie Chat (AI companion)     │
+│  /design    → Game Design Hub                │
+│  /play      → THE GAME (merged DVS + ELK)    │
+│  /auth      → Login / Demo                   │
+│                                              │
+│  Sidebar: Chat | Design Hub | Play Game      │
+│           FORGE link | Settings              │
+└─────────────────────────────────────────────┘
 ```
-<a href="https://eru-1.base44.app" target="_blank" rel="noopener noreferrer">
-  🔥 FORGE
-</a>
-```
-Same styling as the Game Design Hub link.
 
-**Modified file:** `src/pages/Index.tsx` — sidebar footer section
+## What Gets Merged
 
-## Step 3: Testing (manual)
+### From Emperors of the Last Kingdom (primary game engine)
+- **Full game engine**: `GameContext.tsx` (1300 lines) — resource ticking, building upgrades, research, troops, combat, diplomacy, gacha, battle pass, guild bank, AI adaptation
+- **All type definitions**: `types.ts` — Resources, Buildings, Troops, Gear, Gacha, Guild, AI Adaptation
+- **All game data**: `data.ts` — 45 buildings, 60+ research items, troops, heroes, expeditions, gear crafting, legendary creatures
+- **All game pages** (24 tabs): Dashboard, City, Research, Army, Expeditions, Heroes, Crafting, Diplomacy, Gacha, Battle Pass, Guild Bank, Trading, World Map, Bag, Quests, etc.
+- **Support systems**: i18n translations, audio/music system, gacha data, AI adaptation
 
-After implementation, the user should test:
-- Demo login flow
-- Tag creation, assignment, filtering, and deletion
-- FORGE link opens correctly
-- Code blocks in Jackie responses render with syntax highlighting and copy button
+### From Dragon Veil Strategy (UI patterns + data)
+- **Mock data types**: Heroes, TroopFormations, Monsters, Factions, Intel Reports, Rallies, City Buildings — merge into unified type system
+- **UI components**: HomeDashboard, WorldScreen, IntelScreen, MonstersScreen, VeilPressureGauge — merge unique mechanics into the Emperors layout
+- **World data**: Regions, factions, lore — feed into game content
 
----
+### Jackie (stays as-is, gains game integration)
+- Chat AI with streaming, voice, attachments, tags — unchanged
+- Design Hub — unchanged, but now pre-populated with merged game data
+- **New**: "Play Game" route that launches the merged strategy game
+- **New**: Jackie can reference game state in conversations (your resources, army, etc.)
 
-## Technical Details
+## Implementation Steps
 
-| Item | File | Change |
-|------|------|--------|
-| MarkdownRenderer component | `src/components/MarkdownRenderer.tsx` | New file — custom ReactMarkdown with syntax highlighting, copy buttons, table styling |
-| JackieMessage update | `src/pages/Index.tsx` (line ~420) | Replace `<ReactMarkdown>` with `<MarkdownRenderer>` |
-| FORGE sidebar link | `src/pages/Index.tsx` (line ~333) | Add external link |
-| Package | `package.json` | Add `react-syntax-highlighter` + types |
+| # | Step | Files | Scope |
+|---|------|-------|-------|
+| 1 | Copy game engine files from Emperors | `src/game/types.ts`, `data.ts`, `GameContext.tsx`, `gachaData.ts`, `aiAdaptation.ts`, `musicData.ts`, `i18n.tsx`, `translations/` | ~3000 lines |
+| 2 | Copy all game UI components from Emperors | `src/components/game/` (24+ component files) | ~8000 lines |
+| 3 | Merge Dragon Veil unique mechanics into game data | Extend `types.ts` and `data.ts` with DVS monsters, rallies, intel, veil pressure | ~500 lines |
+| 4 | Copy support components (AudioSystem, TonWallet, ResourceBar, WorldMap, etc.) | `src/components/` | ~2000 lines |
+| 5 | Create `/play` route with GameLayout | `src/pages/Play.tsx`, update `App.tsx` | New protected route |
+| 6 | Add "Play Game" link to Jackie sidebar | `src/pages/Index.tsx` sidebar section | Small edit |
+| 7 | Connect Jackie chat to game state | Pass game context summary to AI system prompt when user is in-game | Edge function update |
+| 8 | Install missing dependencies | `framer-motion`, any other deps from Emperors | Package update |
+
+## What Jackie Becomes
+
+- **Chat** → Talk to Jackie, get game advice, brainstorm ideas, stress relief
+- **Design Hub** → Curate and evolve game systems, lore, mechanics
+- **Play** → Full playable strategy game with 24 tabs, 45 buildings, combat, gacha, guilds, diplomacy
+- **FORGE** → External link to eru-1.base44.app for additional tools
+
+## Important Notes
+
+- The game uses `localStorage` for save state + cloud sync to the database every 30 seconds
+- Demo users get to play but saves are wiped on logout (existing demo behavior)
+- All existing Jackie features (tags, security, attachments, voice) remain untouched
+- The game engine runs entirely client-side — no new database tables needed for gameplay
+- Dragon Veil's mock data becomes real game content within the merged engine
+
+## Estimated Scope
+
+This is a large merge (~15,000 lines of game code to bring over). The implementation will be done in batches:
+1. Game engine + types (core)
+2. Game UI components (all 24+ pages)
+3. Routing + sidebar integration
+4. Dragon Veil unique content merge
+5. Jackie ↔ Game context bridge
 
