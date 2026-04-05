@@ -430,7 +430,7 @@ const WEATHER_ICONS: Record<WeatherType2D, string> = { clear: '☀️', rain: '�
 export default function WorldMap() {
   const { state, getBuildingLevel } = useGame();
   const { t } = useI18n();
-  const { playAmbient, stopAmbientSfx, sfxEnabled } = useAudio();
+  const { sfxEnabled } = useAudio();
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -442,22 +442,9 @@ export default function WorldMap() {
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay2D>('day');
   const [weather, setWeather] = useState<WeatherType2D>('clear');
 
-  // Ambient SFX tied to weather/time
+  // Ambient SFX placeholder (ambient system not yet implemented)
   useEffect(() => {
-    if (!sfxEnabled) { stopAmbientSfx(); return; }
-    const ambientMap: Record<string, AmbientType> = {
-      rain: 'rain', snow: 'snow', fog: 'wind',
-    };
-    const timeMap: Record<string, AmbientType> = {
-      night: 'night', dawn: 'dawn',
-    };
-    if (ambientMap[weather]) {
-      playAmbient(ambientMap[weather]);
-    } else if (timeMap[timeOfDay]) {
-      playAmbient(timeMap[timeOfDay]);
-    } else {
-      stopAmbientSfx();
-    }
+    // Future: add ambient sounds for weather/time of day
     return () => stopAmbientSfx();
   }, [weather, timeOfDay, sfxEnabled]);
 
