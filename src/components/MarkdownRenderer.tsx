@@ -112,7 +112,7 @@ function MermaidDiagram({ code }: { code: string }) {
     let cancelled = false;
     (async () => {
       try {
-        const mermaid = (await import("https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs")).default;
+        const { default: mermaid } = await import("mermaid");
         mermaid.initialize({ startOnLoad: false, theme: "dark", securityLevel: "strict" });
         const { svg: rendered } = await mermaid.render(id, code);
         if (!cancelled) setSvg(rendered);
