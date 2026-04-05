@@ -445,7 +445,6 @@ export default function WorldMap() {
   // Ambient SFX placeholder (ambient system not yet implemented)
   useEffect(() => {
     // Future: add ambient sounds for weather/time of day
-    return () => stopAmbientSfx();
   }, [weather, timeOfDay, sfxEnabled]);
 
   // Day/night cycle timer
