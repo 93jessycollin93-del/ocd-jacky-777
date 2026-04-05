@@ -26,6 +26,7 @@ import { ChatMediaBar, type PendingFile } from "@/components/ChatMediaBar";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { AttachmentDisplay } from "@/components/AttachmentDisplay";
 import { toast } from "sonner";
+import { getGameStateContext } from "@/lib/game-state-context";
 import { Plus, Trash2, MessageSquare, LogOut, Send, Menu, X, Sun, Moon, Volume2, VolumeX, Download, Mic, ChevronDown, Zap, DollarSign, Search, Tag, XCircle } from "lucide-react";
 import {
   listTags,
@@ -683,9 +684,12 @@ const Index = () => {
       { id: assistantTempId, role: "assistant", content: "", timestamp: new Date(), memoryTier: 1 },
     ]);
 
+    const gameContext = getGameStateContext();
+
     await streamChat({
       messages: newHistory,
       model: selectedModel,
+      context: gameContext,
       onDelta: (chunk) => {
         assistantContent += chunk;
         setMessages((prev) =>
