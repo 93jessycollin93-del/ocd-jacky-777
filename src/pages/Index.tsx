@@ -501,6 +501,8 @@ const Index = () => {
   const [tags, setTags] = useState<TagType[]>([]);
   const [tagMap, setTagMap] = useState<Record<string, string[]>>({});
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
+  const [rateLimitCooldown, setRateLimitCooldown] = useState(0);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const changeModel = useCallback(async (model: JackieModelId) => {
     setSelectedModel(model);
@@ -971,7 +973,23 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
         setIsProcessing(false);
       },
       onError: (err) => {
-        toast.error(err);
+        if (err.includes("Rate limit") || err.includes("rate limit")) {
+          const seconds = 30;
+          setRateLimitCooldown(seconds);
+          if (cooldownRef.current) clearInterval(cooldownRef.current);
+          cooldownRef.current = setInterval(() => {
+            setRateLimitCooldown((prev) => {
+              if (prev <= 1) {
+                clearInterval(cooldownRef.current!);
+                cooldownRef.current = null;
+                return 0;
+              }
+              return prev - 1;
+            });
+          }, 1000);
+        } else {
+          toast.error(err);
+        }
         setMessages((prev) => prev.filter((m) => m.id !== assistantTempId));
         setIsProcessing(false);
       },
@@ -1192,13 +1210,21 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
                 }}
                 disabled={isProcessing}
               />
-              <button
-                onClick={handleSubmit}
-                disabled={isProcessing || (!input.trim() && pendingFiles.length === 0)}
-                className="p-3 rounded-sm bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-30 transition-opacity btn-mechanical flex-shrink-0"
-                title="Send (Enter)"
-              >
-                <Send size={16} />
+              {rateLimitCooldown > 0 ? (
+                <div className="p-3 rounded-sm bg-destructive/20 border border-destructive/40 text-destructive font-mono text-xs flex items-center gap-2 flex-shrink-0 animate-pulse">
+                  <Zap size={14} />
+                  {rateLimitCooldown}s
+                </div>
+              ) : (
+                <button
+                  onClick={handleSubmit}
+                  disabled={isProcessing || (!input.trim() && pendingFiles.length === 0)}
+                  className="p-3 rounded-sm bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-30 transition-opacity btn-mechanical flex-shrink-0"
+                  title="Send (Enter)"
+                >
+                  <Send size={16} />
+                </button>
+              )}
               </button>
             </div>
             <div className="flex items-center justify-between mt-1.5 ml-5">
