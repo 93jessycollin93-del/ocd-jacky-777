@@ -260,9 +260,65 @@ function ComparisonPanel({ packs, onClose, onRemove }: { packs: JadePack[]; onCl
   );
 }
 
+// ── Rarity mapping ──
+const JADE_TO_GEAR_RARITY: Record<string, GearRarity> = {
+  rough: 'common', polished: 'uncommon', refined: 'rare',
+  gilded: 'ultra_rare', sovereign: 'legendary', imperial: 'mythic', singularity: 'mythic',
+};
+
+function rewardsToItems(rewards: JadePackReward[], packId: string): BagItem[] {
+  return rewards.filter(r => r.guaranteed || Math.random() * 100 < (r.weight ?? 0)).map(r => ({
+    id: `${packId}-${r.name}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    name: r.name,
+    icon: r.icon,
+    category: 'resources' as const,
+    rarity: JADE_TO_GEAR_RARITY[r.rarity] || 'common',
+    quantity: r.quantity,
+    description: `From pack purchase`,
+    obtainedAt: Date.now(),
+  }));
+}
+
 // ── Pack Detail Modal ──
 function PackModal({ pack, onClose, showScores }: { pack: JadePack; onClose: () => void; showScores: boolean }) {
   const cfg = JADE_RARITY_CONFIG[pack.rarity];
+  const { state, setState, saveState, canAfford } = useGame();
+  const [purchasing, setPurchasing] = useState(false);
+  const [purchased, setPurchased] = useState(false);
+  const playerGold = state.resources.gold;
+  const affordable = playerGold >= pack.priceGold;
+
+  const handlePurchase = useCallback(() => {
+    if (!affordable || purchasing) return;
+    setPurchasing(true);
+
+    setTimeout(() => {
+      setState(prev => {
+        const newResources = { ...prev.resources, gold: prev.resources.gold - pack.priceGold };
+        const newItems = rewardsToItems([...pack.coreRewards, ...(pack.bonusRewards || [])], pack.id);
+        const newBag = [...(prev.bag || []), ...newItems];
+
+        // Update pity
+        const currentPity = prev.gachaPity || {};
+        const newPity = { ...currentPity };
+        const pityKey = `jade_store_${pack.category}`;
+        newPity[pityKey] = (newPity[pityKey] || 0) + pack.pityContribution;
+
+        const newState = { ...prev, resources: newResources, bag: newBag, gachaPity: newPity };
+        saveState(newState);
+
+        toast.success(`Acquired ${pack.name}`, {
+          description: `${newItems.length} items added to your bag`,
+        });
+
+        return newState;
+      });
+
+      setPurchasing(false);
+      setPurchased(true);
+      setTimeout(() => setPurchased(false), 2000);
+    }, 600);
+  }, [affordable, purchasing, pack, setState, saveState]);
 
   return (
     <motion.div
@@ -364,8 +420,8 @@ function PackModal({ pack, onClose, showScores }: { pack: JadePack; onClose: () 
               </div>
             )}
             <div className="rounded-lg bg-muted/30 p-2 text-center">
-              <p className="text-[10px] text-muted-foreground uppercase">Target</p>
-              <p className="text-sm font-bold text-foreground capitalize">{pack.targetSegment.replace(/_/g, ' ')}</p>
+              <p className="text-[10px] text-muted-foreground uppercase">Your Gold</p>
+              <p className={`text-sm font-bold ${affordable ? 'text-emerald-400' : 'text-red-400'}`}>{playerGold.toLocaleString()}</p>
             </div>
           </div>
 
@@ -381,9 +437,18 @@ function PackModal({ pack, onClose, showScores }: { pack: JadePack; onClose: () 
 
           {/* Buy */}
           <div className="mt-5 flex items-center gap-3">
-            <Button className="flex-1 h-12 text-base font-bold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
-              <Crown className="w-4 h-4 mr-2" />
-              {pack.priceGold.toLocaleString()} Gold
+            <Button
+              className="flex-1 h-12 text-base font-bold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 disabled:opacity-40"
+              disabled={!affordable || purchasing || purchased}
+              onClick={handlePurchase}
+            >
+              {purchased ? (
+                <><Check className="w-4 h-4 mr-2" /> Acquired</>
+              ) : purchasing ? (
+                <motion.span animate={{ opacity: [1, 0.4, 1] }} transition={{ repeat: Infinity, duration: 1 }}>Opening Vault…</motion.span>
+              ) : (
+                <><Crown className="w-4 h-4 mr-2" /> {pack.priceGold.toLocaleString()} Gold</>
+              )}
             </Button>
             {pack.priceUsd && (
               <Button variant="outline" className="h-12 px-4 text-sm font-semibold border-primary/40 text-primary">
@@ -391,6 +456,9 @@ function PackModal({ pack, onClose, showScores }: { pack: JadePack; onClose: () 
               </Button>
             )}
           </div>
+          {!affordable && !purchasing && !purchased && (
+            <p className="text-[10px] text-red-400 text-center mt-1">Insufficient gold — need {(pack.priceGold - playerGold).toLocaleString()} more</p>
+          )}
 
           {/* Fairness notice */}
           <div className="mt-3 flex items-start gap-2 text-[10px] text-muted-foreground">
