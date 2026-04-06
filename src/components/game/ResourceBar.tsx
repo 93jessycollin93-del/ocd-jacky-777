@@ -6,7 +6,7 @@ import { Resources } from '@/game/types';
 export default function ResourceBar() {
   const { state } = useGame();
   const { t } = useI18n();
-  const resources: (keyof Resources)[] = ['food', 'wood', 'stone', 'iron', 'gold'];
+  const resources: (keyof Resources)[] = ['food', 'wood', 'stone', 'iron', 'gold', 'diamonds'];
 
   return (
     <div className="flex flex-wrap items-center gap-3 px-4 py-2 bg-card medieval-border rounded-md">

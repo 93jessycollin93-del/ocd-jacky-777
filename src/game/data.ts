@@ -270,7 +270,7 @@ export function getCounterMultiplier(attacker: string, defender: string): number
 export function createInitialState(realmName: string): GameState {
   return {
     realmName,
-    resources: { food: 500, wood: 500, stone: 300, iron: 100, gold: 200 },
+    resources: { food: 500, wood: 500, stone: 300, iron: 100, gold: 200, diamonds: 50 },
     buildings: BUILDINGS.map(b => ({ id: b.id, level: b.id === 'keep' ? 1 : 0, upgrading: false })),
     research: RESEARCH.map(r => ({ id: r.id, level: 0, researching: false })),
     troops: TROOPS.map(t => ({ id: t.id, count: 0, training: 0 })),
@@ -293,7 +293,7 @@ export function createInitialState(realmName: string): GameState {
 }
 
 export const RESOURCE_ICONS: Record<string, string> = {
-  food: '🌾', wood: '🪵', stone: '🪨', iron: '⚙️', gold: '💰',
+  food: '🌾', wood: '🪵', stone: '🪨', iron: '⚙️', gold: '💰', diamonds: '💎',
 };
 
 // ── Gear Loot Tables ──

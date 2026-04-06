@@ -1,5 +1,5 @@
 // ── Resource types ──
-export type ResourceType = 'food' | 'wood' | 'stone' | 'iron' | 'gold';
+export type ResourceType = 'food' | 'wood' | 'stone' | 'iron' | 'gold' | 'diamonds';
 
 export interface Resources {
   food: number;
@@ -7,6 +7,7 @@ export interface Resources {
   stone: number;
   iron: number;
   gold: number;
+  diamonds: number;
 }
 
 // ── Buildings ──
