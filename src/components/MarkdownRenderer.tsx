@@ -106,21 +106,39 @@ function MermaidDiagram({ code }: { code: string }) {
   const [svg, setSvg] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [expanded, setExpanded] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const id = useMemo(() => `mermaid-${Math.random().toString(36).slice(2, 9)}`, []);
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    const timer = setTimeout(async () => {
       try {
         const { default: mermaid } = await import("mermaid");
         mermaid.initialize({ startOnLoad: false, theme: "dark", securityLevel: "strict" });
-        const { svg: rendered } = await mermaid.render(id, code);
-        if (!cancelled) setSvg(rendered);
+
+        // Create an offscreen container with real dimensions for mermaid to render into
+        const tempDiv = document.createElement("div");
+        tempDiv.style.position = "absolute";
+        tempDiv.style.left = "-9999px";
+        tempDiv.style.top = "-9999px";
+        tempDiv.style.width = "800px";
+        tempDiv.style.height = "600px";
+        tempDiv.id = id;
+        document.body.appendChild(tempDiv);
+
+        try {
+          const { svg: rendered } = await mermaid.render(id, code);
+          if (!cancelled) setSvg(rendered);
+        } finally {
+          // Clean up: remove temp container and any leftover mermaid elements
+          tempDiv.remove();
+          document.getElementById("d" + id)?.remove();
+        }
       } catch (e: any) {
         if (!cancelled) setError(e.message || "Failed to render diagram");
       }
-    })();
-    return () => { cancelled = true; };
+    }, 50); // Small delay to ensure DOM is ready
+    return () => { cancelled = true; clearTimeout(timer); };
   }, [code, id]);
 
   if (error) {
