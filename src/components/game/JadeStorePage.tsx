@@ -554,6 +554,7 @@ type QuickFilter = 'all' | 'best_value' | 'most_popular' | 'limited' | 'new' | '
 const CATEGORIES = Object.keys(CATEGORY_META) as JadeStoreCategory[];
 
 export default function JadeStorePage() {
+  const { state } = useGame();
   const [selectedPack, setSelectedPack] = useState<JadePack | null>(null);
   const [activeCategory, setActiveCategory] = useState<JadeStoreCategory | 'featured' | 'all'>('featured');
   const [sortBy, setSortBy] = useState<SortKey>('default');
