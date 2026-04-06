@@ -825,7 +825,7 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
   };
 
   const handleSubmit = async () => {
-    if ((!input.trim() && pendingFiles.length === 0) || isProcessing) return;
+    if ((!input.trim() && pendingFiles.length === 0) || isProcessing || rateLimitCooldown > 0) return;
 
     const userText = input.trim();
     const filesToUpload = [...pendingFiles];
