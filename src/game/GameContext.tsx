@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { saveStateChecksum, verifyStateIntegrity } from './transactionGuard';
 import {
   GameState, Resources, March, BattleReport, TroopClass, RareMaterials, FactionId, FactionState, AllianceLevel, GearItem, CraftingMaterialType, CreatureHunt, MarchSpeed, MarchFormation, AIEventLog, GachaItem, GachaPull, BagItem, PlayerActionType,
 } from './types';
@@ -80,6 +81,7 @@ function loadState(): GameState | null {
 
 function saveState(state: GameState) {
   localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+  saveStateChecksum(state);
 }
 
 // ── Cloud save/load ──
