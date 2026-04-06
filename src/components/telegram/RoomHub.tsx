@@ -42,7 +42,7 @@ const ROOMS: RoomDef[] = [
   { id: 'vault', label: 'Archive', icon: <Archive size={22} />, color: 'hsl(40, 40%, 45%)', description: 'History & vault storage', status: 'coming_soon', category: 'system' },
   { id: 'tournament', label: 'Events', icon: <Trophy size={22} />, color: 'hsl(50, 80%, 50%)', description: 'Tournaments & showcases', status: 'coming_soon', category: 'social' },
   { id: 'security', label: 'Security', icon: <Shield size={22} />, color: 'hsl(150, 70%, 40%)', description: 'Wallet & session control', status: 'live', category: 'system' },
-  { id: 'cards', label: 'Card Arena', icon: <Layers size={22} />, color: 'hsl(15, 80%, 55%)', description: 'TCG deck building', status: 'coming_soon', category: 'create' },
+  { id: 'cards', label: 'Card Arena', icon: <Layers size={22} />, color: 'hsl(15, 80%, 55%)', description: 'TCG deck building', status: 'live', category: 'create' },
   { id: 'mail', label: 'Messages', icon: <Mail size={22} />, color: 'hsl(200, 60%, 50%)', description: 'Mail & campaigns', status: 'coming_soon', category: 'social' },
 ];
 
