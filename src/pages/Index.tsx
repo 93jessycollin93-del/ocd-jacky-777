@@ -747,6 +747,60 @@ const Index = () => {
           return "❌ Failed to load stats.";
         }
       }
+      case '/discernment': {
+        if (!args) return "**Usage:** `/discernment <URL, tool name, or description>`\nExample: `/discernment https://free-followers-now.xyz`\nJackie will analyze it through Jessy's discernment lens.";
+        try {
+          toast.info("🔍 Analyzing...");
+          const discernmentPrompt = `Analyze the following through Jessy's discernment lens. Evaluate whether this is signal or bait, real value or distraction, trustworthy or a trap. Be calm, precise, and protective — not harsh or reactive.
+
+Subject to evaluate: "${args}"
+
+Provide your assessment in this structure:
+1. **Trust Level** — rate as: ✅ Clean, ⚠️ Caution, or 🚫 Avoid
+2. **What it claims** — what does it present itself as?
+3. **What it likely is** — your honest read
+4. **Red flags** — specific concerns (or "None detected")
+5. **Recommendation** — calm, actionable guidance
+
+Keep it concise but thorough. No hype, no false alarm — just truth.`;
+
+          const res = await fetch(
+            `https://rkwhhbxgjdpehfuxsult.supabase.co/functions/v1/jackie-chat`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+                'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              },
+              body: JSON.stringify({
+                model: selectedModel,
+                messages: [{ role: 'user', content: discernmentPrompt }],
+              }),
+            }
+          );
+          if (!res.ok) throw new Error('Analysis failed');
+          const reader = res.body?.getReader();
+          if (!reader) throw new Error('No response stream');
+          let result = '';
+          const decoder = new TextDecoder();
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value);
+            for (const line of chunk.split('\n')) {
+              if (!line.startsWith('data: ') || line.includes('[DONE]')) continue;
+              try {
+                const j = JSON.parse(line.slice(6));
+                result += j.choices?.[0]?.delta?.content || '';
+              } catch {}
+            }
+          }
+          return `## 🔍 Discernment Analysis\n\n${result || 'No assessment could be generated.'}`;
+        } catch (e: any) {
+          return `❌ Discernment analysis failed: ${e.message}`;
+        }
+      }
       case '/help':
         return `## Jackie Commands\n
 | Command | Description |
@@ -759,6 +813,7 @@ const Index = () => {
 | \`/done <id>\` | Mark task complete |
 | \`/files [search]\` | Browse uploaded files |
 | \`/imagine <prompt>\` | Generate an image |
+| \`/discernment <subject>\` | Analyze a URL, tool, or offer for trust |
 | \`/stats\` | View Jackie's stats |
 | \`/help\` | Show this guide |`;
       default:
