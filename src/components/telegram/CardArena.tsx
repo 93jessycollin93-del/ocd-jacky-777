@@ -535,6 +535,7 @@ function PackReveal({ results, onDone }: { results: PackResult; onDone: () => vo
 interface CardArenaProps { onBack: () => void; }
 
 export default function CardArena({ onBack }: CardArenaProps) {
+  const { setState: setGameState, addBattlePassXP } = useGame();
   const [tab, setTab] = useState<ArenaTab>('collection');
   const [state, setState] = useState<CollectionState>(loadState);
   const [filterRarity, setFilterRarity] = useState<CardRarity | 'all'>('all');
