@@ -561,7 +561,7 @@ const SCORE_MAP: Record<SortKey, keyof JadePackScores | null> = {
 };
 
 // ── Quick filter presets ──
-type QuickFilter = 'all' | 'best_value' | 'most_popular' | 'limited' | 'new' | 'micro' | 'whale_tier';
+type QuickFilter = 'all' | 'best_value' | 'most_popular' | 'limited' | 'new' | 'micro' | 'whale_tier' | 'wishlist';
 
 const CATEGORIES = Object.keys(CATEGORY_META) as JadeStoreCategory[];
 
@@ -574,6 +574,19 @@ export default function JadeStorePage() {
   const [quickFilter, setQuickFilter] = useState<QuickFilter>('all');
   const [comparePacks, setComparePacks] = useState<JadePack[]>([]);
   const [showCompare, setShowCompare] = useState(false);
+  const [wishlist, setWishlist] = useState<Set<string>>(() => {
+    try { const saved = localStorage.getItem('jade_wishlist'); return saved ? new Set(JSON.parse(saved)) : new Set(); }
+    catch { return new Set(); }
+  });
+
+  const toggleWishlist = useCallback((pack: JadePack) => {
+    setWishlist(prev => {
+      const next = new Set(prev);
+      if (next.has(pack.id)) next.delete(pack.id); else next.add(pack.id);
+      localStorage.setItem('jade_wishlist', JSON.stringify([...next]));
+      return next;
+    });
+  }, []);
 
   const featured = useMemo(() => getFeaturedPacks(), []);
 
@@ -604,6 +617,7 @@ export default function JadeStorePage() {
       case 'new': packs = packs.filter(p => p.isNew); break;
       case 'micro': packs = packs.filter(p => p.priceTier === 'micro' || p.priceTier === 'entry'); break;
       case 'whale_tier': packs = packs.filter(p => p.priceTier === 'whale' || p.priceTier === 'absurd'); break;
+      case 'wishlist': packs = packs.filter(p => wishlist.has(p.id)); break;
     }
 
     // Sort
@@ -612,7 +626,7 @@ export default function JadeStorePage() {
     if (sortBy === 'price_high') return [...packs].sort((a, b) => b.priceGold - a.priceGold);
     if (scoreKey) return sortByScore(packs, scoreKey);
     return packs;
-  }, [activeCategory, sortBy, quickFilter, featured]);
+  }, [activeCategory, sortBy, quickFilter, featured, wishlist]);
 
   return (
     <div className="space-y-3 pb-20">
@@ -667,7 +681,7 @@ export default function JadeStorePage() {
           {(['all', 'best_value', 'most_popular', 'limited', 'new', 'micro', 'whale_tier'] as QuickFilter[]).map(f => {
             const labels: Record<QuickFilter, string> = {
               all: '📦 All', best_value: '💚 Best Value', most_popular: '🔥 Popular',
-              limited: '⏳ Limited', new: '✨ New', micro: '💰 Budget', whale_tier: '🐋 Whale'
+              limited: '⏳ Limited', new: '✨ New', micro: '💰 Budget', whale_tier: '🐋 Whale', wishlist: '❤️ Wishlist'
             };
             return (
               <button
@@ -749,6 +763,8 @@ export default function JadeStorePage() {
               showScores={showScores}
               isComparing={!!comparePacks.find(p => p.id === pack.id)}
               onToggleCompare={toggleCompare}
+              isWishlisted={wishlist.has(pack.id)}
+              onToggleWishlist={toggleWishlist}
             />
           ))}
         </AnimatePresence>
