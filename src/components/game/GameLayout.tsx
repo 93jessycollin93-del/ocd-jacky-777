@@ -28,10 +28,11 @@ import MarketplacePage from '@/components/game/MarketplacePage';
 import GuildBankPage from '@/components/game/GuildBankPage';
 import PremiumStorePage from '@/components/game/PremiumStorePage';
 import JadeStorePage from '@/components/game/JadeStorePage';
+import JadeAdminPage from '@/components/game/JadeAdminPage';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
-type Tab = 'dashboard' | 'city' | 'research' | 'army' | 'expeditions' | 'heroes' | 'shards' | 'map' | 'crafting' | 'diplomacy' | 'jukebox' | 'oracle' | 'eventlog' | 'quests' | 'trading' | 'gacha' | 'battlepass' | 'leaderboard' | 'shop' | 'bag' | 'marketplace' | 'guildbank' | 'premiumstore' | 'jadestore';
+type Tab = 'dashboard' | 'city' | 'research' | 'army' | 'expeditions' | 'heroes' | 'shards' | 'map' | 'crafting' | 'diplomacy' | 'jukebox' | 'oracle' | 'eventlog' | 'quests' | 'trading' | 'gacha' | 'battlepass' | 'leaderboard' | 'shop' | 'bag' | 'marketplace' | 'guildbank' | 'premiumstore' | 'jadestore' | 'jadeadmin';
 
 const tabVariants = {
   initial: { opacity: 0, y: 12 },
