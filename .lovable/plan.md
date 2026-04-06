@@ -1,23 +1,31 @@
+# Jackie Intelligence Upgrade — All Four Systems
 
+## 1. Database Migration
+Create two new tables:
+- **`jackie_memory`** — stores extracted facts, preferences, decisions from conversations
+  - Fields: user_id, key, value, category (preference/decision/context/pattern), source_conversation_id, confidence, created_at, updated_at
+  - RLS: users can only access their own memories
+- **`jackie_tasks`** — persistent coding task tracker
+  - Fields: user_id, title, description, status (todo/in_progress/done/blocked), priority (low/medium/high/critical), category, due_date, created_at, updated_at
+  - RLS: users can only access their own tasks
 
-# Fix Build Error + Complete Wishlist Feature
+## 2. Edge Function: `jackie-image`
+- New edge function that calls Lovable AI image generation models
+- Accepts a text prompt, returns base64 image data
+- Stores generated images in the `chat-attachments` storage bucket
+- Uses LOVABLE_API_KEY (already configured)
 
-## Problem
-The `PackCard` component was updated to require `isWishlisted` and `onToggleWishlist` props, but the parent component never added wishlist state or passes those props.
+## 3. Backend Logic (`src/lib/`)
+- **`jackie-memory.ts`** — CRUD for memory entries, auto-extraction of key facts from AI responses, memory injection into chat context
+- **`jackie-tasks.ts`** — CRUD for tasks, status management, task summary for context injection
+- **`jackie-files.ts`** — Browse/search attachments in storage, retrieve file metadata, display in chat
 
-## Plan
+## 4. Frontend Integration
+- Update `jackie-chat` edge function system prompt to include memory context + active tasks
+- Add `/` commands in chat: `/remember`, `/tasks`, `/files`, `/imagine`
+- Task panel accessible from chat sidebar
+- Memory auto-extracts from conversations (no manual work needed)
 
-### 1. Add wishlist state to `JadeStorePage` (line ~575)
-- Add `useState<Set<string>>` for wishlist IDs, initialized from `localStorage` key `jade_wishlist`
-- Add `toggleWishlist` function that adds/removes pack IDs and persists to `localStorage`
-
-### 2. Add wishlist quick filter option
-- Extend `QuickFilter` type to include `'wishlist'`
-- Add wishlist filter button to the quick filter bar
-
-### 3. Pass missing props to `PackCard` (lines 745-752)
-- Add `isWishlisted={wishlist.has(pack.id)}` 
-- Add `onToggleWishlist={toggleWishlist}`
-
-This fixes the build error and completes the wishlist feature that was partially implemented before the cancellation.
-
+## 5. Chat Context Enhancement
+- Before each message, inject: recent memories, active tasks, uploaded file context
+- Jackie becomes aware of past decisions and current priorities automatically

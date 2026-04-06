@@ -292,6 +292,89 @@ export type Database = {
         }
         Relationships: []
       }
+      jackie_memory: {
+        Row: {
+          category: string
+          confidence: number
+          created_at: string
+          id: string
+          key: string
+          source_conversation_id: string | null
+          updated_at: string
+          user_id: string
+          value: string
+        }
+        Insert: {
+          category?: string
+          confidence?: number
+          created_at?: string
+          id?: string
+          key: string
+          source_conversation_id?: string | null
+          updated_at?: string
+          user_id: string
+          value: string
+        }
+        Update: {
+          category?: string
+          confidence?: number
+          created_at?: string
+          id?: string
+          key?: string
+          source_conversation_id?: string | null
+          updated_at?: string
+          user_id?: string
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jackie_memory_source_conversation_id_fkey"
+            columns: ["source_conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jackie_tasks: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
