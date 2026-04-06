@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ArrowLeft, ChevronDown, Zap } from 'lucide-react';
 import { ConversionPresetCard } from '../components/ConversionPresetCard';
+import { TelegramAvatarPreview } from '../components/TelegramAvatarPreview';
 import { getPresetForMedia, formatFileSize, formatDuration, type MediaItem, type ConversionPreset } from '../types';
 import { conversionService } from '../services';
 import { toast } from 'sonner';
@@ -12,19 +13,27 @@ interface JobBuilderProps {
 }
 
 export function JobBuilder({ item, onBack, onJobCreated }: JobBuilderProps) {
-  const presets = getPresetForMedia(item);
+  const allPresets = getPresetForMedia(item);
+  const generalPresets = allPresets.filter(p => p.category !== 'telegram');
+  const telegramPresets = allPresets.filter(p => p.category === 'telegram');
+
   const [selected, setSelected] = useState<ConversionPreset | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [bitrate, setBitrate] = useState(selected?.defaultBitrate || 192);
+  const [bitrate, setBitrate] = useState(192);
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(item.duration || 0);
   const [normalize, setNormalize] = useState(false);
   const [outputName, setOutputName] = useState('');
+  const [avatarShape, setAvatarShape] = useState<'square' | 'circle'>('circle');
+
+  const isTelegramPreset = selected?.category === 'telegram';
+  const showAvatarPreview = selected?.actionType === 'telegram_profile_photo' || selected?.actionType === 'telegram_profile_video';
 
   const handlePresetSelect = (preset: ConversionPreset) => {
     setSelected(preset);
     if (preset.defaultBitrate) setBitrate(preset.defaultBitrate);
     setOutputName(conversionService.getOutputFilename(item, preset.outputFormat));
+    if (preset.telegramMeta?.cropShape) setAvatarShape(preset.telegramMeta.cropShape);
   };
 
   const handleQueue = () => {
@@ -66,23 +75,55 @@ export function JobBuilder({ item, onBack, onJobCreated }: JobBuilderProps) {
         </div>
       </div>
 
-      {/* Presets */}
-      <div className="space-y-2">
-        <h2 className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Choose Action</h2>
-        <div className="grid grid-cols-1 gap-2">
-          {presets.map(p => (
-            <ConversionPresetCard
-              key={p.key}
-              preset={p}
-              selected={selected?.key === p.key}
-              onSelect={handlePresetSelect}
-            />
-          ))}
+      {/* General Presets */}
+      {generalPresets.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Standard Actions</h2>
+          <div className="grid grid-cols-1 gap-2">
+            {generalPresets.map(p => (
+              <ConversionPresetCard
+                key={p.key}
+                preset={p}
+                selected={selected?.key === p.key}
+                onSelect={handlePresetSelect}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Telegram Presets */}
+      {telegramPresets.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+            <span>✈️</span> Telegram Presets
+          </h2>
+          <div className="grid grid-cols-1 gap-2">
+            {telegramPresets.map(p => (
+              <ConversionPresetCard
+                key={p.key}
+                preset={p}
+                selected={selected?.key === p.key}
+                onSelect={handlePresetSelect}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Telegram Avatar Preview */}
+      {showAvatarPreview && selected?.telegramMeta && (
+        <TelegramAvatarPreview
+          previewShape={avatarShape}
+          onShapeChange={setAvatarShape}
+          outputResolution={selected.telegramMeta.outputResolution}
+          estimatedSize={selected.telegramMeta.estimatedSize}
+          outputFormat={selected.outputFormat}
+        />
+      )}
 
       {/* Advanced Settings */}
-      {selected && (
+      {selected && !isTelegramPreset && (
         <>
           <button
             onClick={() => setShowAdvanced(!showAdvanced)}
@@ -160,13 +201,17 @@ export function JobBuilder({ item, onBack, onJobCreated }: JobBuilderProps) {
               </div>
             </div>
           )}
+        </>
+      )}
 
-          {/* Estimated output */}
+      {/* Estimated output */}
+      {selected && (
+        <>
           <div className="p-3 border border-primary/20 rounded-sm bg-primary/5">
             <p className="text-[10px] font-mono uppercase tracking-widest text-primary">Estimated Output</p>
-            <p className="text-xs text-foreground mt-1">{outputName || 'output.mp3'}</p>
+            <p className="text-xs text-foreground mt-1">{outputName || 'output'}</p>
             <p className="text-[10px] text-muted-foreground">
-              ~{formatFileSize(Math.round(item.fileSize * 0.15))} · {selected.outputFormat}
+              {selected.telegramMeta?.estimatedSize || `~${formatFileSize(Math.round(item.fileSize * 0.15))}`} · {selected.outputFormat}
             </p>
           </div>
 
