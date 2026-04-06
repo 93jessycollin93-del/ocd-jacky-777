@@ -85,10 +85,15 @@ const RARITY_COLORS: Record<string, string> = {
 
 export default function BattlePassPage() {
   const { state, setState, addBattlePassXP } = useGame();
-  const bp = state.battlePass || {
-    season: 1, xp: 0, tier: 0, isPremium: false,
-    claimedFree: [] as number[], claimedPremium: [] as number[],
-    seasonStartedAt: Date.now(),
+  const rawBp = state.battlePass;
+  const bp = {
+    season: rawBp?.season ?? 1,
+    xp: rawBp?.xp ?? 0,
+    tier: rawBp?.tier ?? 0,
+    isPremium: rawBp?.isPremium ?? false,
+    claimedFree: rawBp?.claimedFree ?? [] as number[],
+    claimedPremium: rawBp?.claimedPremium ?? [] as number[],
+    seasonStartedAt: rawBp?.seasonStartedAt ?? Date.now(),
   };
 
   const currentTier = bp.tier;
