@@ -107,6 +107,7 @@ export default function GameLayout() {
       case 'guildbank': return <GuildBankPage />;
       case 'premiumstore': return <PremiumStorePage />;
       case 'jadestore': return <JadeStorePage />;
+      case 'jadeadmin': return <JadeAdminPage />;
     }
   };
 
