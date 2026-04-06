@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Design from "./pages/Design";
 import Play from "./pages/Play";
+import TelegramShell from "./pages/TelegramShell";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -62,6 +63,7 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route path="/hub" element={<TelegramShell />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
