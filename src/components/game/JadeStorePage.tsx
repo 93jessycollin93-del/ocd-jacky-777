@@ -612,7 +612,11 @@ export default function JadeStorePage() {
           </h1>
           <p className="text-[10px] text-muted-foreground">Sacred jade · Reserve-grade · Lineage-bound</p>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
+          <div className="text-right mr-1">
+            <p className="text-[10px] text-muted-foreground">Balance</p>
+            <p className="text-sm font-bold text-amber-400">{state.resources.gold.toLocaleString()} 🪙</p>
+          </div>
           {/* Admin toggle */}
           <button
             onClick={() => setShowScores(!showScores)}
