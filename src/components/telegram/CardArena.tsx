@@ -847,9 +847,16 @@ export default function CardArena({ onBack }: CardArenaProps) {
           {/* ═══ BATTLE ═══ */}
           {tab === 'battle' && (
             <motion.div key="battle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center">
+              {lastRewardMsg && (
+                <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+                  className="mb-3 p-2.5 rounded-xl bg-green-500/10 border border-green-500/20 text-[10px] text-green-400 font-medium">
+                  🏆 {lastRewardMsg}
+                  <button className="ml-2 text-muted-foreground underline" onClick={() => setLastRewardMsg(null)}>✕</button>
+                </motion.div>
+              )}
               <motion.div animate={{ scale: [1, 1.05, 1] }} transition={{ duration: 2, repeat: Infinity }} className="text-5xl mb-3">⚔</motion.div>
-              <h2 className="text-base font-bold text-foreground mb-1">Enter Battle</h2>
-              <p className="text-[10px] text-muted-foreground mb-4">3 lanes · Best of 3 · Abilities + Elements + Combos</p>
+              <h2 className="text-base font-bold text-foreground mb-1">Quick Match</h2>
+              <p className="text-[10px] text-muted-foreground mb-2">Win to earn dust, XP, and a chance to discover enemy faction cards</p>
 
               <div className="flex gap-2 mb-4">
                 {FACTIONS.map(f => (
@@ -861,6 +868,19 @@ export default function CardArena({ onBack }: CardArenaProps) {
                 ))}
               </div>
 
+              {bredCards.length > 0 && (
+                <Card className="mb-3 text-left">
+                  <CardContent className="p-2.5">
+                    <p className="text-[10px] font-bold text-foreground mb-1">🐉 Bred Cards in Pool: {bredCards.length}</p>
+                    <div className="flex gap-1 overflow-x-auto">
+                      {bredCards.slice(0, 5).map(c => (
+                        <span key={c.id} className="text-lg" title={c.name}>{c.art}</span>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               <Card className="mb-3 text-left">
                 <CardContent className="p-3 text-[9px] text-muted-foreground space-y-0.5">
                   <p>⚡ Energy scales 1→10 per turn</p>
@@ -869,13 +889,99 @@ export default function CardArena({ onBack }: CardArenaProps) {
                   <p>💥 Crit: 5% base, ×1.5, cap 35%</p>
                   <p>🌊 Element advantage: +25%</p>
                   <p>🩸 Statuses: burn, frost, poison, bleed, shield</p>
-                  <p>🏆 Win: +30 gold, +15 dust, +25 XP + card chance</p>
+                  <p>🃏 Win: dust + XP + chance for enemy faction card</p>
                 </CardContent>
               </Card>
 
-              <Button size="lg" onClick={() => { haptic.heavy(); setInBattle(true); }} className="w-full">
-                <Swords size={16} /> Start Battle as {FACTION_ICONS[deckFaction]} {deckFaction}
+              <Button size="lg" onClick={() => { haptic.heavy(); setTournamentDifficulty(1); setInBattle(true); }} className="w-full">
+                <Swords size={16} /> Quick Match as {FACTION_ICONS[deckFaction]} {deckFaction}
               </Button>
+            </motion.div>
+          )}
+
+          {/* ═══ TOURNAMENT ═══ */}
+          {tab === 'tournament' && (
+            <motion.div key="tourney" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <div className="text-center mb-4">
+                <Trophy size={32} className="text-yellow-400 mx-auto mb-2" />
+                <h2 className="text-base font-bold text-foreground">Tournament Bracket</h2>
+                <p className="text-[10px] text-muted-foreground">3 rounds · Increasing difficulty · Escalating prizes</p>
+              </div>
+
+              {/* Faction select */}
+              <div className="flex gap-2 mb-4">
+                {FACTIONS.map(f => (
+                  <button key={f} onClick={() => { haptic.light(); setDeckFaction(f); }}
+                    className={`flex-1 p-2 rounded-xl text-center ${deckFaction === f ? 'bg-primary/20 border-2 border-primary' : 'bg-muted border border-border'}`}>
+                    <span className="text-xl">{FACTION_ICONS[f]}</span>
+                    <p className="text-[8px] font-bold text-foreground mt-0.5">{f}</p>
+                  </button>
+                ))}
+              </div>
+
+              {!tournament ? (
+                <Button className="w-full mb-4" onClick={() => {
+                  haptic.heavy();
+                  setTournament(generateTournamentBracket(deckFaction));
+                  setTournamentRound(0);
+                }}>
+                  <Trophy size={16} /> Start New Tournament
+                </Button>
+              ) : (
+                <div className="space-y-3">
+                  {tournament.map((match, i) => {
+                    const isActive = i === tournamentRound && match.status !== 'won' && match.status !== 'lost';
+                    const canFight = isActive && (i === 0 || tournament[i - 1]?.status === 'won');
+                    return (
+                      <Card key={i} className={`overflow-hidden ${match.status === 'won' ? 'border-green-500/30' : match.status === 'lost' ? 'border-red-500/30 opacity-50' : ''}`}>
+                        <CardContent className="p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg font-bold text-foreground">R{match.round}</span>
+                              <span className="text-xl">{FACTION_ICONS[match.enemyFaction]}</span>
+                              <span className="text-[10px] font-bold text-foreground">{match.enemyFaction}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {Array.from({ length: match.difficulty }, (_, k) => (
+                                <Star key={k} size={10} className="text-yellow-400 fill-yellow-400" />
+                              ))}
+                            </div>
+                          </div>
+                          <p className="text-[9px] text-muted-foreground mb-2">Prize: {match.prize.label}</p>
+                          <div className="flex items-center justify-between">
+                            {match.status === 'won' && <Badge className="bg-green-500/20 text-green-400 text-[8px]">✓ Won</Badge>}
+                            {match.status === 'lost' && <Badge variant="destructive" className="text-[8px]">✕ Lost</Badge>}
+                            {match.status === 'upcoming' && !canFight && <Badge variant="outline" className="text-[8px]">Locked</Badge>}
+                            {canFight && (
+                              <Button size="sm" className="h-7 text-[10px]" onClick={() => startTournamentBattle(match)}>
+                                <Swords size={12} /> Fight!
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+
+                  {/* Tournament result */}
+                  {tournament.every(m => m.status === 'won') && (
+                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
+                      className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-center">
+                      <Crown size={28} className="text-yellow-400 mx-auto mb-2" />
+                      <p className="text-sm font-bold text-foreground">🏆 Tournament Champion!</p>
+                      <p className="text-[10px] text-muted-foreground">All prizes claimed</p>
+                    </motion.div>
+                  )}
+                  {tournament.some(m => m.status === 'lost') && (
+                    <div className="text-center">
+                      <p className="text-[10px] text-muted-foreground mb-2">Tournament ended</p>
+                      <Button variant="outline" size="sm" onClick={() => {
+                        setTournament(null); setTournamentRound(0);
+                      }}>Start New Tournament</Button>
+                    </div>
+                  )}
+                </div>
+              )}
             </motion.div>
           )}
 
