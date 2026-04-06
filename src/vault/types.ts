@@ -21,7 +21,10 @@ export type JobAction =
   | 'extract_thumbnail'
   | 'normalize_audio'
   | 'strip_audio'
-  | 'lower_bitrate';
+  | 'lower_bitrate'
+  | 'telegram_profile_photo'
+  | 'telegram_profile_video'
+  | 'telegram_share_optimize';
 
 export type LibraryTab = 'all' | 'assets' | 'references' | 'outputs' | 'jobs';
 
@@ -100,6 +103,14 @@ export interface ConversionPreset {
   outputFormat: string;
   defaultBitrate?: number;
   supportedInputTypes: string[];
+  category?: 'general' | 'telegram';
+  telegramMeta?: {
+    outputResolution?: string;
+    estimatedSize?: string;
+    muteAudio?: boolean;
+    maxDuration?: number;
+    cropShape?: 'square' | 'circle';
+  };
 }
 
 export const CONVERSION_PRESETS: ConversionPreset[] = [
@@ -198,6 +209,53 @@ export const CONVERSION_PRESETS: ConversionPreset[] = [
     outputFormat: 'same',
     defaultBitrate: 500,
     supportedInputTypes: ['video/', 'audio/'],
+  },
+  // ── Telegram Presets ──
+  {
+    key: 'tg_profile_photo',
+    label: 'Telegram Profile Photo',
+    description: 'Square avatar, optimized for clarity at small sizes',
+    icon: '✈️',
+    actionType: 'telegram_profile_photo',
+    outputFormat: 'image/jpeg',
+    supportedInputTypes: ['image/', 'video/'],
+    category: 'telegram',
+    telegramMeta: {
+      outputResolution: '800×800',
+      estimatedSize: '~80 KB',
+      cropShape: 'circle',
+    },
+  },
+  {
+    key: 'tg_profile_video',
+    label: 'Telegram Profile Video',
+    description: 'Short square clip, muted, H.264 MP4',
+    icon: '🎬',
+    actionType: 'telegram_profile_video',
+    outputFormat: 'video/mp4',
+    supportedInputTypes: ['video/'],
+    category: 'telegram',
+    telegramMeta: {
+      outputResolution: '800×800',
+      estimatedSize: '~2 MB',
+      muteAudio: true,
+      maxDuration: 10,
+      cropShape: 'circle',
+    },
+  },
+  {
+    key: 'tg_share_optimize',
+    label: 'Telegram Share Optimized',
+    description: 'Compress for fast Telegram sharing',
+    icon: '📨',
+    actionType: 'telegram_share_optimize',
+    outputFormat: 'video/mp4',
+    defaultBitrate: 800,
+    supportedInputTypes: ['video/', 'audio/', 'image/'],
+    category: 'telegram',
+    telegramMeta: {
+      estimatedSize: '~5 MB',
+    },
   },
 ];
 
