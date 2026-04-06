@@ -65,6 +65,14 @@ const App = () => (
                 }
               />
               <Route path="/hub" element={<TelegramShell />} />
+              <Route
+                path="/vault"
+                element={
+                  <ProtectedRoute>
+                    <Vault />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
