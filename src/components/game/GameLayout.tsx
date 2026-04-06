@@ -27,6 +27,7 @@ import BagPage from '@/components/game/BagPage';
 import MarketplacePage from '@/components/game/MarketplacePage';
 import GuildBankPage from '@/components/game/GuildBankPage';
 import PremiumStorePage from '@/components/game/PremiumStorePage';
+import JadeStorePage from '@/components/game/JadeStorePage';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
