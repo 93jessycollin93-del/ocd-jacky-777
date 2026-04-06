@@ -183,13 +183,15 @@ function LaneRow({ label, playerUnits, enemyUnits, onPlayerUnitTap, onEnemyUnitT
 }
 
 // ── Battle Screen ──
-function BattleScreen({ playerFaction, onExit, onRewards }: {
-  playerFaction: string; onExit: () => void; onRewards: (won: boolean, rounds: number) => void;
+function BattleScreen({ playerFaction, onExit, onRewards, forcedEnemy, difficulty = 1 }: {
+  playerFaction: string; onExit: () => void; onRewards: (won: boolean, rounds: number, enemyFaction: string) => void;
+  forcedEnemy?: string; difficulty?: number;
 }) {
   const enemyFaction = useMemo(() => {
+    if (forcedEnemy) return forcedEnemy;
     const others = FACTIONS.filter(f => f !== playerFaction);
     return others[Math.floor(Math.random() * others.length)];
-  }, [playerFaction]);
+  }, [playerFaction, forcedEnemy]);
 
   const [battle, setBattle] = useState<BattleState>(() =>
     createBattleState(buildFactionDeck(playerFaction), buildFactionDeck(enemyFaction))
