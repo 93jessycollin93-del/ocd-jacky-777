@@ -29,10 +29,11 @@ import GuildBankPage from '@/components/game/GuildBankPage';
 import PremiumStorePage from '@/components/game/PremiumStorePage';
 import JadeStorePage from '@/components/game/JadeStorePage';
 import JadeAdminPage from '@/components/game/JadeAdminPage';
+import DiamondExchangePage from '@/components/game/DiamondExchangePage';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
-type Tab = 'dashboard' | 'city' | 'research' | 'army' | 'expeditions' | 'heroes' | 'shards' | 'map' | 'crafting' | 'diplomacy' | 'jukebox' | 'oracle' | 'eventlog' | 'quests' | 'trading' | 'gacha' | 'battlepass' | 'leaderboard' | 'shop' | 'bag' | 'marketplace' | 'guildbank' | 'premiumstore' | 'jadestore' | 'jadeadmin';
+type Tab = 'dashboard' | 'city' | 'research' | 'army' | 'expeditions' | 'heroes' | 'shards' | 'map' | 'crafting' | 'diplomacy' | 'jukebox' | 'oracle' | 'eventlog' | 'quests' | 'trading' | 'gacha' | 'battlepass' | 'leaderboard' | 'shop' | 'bag' | 'marketplace' | 'guildbank' | 'premiumstore' | 'jadestore' | 'jadeadmin' | 'diamonds';
 
 const tabVariants = {
   initial: { opacity: 0, y: 12 },
@@ -71,6 +72,7 @@ export default function GameLayout() {
     { id: 'marketplace', label: 'Market', icon: '🏬' },
     { id: 'guildbank', label: t('nav.guildBank') || 'Guild Bank', icon: '🏦' },
     { id: 'premiumstore', label: 'Premium Store', icon: '💎' },
+    { id: 'diamonds', label: 'Diamond Exchange', icon: '💠' },
     { id: 'jadestore', label: 'Jade Vault', icon: '🏛️' },
     { id: 'jadeadmin', label: 'Admin Curation', icon: '⚙️' },
   ];
@@ -106,6 +108,7 @@ export default function GameLayout() {
       case 'marketplace': return <MarketplacePage />;
       case 'guildbank': return <GuildBankPage />;
       case 'premiumstore': return <PremiumStorePage />;
+      case 'diamonds': return <DiamondExchangePage />;
       case 'jadestore': return <JadeStorePage />;
       case 'jadeadmin': return <JadeAdminPage />;
     }
