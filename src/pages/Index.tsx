@@ -640,6 +640,132 @@ const Index = () => {
     }, 50);
   };
 
+  // ── Slash Command Handler ──
+  const handleSlashCommand = async (text: string, convId: string): Promise<string | null> => {
+    const parts = text.split(/\s+/);
+    const cmd = parts[0].toLowerCase();
+    const args = parts.slice(1).join(' ');
+
+    switch (cmd) {
+      case '/remember': {
+        if (!args) return "**Usage:** `/remember <key> = <value>`\nExample: `/remember preferred_framework = React with TypeScript`";
+        const [key, ...valParts] = args.split('=');
+        const value = valParts.join('=').trim();
+        if (!key.trim() || !value) return "**Format:** `/remember key = value`";
+        try {
+          await upsertMemory(key.trim(), value, 'preference', convId);
+          return `✅ **Remembered:** ${key.trim()} → ${value}`;
+        } catch (e: any) {
+          return `❌ Failed to save memory: ${e.message}`;
+        }
+      }
+      case '/memories': {
+        try {
+          const mems = args ? await searchMemories(args) : await getMemories();
+          if (mems.length === 0) return "📭 No memories stored yet. Use `/remember key = value` to teach me.";
+          let out = "## 🧠 Jackie's Memory\n\n";
+          for (const m of mems.slice(0, 20)) {
+            out += `- **${m.key}** → ${m.value} _(${m.category}, ${(m.confidence * 100).toFixed(0)}%)_\n`;
+          }
+          return out;
+        } catch (e: any) {
+          return `❌ ${e.message}`;
+        }
+      }
+      case '/forget': {
+        if (!args) return "**Usage:** `/forget <search term>`";
+        try {
+          const mems = await searchMemories(args);
+          if (mems.length === 0) return "No matching memories found.";
+          for (const m of mems) await deleteMemory(m.id);
+          return `🗑️ Forgot ${mems.length} memor${mems.length === 1 ? 'y' : 'ies'} matching "${args}"`;
+        } catch (e: any) {
+          return `❌ ${e.message}`;
+        }
+      }
+      case '/task': {
+        if (!args) return "**Usage:** `/task <title>` — Creates a new task\nOr: `/task done <id>` `/task list`";
+        if (args.toLowerCase() === 'list') {
+          const tasks = await getTasks();
+          if (tasks.length === 0) return "📋 No tasks. Create one with `/task <title>`";
+          let out = "## 📋 Tasks\n\n";
+          const statusEmoji: Record<string, string> = { todo: '📋', in_progress: '🔧', done: '✅', blocked: '🚫' };
+          const prioEmoji: Record<string, string> = { critical: '🔴', high: '🟠', medium: '🟡', low: '🟢' };
+          for (const t of tasks) {
+            out += `- ${statusEmoji[t.status] || ''} ${prioEmoji[t.priority] || ''} **${t.title}** _(${t.status})_ \`${t.id.slice(0, 8)}\`\n`;
+          }
+          return out;
+        }
+        try {
+          const task = await createTask(args);
+          return `✅ **Task created:** ${task.title} \`${task.id.slice(0, 8)}\``;
+        } catch (e: any) {
+          return `❌ ${e.message}`;
+        }
+      }
+      case '/done': {
+        if (!args) return "**Usage:** `/done <task-id-prefix>`";
+        try {
+          const tasks = await getTasks();
+          const match = tasks.find(t => t.id.startsWith(args.trim()));
+          if (!match) return "❌ No task found with that ID prefix.";
+          await completeTask(match.id);
+          return `✅ **Completed:** ${match.title}`;
+        } catch (e: any) {
+          return `❌ ${e.message}`;
+        }
+      }
+      case '/files': {
+        try {
+          const files = args ? await searchFiles(args) : await listFiles(convId);
+          if (files.length === 0) return "📁 No files found.";
+          let out = "## 📁 Files\n\n";
+          for (const f of files.slice(0, 20)) {
+            const size = f.size < 1024 ? `${f.size}B` : f.size < 1048576 ? `${(f.size / 1024).toFixed(1)}KB` : `${(f.size / 1048576).toFixed(1)}MB`;
+            out += `- 📎 **${f.name}** (${f.type}, ${size})\n`;
+          }
+          return out;
+        } catch (e: any) {
+          return `❌ ${e.message}`;
+        }
+      }
+      case '/imagine': {
+        if (!args) return "**Usage:** `/imagine <description>`\nExample: `/imagine a futuristic city skyline at sunset`";
+        try {
+          toast.info("🎨 Generating image...");
+          const result = await generateImage(args);
+          return `## 🎨 Generated Image\n\n![Generated](${result.image})\n\n${result.text || ''}`;
+        } catch (e: any) {
+          return `❌ Image generation failed: ${e.message}`;
+        }
+      }
+      case '/stats': {
+        try {
+          const [taskStats, memCount] = await Promise.all([getTaskStats(), getMemories()]);
+          return `## 📊 Jackie Stats\n\n**Tasks:** ${taskStats.total} total (${taskStats.todo} todo, ${taskStats.inProgress} active, ${taskStats.done} done, ${taskStats.blocked} blocked)\n**Critical:** ${taskStats.critical}\n**Memories:** ${memCount.length} stored\n**Model:** ${selectedModel}`;
+        } catch {
+          return "❌ Failed to load stats.";
+        }
+      }
+      case '/help':
+        return `## Jackie Commands\n
+| Command | Description |
+|---------|------------|
+| \`/remember key = value\` | Teach Jackie a preference or decision |
+| \`/memories [search]\` | View stored memories |
+| \`/forget <search>\` | Delete matching memories |
+| \`/task <title>\` | Create a coding task |
+| \`/task list\` | Show all tasks |
+| \`/done <id>\` | Mark task complete |
+| \`/files [search]\` | Browse uploaded files |
+| \`/imagine <prompt>\` | Generate an image |
+| \`/stats\` | View Jackie's stats |
+| \`/help\` | Show this guide |`;
+      default:
+        return null; // Not a recognized command, proceed as normal message
+    }
+  };
+
   const handleSubmit = async () => {
     if ((!input.trim() && pendingFiles.length === 0) || isProcessing) return;
 
