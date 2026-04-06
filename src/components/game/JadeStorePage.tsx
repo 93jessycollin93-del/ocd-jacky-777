@@ -306,7 +306,7 @@ function PackModal({ pack, onClose, showScores }: { pack: JadePack; onClose: () 
 
     setTimeout(() => {
       setState(prev => {
-        const newResources = { ...prev.resources, gold: prev.resources.diamonds - pack.priceDiamonds };
+        const newResources = { ...prev.resources, diamonds: prev.resources.diamonds - pack.priceDiamonds };
         const newItems = rewardsToItems([...pack.coreRewards, ...(pack.bonusRewards || [])], pack.id);
         const newBag = [...(prev.bag || []), ...newItems];
 
