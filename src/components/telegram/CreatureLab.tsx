@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { haptic, telegramConfirm } from '@/lib/telegram';
 import AnimatedCanvas from '@/components/backgrounds/AnimatedCanvas';
 import {
-  createCreature, breedCreatures, SPECIES_META, RARITY_CONFIG,
+  createCreature, breedCreatures, creatureToCard, SPECIES_META, RARITY_CONFIG,
   type Creature, type CreatureSpecies, type CreatureRarity
 } from '@/game/creatureSystem';
 import {
@@ -80,26 +80,22 @@ export default function CreatureLab({ onBack }: CreatureLabProps) {
 
     // Auto-generate matching card in Card Arena collection
     try {
-      const { creatureToCard } = require('@/game/creatureSystem');
       const cardDef = creatureToCard(result.child);
       const CARD_STORAGE = 'card_arena_state';
       const raw = localStorage.getItem(CARD_STORAGE);
-      if (raw) {
-        const cardState = JSON.parse(raw);
-        const alreadyOwned = cardState.ownedCards?.some((o: { cardId: string }) => o.cardId === cardDef.id);
-        if (!alreadyOwned) {
-          cardState.ownedCards = cardState.ownedCards || [];
-          cardState.ownedCards.push({
-            cardId: cardDef.id, copies: 1, foil: false, animated: false,
-            firstObtained: Date.now(), source: 'battle',
-          });
-          // Store the bred card definition for Card Arena to pick up
-          const bredCards = JSON.parse(localStorage.getItem('bred_card_defs') || '[]');
-          bredCards.push(cardDef);
-          localStorage.setItem('bred_card_defs', JSON.stringify(bredCards));
-          localStorage.setItem(CARD_STORAGE, JSON.stringify(cardState));
-          toast.success(`🃏 Card "${cardDef.name}" added to your Card Arena collection!`);
-        }
+      const cardState = raw ? JSON.parse(raw) : { ownedCards: [], dust: 200, gems: 50, eventTokens: 0, pityCounter: 0, seasonTier: 0, seasonXp: 0 };
+      const alreadyOwned = cardState.ownedCards?.some((o: { cardId: string }) => o.cardId === cardDef.id);
+      if (!alreadyOwned) {
+        cardState.ownedCards = cardState.ownedCards || [];
+        cardState.ownedCards.push({
+          cardId: cardDef.id, copies: 1, foil: false, animated: false,
+          firstObtained: Date.now(), source: 'battle',
+        });
+        const bredCards = JSON.parse(localStorage.getItem('bred_card_defs') || '[]');
+        bredCards.push(cardDef);
+        localStorage.setItem('bred_card_defs', JSON.stringify(bredCards));
+        localStorage.setItem(CARD_STORAGE, JSON.stringify(cardState));
+        toast.success(`🃏 Card "${cardDef.name}" added to your Card Arena collection!`);
       }
     } catch {}
   };
