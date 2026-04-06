@@ -80,7 +80,6 @@ export default function CreatureLab({ onBack }: CreatureLabProps) {
 
     // Auto-generate matching card in Card Arena collection
     try {
-      const { creatureToCard } = require('@/game/creatureSystem');
       const cardDef = creatureToCard(result.child);
       const CARD_STORAGE = 'card_arena_state';
       const raw = localStorage.getItem(CARD_STORAGE);
