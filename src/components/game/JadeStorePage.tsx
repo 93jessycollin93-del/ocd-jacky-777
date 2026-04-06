@@ -681,7 +681,7 @@ export default function JadeStorePage() {
           {(['all', 'best_value', 'most_popular', 'limited', 'new', 'micro', 'whale_tier'] as QuickFilter[]).map(f => {
             const labels: Record<QuickFilter, string> = {
               all: '📦 All', best_value: '💚 Best Value', most_popular: '🔥 Popular',
-              limited: '⏳ Limited', new: '✨ New', micro: '💰 Budget', whale_tier: '🐋 Whale'
+              limited: '⏳ Limited', new: '✨ New', micro: '💰 Budget', whale_tier: '🐋 Whale', wishlist: '❤️ Wishlist'
             };
             return (
               <button
