@@ -459,7 +459,7 @@ function PackModal({ pack, onClose, showScores }: { pack: JadePack; onClose: () 
               ) : purchasing ? (
                 <motion.span animate={{ opacity: [1, 0.4, 1] }} transition={{ repeat: Infinity, duration: 1 }}>Opening Vault…</motion.span>
               ) : (
-                <><Crown className="w-4 h-4 mr-2" /> {pack.priceDiamonds.toLocaleString()} 💎<>
+                <><Crown className="w-4 h-4 mr-2" /> {pack.priceDiamonds.toLocaleString()} 💎</>
               )}
             </Button>
             {pack.priceUsd && (
