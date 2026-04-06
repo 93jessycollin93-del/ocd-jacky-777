@@ -131,13 +131,28 @@ function generateColor(parentA?: CreatureColor, parentB?: CreatureColor): Creatu
 
 function rollMutations(generation: number): CreatureMutation[] {
   const mutations: CreatureMutation[] = [];
-  const mutChance = Math.min(0.4, 0.1 + generation * 0.03);
+  // Mutations are EXTREMELY rare — players need hundreds of breeding cycles
+  // Base chance starts at 0.3% per mutation slot, scaling very slowly with generation
+  // Even at gen 50+, max chance per slot is only ~3% for common mutations
+  const baseMutChance = Math.min(0.03, 0.003 + generation * 0.0005);
+  
+  // Rarity multipliers make higher-tier mutations astronomically rare
+  const RARITY_MULT: Record<string, number> = {
+    uncommon: 1.0,      // full base chance
+    rare: 0.4,          // 40% of base
+    epic: 0.12,         // 12% of base
+    legendary: 0.03,    // 3% of base  
+    mythic: 0.008,      // 0.8% of base — truly mythic
+  };
+
   for (const m of MUTATION_POOL) {
-    if (Math.random() < mutChance * (RARITY_ORDER.indexOf(m.rarity) < 3 ? 1 : 0.3)) {
+    const rarityMult = RARITY_MULT[m.rarity] ?? 0.5;
+    const chance = baseMutChance * rarityMult;
+    if (Math.random() < chance) {
       mutations.push({ ...m, id: `mut_${Date.now()}_${Math.random().toString(36).slice(2)}`, generation });
     }
   }
-  return mutations.slice(0, 3); // Max 3 new mutations
+  return mutations.slice(0, 2); // Max 2 new mutations per breed
 }
 
 function determineRarity(stats: CreatureStats, mutations: CreatureMutation[]): CreatureRarity {
