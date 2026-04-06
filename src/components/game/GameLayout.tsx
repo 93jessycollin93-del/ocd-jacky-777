@@ -72,6 +72,7 @@ export default function GameLayout() {
     { id: 'guildbank', label: t('nav.guildBank') || 'Guild Bank', icon: '🏦' },
     { id: 'premiumstore', label: 'Premium Store', icon: '💎' },
     { id: 'jadestore', label: 'Jade Vault', icon: '🏛️' },
+    { id: 'jadeadmin', label: 'Admin Curation', icon: '⚙️' },
   ];
 
   const handleTabChange = (tab: Tab) => {
