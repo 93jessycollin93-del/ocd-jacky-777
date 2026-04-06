@@ -5,11 +5,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { haptic } from '@/lib/telegram';
+import { toast } from 'sonner';
 import {
   ArrowLeft, Layers, Swords, Trophy, Star, Sparkles, Crown,
   Shield, Zap, Heart, Plus, Minus, ChevronRight, BookOpen,
-  Gift, Archive, Flame, Droplets,
+  Gift, Archive, Flame, Droplets, Diamond,
 } from 'lucide-react';
+import { useGame } from '@/game/GameContext';
 import {
   type CardDef, type CardRarity, type CardElement, type Lane, type BattleUnit, type BattleState, type BoardState,
   BALANCE_CONSTANT,
@@ -44,9 +46,9 @@ function generateTournamentBracket(playerFaction: string): TournamentMatch[] {
   // 3 rounds, last round is random repeat
   const foes = [shuffled[0], shuffled[1], shuffled[Math.floor(Math.random() * 2)]];
   return [
-    { round: 1, enemyFaction: foes[0], difficulty: 1, prize: { dust: 30, gems: 10, label: '30 Dust + 10 Gems' }, status: 'upcoming' },
-    { round: 2, enemyFaction: foes[1], difficulty: 2, prize: { dust: 75, gems: 25, label: '75 Dust + 25 Gems + Card Chance' }, status: 'upcoming' },
-    { round: 3, enemyFaction: foes[2], difficulty: 3, prize: { dust: 150, gems: 50, label: '150 Dust + 50 Gems + Guaranteed Card' }, status: 'upcoming' },
+    { round: 1, enemyFaction: foes[0], difficulty: 1, prize: { dust: 30, gems: 10, label: '30 Dust + 3 💎' }, status: 'upcoming' },
+    { round: 2, enemyFaction: foes[1], difficulty: 2, prize: { dust: 75, gems: 25, label: '75 Dust + 8 💎 + Card Chance' }, status: 'upcoming' },
+    { round: 3, enemyFaction: foes[2], difficulty: 3, prize: { dust: 150, gems: 50, label: '150 Dust + 15 💎 + 🏆 35 💎 Champion Bonus' }, status: 'upcoming' },
   ];
 }
 
@@ -534,6 +536,7 @@ function PackReveal({ results, onDone }: { results: PackResult; onDone: () => vo
 interface CardArenaProps { onBack: () => void; }
 
 export default function CardArena({ onBack }: CardArenaProps) {
+  const { setState: setGameState, addBattlePassXP } = useGame();
   const [tab, setTab] = useState<ArenaTab>('collection');
   const [state, setState] = useState<CollectionState>(loadState);
   const [filterRarity, setFilterRarity] = useState<CardRarity | 'all'>('all');
@@ -608,10 +611,26 @@ export default function CardArena({ onBack }: CardArenaProps) {
     haptic.light();
   }, [state, allCards]);
 
-  // Battle rewards with enemy faction card drops
+  // Diamond rewards based on difficulty: quick=1, round1=3, round2=8, round3=15, champion=50
+  const DIAMOND_REWARDS = [0, 3, 8, 15]; // indexed by tournamentDifficulty (0=quick match)
+  const CHAMPION_BONUS = 35;
+
+  // Battle rewards with enemy faction card drops + diamonds
   const handleBattleRewards = useCallback((won: boolean, rounds: number, enemyFaction: string) => {
     const rewards = calculateBattleRewards(won, rounds, tournamentDifficulty);
     const msgs: string[] = [`+${rewards.dust} dust, +${rewards.xp} XP`];
+
+    // Diamond calculation
+    let diamondReward = 0;
+    if (won) {
+      diamondReward = tournament
+        ? (DIAMOND_REWARDS[tournamentDifficulty] || 1)
+        : 1; // Quick match = 1 diamond
+    }
+
+    if (diamondReward > 0) {
+      msgs.push(`+${diamondReward} 💎`);
+    }
 
     // Card drop from enemy faction
     let droppedCard: CardDef | null = null;
@@ -638,10 +657,25 @@ export default function CardArena({ onBack }: CardArenaProps) {
         seasonPassTier: prev.seasonPassTier + (won ? 1 : 0),
       };
     });
+
+    // Grant diamonds to game state
+    if (diamondReward > 0) {
+      setGameState(prev => ({
+        ...prev,
+        resources: { ...prev.resources, diamonds: (prev.resources.diamonds || 0) + diamondReward },
+      }));
+    }
+
+    // Grant battle pass XP
+    if (won) {
+      addBattlePassXP(rewards.xp || 25, `Card Arena ${tournament ? 'tournament' : 'quick match'}`);
+    }
+
     setLastRewardMsg(msgs.join(' · '));
 
     // Update tournament state if in tournament
     if (tournament) {
+      const isChampion = won && tournamentRound === 2;
       setTournament(prev => {
         if (!prev) return null;
         return prev.map((m, i) => {
@@ -653,8 +687,17 @@ export default function CardArena({ onBack }: CardArenaProps) {
       if (won && tournamentRound < 2) {
         setTournamentRound(r => r + 1);
       }
+      // Champion bonus
+      if (isChampion) {
+        setGameState(prev => ({
+          ...prev,
+          resources: { ...prev.resources, diamonds: (prev.resources.diamonds || 0) + CHAMPION_BONUS },
+        }));
+        addBattlePassXP(50, 'Tournament Champion');
+        toast.success(`🏆 Tournament Champion! +${CHAMPION_BONUS} 💎 bonus!`);
+      }
     }
-  }, [tournament, tournamentRound, tournamentDifficulty]);
+  }, [tournament, tournamentRound, tournamentDifficulty, setGameState, addBattlePassXP]);
 
   // Start tournament battle
   const startTournamentBattle = useCallback((match: TournamentMatch) => {
