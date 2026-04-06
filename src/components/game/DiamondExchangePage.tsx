@@ -1,10 +1,14 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGame } from '@/game/GameContext';
 import { Diamond, Crown, Star, Coins, Shield, Zap, Gift, Clock, Check, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
+import {
+  checkRateLimit, generateTransactionId, acquireTransactionLock, releaseTransactionLock,
+  logTransaction, checkServerDedup, atomicDiamondGrant, saveStateChecksum,
+} from '@/game/transactionGuard';
 
 // ── Diamond Package Definitions ──
 interface DiamondPackage {
@@ -85,37 +89,73 @@ export default function DiamondExchangePage() {
     setShowConfirm(true);
   }, []);
 
-  const confirmPurchase = useCallback(() => {
-    if (!selectedPkg) return;
+  const processingRef = useRef(false);
+
+  const confirmPurchase = useCallback(async () => {
+    if (!selectedPkg || processingRef.current) return;
+
+    // 1. Rate limit check
+    const rateCheck = checkRateLimit('diamond_exchange');
+    if (!rateCheck.allowed) {
+      toast.error(`Too fast! Try again in ${Math.ceil(rateCheck.retryAfterMs / 1000)}s`);
+      return;
+    }
+
+    // 2. Generate unique transaction ID
+    const txId = generateTransactionId('diamond_exchange');
+
+    // 3. Acquire local lock (prevent double-click)
+    if (!acquireTransactionLock(txId)) {
+      toast.error('Transaction already processing');
+      return;
+    }
+
+    processingRef.current = true;
     setProcessing(true);
 
-    // Simulate payment processing
-    setTimeout(() => {
+    try {
+      // 4. Server-side deduplication
+      const dedupOk = await checkServerDedup(txId, 'diamond_exchange');
+      if (!dedupOk) {
+        toast.error('Duplicate transaction blocked');
+        return;
+      }
+
+      // 5. Calculate diamonds (atomic)
       const firstBonus = isFirstPurchase ? Math.round(selectedPkg.diamonds * 0.5) : 0;
       const totalDiamonds = selectedPkg.diamonds + selectedPkg.bonusDiamonds + firstBonus;
 
-      setState(prev => ({
-        ...prev,
-        resources: {
-          ...prev.resources,
-          diamonds: (prev.resources.diamonds || 0) + totalDiamonds,
-        },
-      }));
+      // 6. Atomic state update
+      setState(prev => {
+        const { newState, txRecord } = atomicDiamondGrant(
+          prev, totalDiamonds, 'diamond_exchange', selectedPkg.id,
+          { packageName: selectedPkg.name, paymentMethod, firstBonus, txId }
+        );
 
+        // Log transaction asynchronously
+        logTransaction(txRecord);
+        saveStateChecksum(newState);
+
+        return newState;
+      });
+
+      // 7. Mark first purchase server-side
       if (isFirstPurchase) {
-        localStorage.setItem(FIRST_PURCHASE_BONUS_KEY, Date.now().toString());
+        localStorage.setItem(FIRST_PURCHASE_BONUS_KEY, txId); // Store txId not just timestamp
       }
-
-      setProcessing(false);
-      setShowConfirm(false);
-      setSelectedPkg(null);
 
       toast.success(
         `💎 ${totalDiamonds.toLocaleString()} diamonds acquired!` +
         (firstBonus > 0 ? ` (includes ${firstBonus} first-purchase bonus!)` : '')
       );
-    }, 1800);
-  }, [selectedPkg, isFirstPurchase, setState]);
+    } finally {
+      releaseTransactionLock(txId);
+      processingRef.current = false;
+      setProcessing(false);
+      setShowConfirm(false);
+      setSelectedPkg(null);
+    }
+  }, [selectedPkg, isFirstPurchase, setState, paymentMethod]);
 
   const getPrice = (pkg: DiamondPackage): string => {
     switch (paymentMethod) {
