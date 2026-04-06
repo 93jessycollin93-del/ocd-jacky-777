@@ -217,10 +217,11 @@ export function breedCreatures(parentA: Creature, parentB: Creature): BreedingRe
     luck: clampStat(dom.stats.luck * 0.6 + rec.stats.luck * 0.4 + (Math.random() - 0.5) * 15),
   };
 
-  // Inherit some parent mutations
+  // Mutation inheritance is rare — only ~15% chance per parent mutation carries forward
+  // This means even established mutation lines can be lost, requiring careful multi-gen breeding
   const inherited = [...parentA.mutations, ...parentB.mutations]
-    .filter(() => Math.random() > 0.4)
-    .slice(0, 2);
+    .filter(() => Math.random() < 0.15)
+    .slice(0, 1); // Max 1 inherited mutation per breed
   const newMuts = rollMutations(gen);
   const allMuts = [...inherited, ...newMuts];
 
