@@ -1,10 +1,13 @@
 import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { JADE_STORE_PACKS, getFeaturedPacks, getPacksByCategory, getBestValuePacks, getMostPopularPacks, getLimitedPacks, sortByScore } from '@/game/jadeStoreData';
-import { JADE_RARITY_CONFIG, CATEGORY_META, type JadePack, type JadeStoreCategory, type JadeRarity, type JadePackScores } from '@/game/jadeTypes';
+import { JADE_RARITY_CONFIG, CATEGORY_META, type JadePack, type JadeStoreCategory, type JadeRarity, type JadePackScores, type JadePackReward } from '@/game/jadeTypes';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { X, Star, TrendingUp, Clock, Crown, Sparkles, ShieldCheck, ChevronRight, BarChart3, Eye, EyeOff, Filter, Layers, Heart, Scale } from 'lucide-react';
+import { X, Star, TrendingUp, Clock, Crown, Sparkles, ShieldCheck, ChevronRight, BarChart3, Eye, EyeOff, Filter, Layers, Heart, Scale, Check } from 'lucide-react';
+import { useGame } from '@/game/GameContext';
+import { toast } from 'sonner';
+import type { BagItem, GearRarity } from '@/game/types';
 
 // ── Rarity border/glow styles ──
 function rarityStyle(rarity: JadeRarity) {
