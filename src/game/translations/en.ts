@@ -86,6 +86,7 @@ export const en: Record<string, string> = {
   'resource.stone': 'stone',
   'resource.iron': 'iron',
   'resource.gold': 'gold',
+  'resource.diamonds': 'diamonds',
   'audio.music': 'Music',
   'audio.sfx': 'SFX',
 };

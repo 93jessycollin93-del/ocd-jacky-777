@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 // ── Types ──
 interface ABVariant {
   id: string;
-  field: 'name' | 'subtitle' | 'priceGold' | 'emotionalHook';
+  field: 'name' | 'subtitle' | 'priceDiamonds' | 'emotionalHook';
   original: string;
   variant: string;
   active: boolean;
@@ -48,7 +48,7 @@ function ABTestPanel({ pack, variants, onChange }: {
   const fields: { key: ABVariant['field']; label: string }[] = [
     { key: 'name', label: 'Name' },
     { key: 'subtitle', label: 'Subtitle' },
-    { key: 'priceGold', label: 'Price (Gold)' },
+    { key: 'priceDiamonds', label: 'Price (💎)' },
     { key: 'emotionalHook', label: 'Hook' },
   ];
 
@@ -149,7 +149,7 @@ function AdminPackRow({ pack, adminState, onUpdate, onDuplicate, expanded, onTog
               </div>
               <div className="flex items-center gap-1 mt-0.5">
                 <span className="text-[9px] text-muted-foreground">{catMeta.icon} {pack.priceTier}</span>
-                <span className="text-[9px] font-semibold text-foreground">{pack.priceGold.toLocaleString()}g</span>
+                <span className="text-[9px] font-semibold text-foreground">{pack.priceDiamonds.toLocaleString()}💎</span>
               </div>
             </div>
           </button>
@@ -315,9 +315,9 @@ export default function JadeAdminPage() {
         return (orderMap.get(a.id) ?? 999) - (orderMap.get(b.id) ?? 999);
       });
     } else if (sortMode === 'price_asc') {
-      packs = [...packs].sort((a, b) => a.priceGold - b.priceGold);
+      packs = [...packs].sort((a, b) => a.priceDiamonds - b.priceDiamonds);
     } else if (sortMode === 'price_desc') {
-      packs = [...packs].sort((a, b) => b.priceGold - a.priceGold);
+      packs = [...packs].sort((a, b) => b.priceDiamonds - a.priceDiamonds);
     } else {
       const scoreMap: Record<string, keyof JadePackScores> = {
         overall: 'overall_attractiveness', margin: 'real_margin',

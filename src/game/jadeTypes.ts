@@ -18,7 +18,7 @@ export type JadeStoreCategory =
 
 export type PriceTier = 'micro' | 'entry' | 'core' | 'mid' | 'elite' | 'whale' | 'absurd';
 
-export type CurrencyType = 'gold' | 'jade_dust' | 'ton' | 'stars' | 'usd';
+export type CurrencyType = 'diamonds' | 'jade_dust' | 'ton' | 'stars' | 'usd';
 
 export interface JadePackReward {
   name: string;
@@ -50,8 +50,8 @@ export interface JadePack {
   category: JadeStoreCategory;
   rarity: JadeRarity;
   priceTier: PriceTier;
-  /** Display price in gold (game currency) */
-  priceGold: number;
+  /** Display price in diamonds (premium currency) */
+  priceDiamonds: number;
   /** Optional USD equivalent for premium packs */
   priceUsd?: number;
   icon: string;
