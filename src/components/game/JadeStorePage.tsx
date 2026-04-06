@@ -77,12 +77,14 @@ function ScorePanel({ scores }: { scores: JadePackScores }) {
 }
 
 // ── Pack Card ──
-function PackCard({ pack, onSelect, showScores, isComparing, onToggleCompare }: {
+function PackCard({ pack, onSelect, showScores, isComparing, onToggleCompare, isWishlisted, onToggleWishlist }: {
   pack: JadePack;
   onSelect: (p: JadePack) => void;
   showScores: boolean;
   isComparing: boolean;
   onToggleCompare: (p: JadePack) => void;
+  isWishlisted: boolean;
+  onToggleWishlist: (p: JadePack) => void;
 }) {
   const cfg = JADE_RARITY_CONFIG[pack.rarity];
 
