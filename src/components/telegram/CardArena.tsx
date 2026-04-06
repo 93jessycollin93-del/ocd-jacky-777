@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -134,11 +134,12 @@ function CardRevealAnimation({ card, onDone }: { card: CreatureCard; onDone: () 
   const [phase, setPhase] = useState<'hidden' | 'flip' | 'glow' | 'done'>('hidden');
   const rc = RARITY_CONFIG[card.rarity];
 
-  useState(() => {
-    setTimeout(() => setPhase('flip'), 300);
-    setTimeout(() => setPhase('glow'), 1200);
-    setTimeout(() => setPhase('done'), 2500);
-  });
+  useEffect(() => {
+    const t1 = setTimeout(() => setPhase('flip'), 300);
+    const t2 = setTimeout(() => setPhase('glow'), 1200);
+    const t3 = setTimeout(() => setPhase('done'), 2500);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, []);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" onClick={() => { if (phase === 'done') onDone(); }}>
