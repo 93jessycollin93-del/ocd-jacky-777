@@ -267,6 +267,35 @@ const Auth = () => {
               {view === "login" ? "Need an account? Sign up" : "Already have an account? Sign in"}
             </button>
 
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center">
+                <span className="bg-background px-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                  or
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={async () => {
+                setLoading(true);
+                try {
+                  const { error } = await supabase.auth.signInAnonymously();
+                  if (error) throw error;
+                } catch (err: any) {
+                  toast.error(err.message || "Demo sign-in failed.");
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              disabled={loading}
+              className="w-full py-3 rounded-sm font-mono text-sm uppercase tracking-wider border border-dashed border-border bg-background text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors disabled:opacity-50 btn-mechanical"
+            >
+              {loading ? "..." : "Try Free Demo"}
+            </button>
+
           </>
         )}
       </div>
