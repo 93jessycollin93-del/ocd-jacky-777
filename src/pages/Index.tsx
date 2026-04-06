@@ -904,6 +904,14 @@ const Index = () => {
           console.error("Failed to persist assistant message");
         }
 
+        // Auto-extract memories from conversation
+        try {
+          const candidates = extractMemoryCandidates(userText, assistantContent);
+          for (const c of candidates) {
+            await upsertMemory(c.key, c.value, c.category, convId!);
+          }
+        } catch { /* silent */ }
+
         setIsProcessing(false);
       },
       onError: (err) => {
