@@ -70,6 +70,7 @@ export default function GameLayout() {
     { id: 'marketplace', label: 'Market', icon: '🏬' },
     { id: 'guildbank', label: t('nav.guildBank') || 'Guild Bank', icon: '🏦' },
     { id: 'premiumstore', label: 'Premium Store', icon: '💎' },
+    { id: 'jadestore', label: 'Jade Vault', icon: '🏛️' },
   ];
 
   const handleTabChange = (tab: Tab) => {
@@ -103,6 +104,7 @@ export default function GameLayout() {
       case 'marketplace': return <MarketplacePage />;
       case 'guildbank': return <GuildBankPage />;
       case 'premiumstore': return <PremiumStorePage />;
+      case 'jadestore': return <JadeStorePage />;
     }
   };
 
