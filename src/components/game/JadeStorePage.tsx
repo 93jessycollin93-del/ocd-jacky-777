@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { JADE_STORE_PACKS, getFeaturedPacks, getPacksByCategory, getBestValuePacks, getMostPopularPacks, getLimitedPacks, sortByScore } from '@/game/jadeStoreData';
 import { JADE_RARITY_CONFIG, CATEGORY_META, type JadePack, type JadeStoreCategory, type JadeRarity, type JadePackScores, type JadePackReward } from '@/game/jadeTypes';
@@ -8,6 +8,10 @@ import { X, Star, TrendingUp, Clock, Crown, Sparkles, ShieldCheck, ChevronRight,
 import { useGame } from '@/game/GameContext';
 import { toast } from 'sonner';
 import type { BagItem, GearRarity } from '@/game/types';
+import {
+  checkRateLimit, generateTransactionId, acquireTransactionLock, releaseTransactionLock,
+  logTransaction, checkServerDedup, atomicDiamondSpend, saveStateChecksum,
+} from '@/game/transactionGuard';
 
 // ── Rarity border/glow styles ──
 function rarityStyle(rarity: JadeRarity) {
@@ -297,39 +301,75 @@ function PackModal({ pack, onClose, showScores }: { pack: JadePack; onClose: () 
   const { state, setState, saveState, canAfford } = useGame();
   const [purchasing, setPurchasing] = useState(false);
   const [purchased, setPurchased] = useState(false);
+  const processingRef = useRef(false);
   const playerDiamonds = state.resources.diamonds;
   const affordable = playerDiamonds >= pack.priceDiamonds;
 
-  const handlePurchase = useCallback(() => {
-    if (!affordable || purchasing) return;
+  const handlePurchase = useCallback(async () => {
+    if (!affordable || purchasing || processingRef.current) return;
+
+    // Rate limit
+    const rateCheck = checkRateLimit('jade_store');
+    if (!rateCheck.allowed) {
+      toast.error(`Too fast! Wait ${Math.ceil(rateCheck.retryAfterMs / 1000)}s`);
+      return;
+    }
+
+    const txId = generateTransactionId('jade_store');
+    if (!acquireTransactionLock(txId)) {
+      toast.error('Transaction in progress');
+      return;
+    }
+
+    processingRef.current = true;
     setPurchasing(true);
 
-    setTimeout(() => {
-      setState(prev => {
-        const newResources = { ...prev.resources, diamonds: prev.resources.diamonds - pack.priceDiamonds };
-        const newItems = rewardsToItems([...pack.coreRewards, ...(pack.bonusRewards || [])], pack.id);
-        const newBag = [...(prev.bag || []), ...newItems];
+    try {
+      const dedupOk = await checkServerDedup(txId, 'jade_store');
+      if (!dedupOk) {
+        toast.error('Duplicate purchase blocked');
+        return;
+      }
 
-        // Update pity
-        const currentPity = prev.gachaPity || {};
+      setState(prev => {
+        // Atomic balance check inside setState
+        const { newState: afterSpend, success, txRecord } = atomicDiamondSpend(
+          prev, pack.priceDiamonds, 'jade_store', pack.id
+        );
+        if (!success) {
+          toast.error('Insufficient diamonds');
+          return prev;
+        }
+
+        const newItems = rewardsToItems([...pack.coreRewards, ...(pack.bonusRewards || [])], pack.id);
+        const newBag = [...(afterSpend.bag || []), ...newItems];
+
+        const currentPity = afterSpend.gachaPity || {};
         const newPity = { ...currentPity };
         const pityKey = `jade_store_${pack.category}`;
         newPity[pityKey] = (newPity[pityKey] || 0) + pack.pityContribution;
 
-        const newState = { ...prev, resources: newResources, bag: newBag, gachaPity: newPity };
-        saveState(newState);
+        const finalState = { ...afterSpend, bag: newBag, gachaPity: newPity };
+        saveState(finalState);
+        saveStateChecksum(finalState);
+
+        // Log transaction
+        if (txRecord) logTransaction(txRecord);
 
         toast.success(`Acquired ${pack.name}`, {
           description: `${newItems.length} items added to your bag`,
         });
 
-        return newState;
+        return finalState;
       });
 
-      setPurchasing(false);
       setPurchased(true);
       setTimeout(() => setPurchased(false), 2000);
-    }, 600);
+    } finally {
+      releaseTransactionLock(txId);
+      processingRef.current = false;
+      setPurchasing(false);
+    }
   }, [affordable, purchasing, pack, setState, saveState]);
 
   return (

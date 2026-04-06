@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGame } from '@/game/GameContext';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { Diamond, Crown, Star, Gift, Lock, Check, Zap, Shield, Swords, Flame, Sparkles } from 'lucide-react';
 import type { BattlePassReward, BattlePassState } from '@/game/types';
+import { checkRateLimit, logTransaction, saveStateChecksum } from '@/game/transactionGuard';
 
 // ── Tier Reward Definitions ──
 const BATTLE_PASS_REWARDS: BattlePassReward[] = [
@@ -103,6 +104,8 @@ export default function BattlePassPage() {
   const freeRewards = useMemo(() => BATTLE_PASS_REWARDS.filter(r => r.type === 'free'), []);
   const premiumRewards = useMemo(() => BATTLE_PASS_REWARDS.filter(r => r.type === 'premium'), []);
 
+  const claimingRef = useRef(new Set<number>());
+
   const claimReward = useCallback((reward: BattlePassReward) => {
     const isFree = reward.type === 'free';
     const claimed = isFree ? bp.claimedFree : bp.claimedPremium;
@@ -111,8 +114,34 @@ export default function BattlePassPage() {
     if (reward.tier > currentTier) return;
     if (reward.type === 'premium' && !bp.isPremium) return;
 
+    // Prevent double-claim via ref
+    const claimKey = reward.tier * 10 + (isFree ? 0 : 1);
+    if (claimingRef.current.has(claimKey)) return;
+    claimingRef.current.add(claimKey);
+
+    // Rate limit
+    const rateCheck = checkRateLimit('battle_pass_claim');
+    if (!rateCheck.allowed) {
+      toast.error(`Slow down! Wait ${Math.ceil(rateCheck.retryAfterMs / 1000)}s`);
+      claimingRef.current.delete(claimKey);
+      return;
+    }
+
     setState(prev => {
-      const newBp = { ...prev.battlePass! };
+      const rawBpPrev = prev.battlePass;
+      const bpPrev = {
+        ...rawBpPrev,
+        claimedFree: rawBpPrev?.claimedFree ?? [],
+        claimedPremium: rawBpPrev?.claimedPremium ?? [],
+      };
+
+      // Re-check inside setState for atomicity
+      const alreadyClaimed = isFree
+        ? bpPrev.claimedFree.includes(reward.tier)
+        : bpPrev.claimedPremium.includes(reward.tier);
+      if (alreadyClaimed) return prev;
+
+      const newBp = { ...bpPrev };
       if (isFree) newBp.claimedFree = [...newBp.claimedFree, reward.tier];
       else newBp.claimedPremium = [...newBp.claimedPremium, reward.tier];
 
@@ -120,29 +149,71 @@ export default function BattlePassPage() {
 
       // Grant diamond rewards
       if (reward.effect?.type === 'instant_resource' && reward.effect.target === 'diamonds') {
-        ns.resources = { ...ns.resources, diamonds: (ns.resources.diamonds || 0) + reward.effect.value };
+        const balBefore = ns.resources.diamonds || 0;
+        ns.resources = { ...ns.resources, diamonds: balBefore + reward.effect.value };
+        
+        logTransaction({
+          transaction_type: 'claim',
+          currency_type: 'diamonds',
+          amount: reward.effect.value,
+          balance_before: balBefore,
+          balance_after: ns.resources.diamonds,
+          source: 'battle_pass',
+          source_id: `tier_${reward.tier}_${reward.type}`,
+        });
+        
         toast.success(`+${reward.effect.value} 💎 Diamonds claimed!`);
       } else {
         toast.success(`${reward.name} claimed!`);
       }
 
+      saveStateChecksum(ns);
       return ns;
     });
+
+    // Release claim lock after a short delay
+    setTimeout(() => claimingRef.current.delete(claimKey), 1000);
   }, [bp, currentTier, setState]);
 
   const upgradeToPremium = useCallback(() => {
     if (bp.isPremium) return;
-    if ((state.resources.diamonds || 0) < 500) {
-      toast.error('Need 500 💎 to unlock Premium Pass');
+
+    const rateCheck = checkRateLimit('jade_store');
+    if (!rateCheck.allowed) {
+      toast.error(`Wait ${Math.ceil(rateCheck.retryAfterMs / 1000)}s`);
       return;
     }
-    setState(prev => ({
-      ...prev,
-      resources: { ...prev.resources, diamonds: (prev.resources.diamonds || 0) - 500 },
-      battlePass: { ...prev.battlePass!, isPremium: true },
-    }));
+
+    setState(prev => {
+      // Atomic check inside setState
+      const currentDiamonds = prev.resources.diamonds || 0;
+      if (currentDiamonds < 500) {
+        toast.error('Need 500 💎 to unlock Premium Pass');
+        return prev;
+      }
+      if (prev.battlePass?.isPremium) return prev; // Already premium
+
+      const ns = {
+        ...prev,
+        resources: { ...prev.resources, diamonds: currentDiamonds - 500 },
+        battlePass: { ...prev.battlePass!, isPremium: true },
+      };
+
+      logTransaction({
+        transaction_type: 'spend',
+        currency_type: 'diamonds',
+        amount: -500,
+        balance_before: currentDiamonds,
+        balance_after: currentDiamonds - 500,
+        source: 'battle_pass',
+        source_id: 'premium_upgrade',
+      });
+
+      saveStateChecksum(ns);
+      return ns;
+    });
     toast.success('👑 Premium Battle Pass unlocked!');
-  }, [bp, state.resources.diamonds, setState]);
+  }, [bp, setState]);
 
   const seasonEnd = bp.seasonStartedAt + (30 * 24 * 60 * 60 * 1000);
   const daysLeft = Math.max(0, Math.ceil((seasonEnd - Date.now()) / (24 * 60 * 60 * 1000)));

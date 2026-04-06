@@ -292,6 +292,72 @@ export type Database = {
         }
         Relationships: []
       }
+      game_purchase_locks: {
+        Row: {
+          created_at: string
+          id: string
+          source: string
+          transaction_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          source: string
+          transaction_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          source?: string
+          transaction_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      game_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          balance_before: number
+          created_at: string
+          currency_type: string
+          id: string
+          metadata: Json | null
+          source: string
+          source_id: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after?: number
+          balance_before?: number
+          created_at?: string
+          currency_type: string
+          id?: string
+          metadata?: Json | null
+          source: string
+          source_id?: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          balance_before?: number
+          created_at?: string
+          currency_type?: string
+          id?: string
+          metadata?: Json | null
+          source?: string
+          source_id?: string | null
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       jackie_memory: {
         Row: {
           category: string

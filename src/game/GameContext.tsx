@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { saveStateChecksum, verifyStateIntegrity } from './transactionGuard';
 import {
   GameState, Resources, March, BattleReport, TroopClass, RareMaterials, FactionId, FactionState, AllianceLevel, GearItem, CraftingMaterialType, CreatureHunt, MarchSpeed, MarchFormation, AIEventLog, GachaItem, GachaPull, BagItem, PlayerActionType,
 } from './types';
@@ -74,12 +75,19 @@ function loadState(): GameState | null {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw);
+    const state = JSON.parse(raw) as GameState;
+    // Verify state integrity — if tampered, prefer cloud save
+    if (!verifyStateIntegrity(state)) {
+      console.warn('[GameContext] State integrity check failed — local state may be tampered');
+      // Don't reject outright; cloud sync will reconcile
+    }
+    return state;
   } catch { return null; }
 }
 
 function saveState(state: GameState) {
   localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+  saveStateChecksum(state);
 }
 
 // ── Cloud save/load ──
