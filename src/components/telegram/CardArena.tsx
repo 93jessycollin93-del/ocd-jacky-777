@@ -46,9 +46,9 @@ function generateTournamentBracket(playerFaction: string): TournamentMatch[] {
   // 3 rounds, last round is random repeat
   const foes = [shuffled[0], shuffled[1], shuffled[Math.floor(Math.random() * 2)]];
   return [
-    { round: 1, enemyFaction: foes[0], difficulty: 1, prize: { dust: 30, gems: 10, label: '30 Dust + 10 Gems' }, status: 'upcoming' },
-    { round: 2, enemyFaction: foes[1], difficulty: 2, prize: { dust: 75, gems: 25, label: '75 Dust + 25 Gems + Card Chance' }, status: 'upcoming' },
-    { round: 3, enemyFaction: foes[2], difficulty: 3, prize: { dust: 150, gems: 50, label: '150 Dust + 50 Gems + Guaranteed Card' }, status: 'upcoming' },
+    { round: 1, enemyFaction: foes[0], difficulty: 1, prize: { dust: 30, gems: 10, label: '30 Dust + 3 💎' }, status: 'upcoming' },
+    { round: 2, enemyFaction: foes[1], difficulty: 2, prize: { dust: 75, gems: 25, label: '75 Dust + 8 💎 + Card Chance' }, status: 'upcoming' },
+    { round: 3, enemyFaction: foes[2], difficulty: 3, prize: { dust: 150, gems: 50, label: '150 Dust + 15 💎 + 🏆 35 💎 Champion Bonus' }, status: 'upcoming' },
   ];
 }
 
