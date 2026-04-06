@@ -1,18 +1,15 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { JADE_STORE_PACKS, getFeaturedPacks, getPacksByCategory, sortByScore } from '@/game/jadeStoreData';
-import { JADE_RARITY_CONFIG, CATEGORY_META, type JadePack, type JadeStoreCategory, type JadeRarity } from '@/game/jadeTypes';
+import { JADE_STORE_PACKS, getFeaturedPacks, getPacksByCategory, getBestValuePacks, getMostPopularPacks, getLimitedPacks, sortByScore } from '@/game/jadeStoreData';
+import { JADE_RARITY_CONFIG, CATEGORY_META, type JadePack, type JadeStoreCategory, type JadeRarity, type JadePackScores } from '@/game/jadeTypes';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { X, Star, TrendingUp, Clock, Crown, Sparkles, ShieldCheck, ChevronRight } from 'lucide-react';
+import { X, Star, TrendingUp, Clock, Crown, Sparkles, ShieldCheck, ChevronRight, BarChart3, Eye, EyeOff, Filter, Layers, Heart, Scale } from 'lucide-react';
 
 // ── Rarity border/glow styles ──
 function rarityStyle(rarity: JadeRarity) {
   const cfg = JADE_RARITY_CONFIG[rarity];
-  return {
-    boxShadow: cfg.glow,
-    borderColor: cfg.color,
-  };
+  return { boxShadow: cfg.glow, borderColor: cfg.color };
 }
 
 function RarityBadge({ rarity }: { rarity: JadeRarity }) {
@@ -34,75 +31,234 @@ function PackBadges({ pack }: { pack: JadePack }) {
       {pack.mostPopular && <Badge className="bg-amber-600/80 text-white text-[9px] border-0">Most Popular</Badge>}
       {pack.isLimited && <Badge className="bg-red-600/80 text-white text-[9px] border-0">Limited</Badge>}
       {pack.isNew && <Badge className="bg-cyan-600/80 text-white text-[9px] border-0">New</Badge>}
+      {pack.featured && <Badge className="bg-purple-600/80 text-white text-[9px] border-0">Featured</Badge>}
+    </div>
+  );
+}
+
+// ── Score Bar (for admin view) ──
+function ScoreBar({ label, value, max = 10 }: { label: string; value: number; max?: number }) {
+  const pct = (value / max) * 100;
+  const color = value >= 8 ? 'bg-emerald-500' : value >= 5 ? 'bg-amber-500' : 'bg-red-400';
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[9px] text-muted-foreground w-20 shrink-0 text-right">{label}</span>
+      <div className="flex-1 h-1.5 bg-muted/40 rounded-full overflow-hidden">
+        <div className={`h-full rounded-full ${color} transition-all`} style={{ width: `${pct}%` }} />
+      </div>
+      <span className="text-[10px] font-bold text-foreground w-4">{value}</span>
+    </div>
+  );
+}
+
+function ScorePanel({ scores }: { scores: JadePackScores }) {
+  return (
+    <div className="space-y-1 p-3 rounded-lg bg-muted/10 border border-border/30">
+      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
+        <BarChart3 className="w-3 h-3" /> Admin Scores
+      </p>
+      <ScoreBar label="Visual" value={scores.visual_desirability} />
+      <ScoreBar label="Value" value={scores.perceived_value} />
+      <ScoreBar label="Margin" value={scores.real_margin} />
+      <ScoreBar label="Beginner" value={scores.beginner_friendliness} />
+      <ScoreBar label="Collector" value={scores.collector_appeal} />
+      <ScoreBar label="Whale" value={scores.whale_appeal} />
+      <ScoreBar label="Urgency" value={scores.urgency_strength} />
+      <ScoreBar label="Prestige" value={scores.prestige_strength} />
+      <ScoreBar label="Retention" value={scores.retention_contribution} />
+      <div className="border-t border-border/30 pt-1 mt-1">
+        <ScoreBar label="Overall" value={scores.overall_attractiveness} />
+      </div>
     </div>
   );
 }
 
 // ── Pack Card ──
-function PackCard({ pack, onSelect }: { pack: JadePack; onSelect: (p: JadePack) => void }) {
+function PackCard({ pack, onSelect, showScores, isComparing, onToggleCompare }: {
+  pack: JadePack;
+  onSelect: (p: JadePack) => void;
+  showScores: boolean;
+  isComparing: boolean;
+  onToggleCompare: (p: JadePack) => void;
+}) {
   const cfg = JADE_RARITY_CONFIG[pack.rarity];
 
   return (
-    <motion.button
-      whileHover={{ scale: 1.03, y: -2 }}
-      whileTap={{ scale: 0.98 }}
-      onClick={() => onSelect(pack)}
-      className="relative flex flex-col rounded-xl border-2 p-3 text-left transition-all duration-200 overflow-hidden group"
-      style={rarityStyle(pack.rarity)}
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className="relative"
     >
-      {/* Glow overlay */}
-      <div
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-        style={{ background: `radial-gradient(circle at 50% 0%, ${cfg.color}20, transparent 70%)` }}
-      />
+      <motion.button
+        whileHover={{ scale: 1.02, y: -2 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={() => onSelect(pack)}
+        className="relative w-full flex flex-col rounded-xl border-2 p-3 text-left transition-all duration-200 overflow-hidden group bg-card"
+        style={rarityStyle(pack.rarity)}
+      >
+        {/* Glow overlay */}
+        <div
+          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+          style={{ background: `radial-gradient(circle at 50% 0%, ${cfg.color}20, transparent 70%)` }}
+        />
 
-      {/* Badges */}
-      <div className="absolute top-2 right-2 z-10">
-        <PackBadges pack={pack} />
-      </div>
+        {/* Badges row */}
+        <div className="absolute top-2 right-2 z-10">
+          <PackBadges pack={pack} />
+        </div>
 
-      {/* Icon + Name */}
-      <div className="flex items-start gap-2 mb-2">
-        <span className="text-2xl">{pack.icon}</span>
-        <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-bold text-foreground truncate">{pack.name}</h3>
-          <p className="text-[10px] text-muted-foreground truncate italic">{pack.subtitle}</p>
+        {/* Icon + Name */}
+        <div className="flex items-start gap-2 mb-2">
+          <span className="text-2xl">{pack.icon}</span>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-bold text-foreground truncate">{pack.name}</h3>
+            <p className="text-[10px] text-muted-foreground truncate italic">{pack.subtitle}</p>
+          </div>
+        </div>
+
+        {/* Rarity + Category */}
+        <div className="flex items-center gap-1.5 mb-2">
+          <RarityBadge rarity={pack.rarity} />
+          <span className="text-[9px] text-muted-foreground">{CATEGORY_META[pack.category].icon} {CATEGORY_META[pack.category].label}</span>
+        </div>
+
+        {/* Rewards preview */}
+        <div className="flex flex-wrap gap-1 mb-2 flex-1">
+          {pack.coreRewards.slice(0, 3).map((r, i) => (
+            <span key={i} className="text-[10px] text-muted-foreground bg-muted/40 rounded px-1.5 py-0.5">
+              {r.icon} {r.quantity}× {r.name.length > 14 ? r.name.slice(0, 14) + '…' : r.name}
+            </span>
+          ))}
+          {pack.coreRewards.length > 3 && (
+            <span className="text-[10px] text-muted-foreground">+{pack.coreRewards.length - 3} more</span>
+          )}
+        </div>
+
+        {/* Price row */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1">
+            <span className="text-sm font-bold text-foreground">{pack.priceGold.toLocaleString()}</span>
+            <span className="text-[10px] text-muted-foreground">gold</span>
+          </div>
+          {pack.priceUsd && (
+            <span className="text-[10px] font-semibold text-primary">${pack.priceUsd}</span>
+          )}
+        </div>
+
+        {/* Overall score mini indicator */}
+        {showScores && (
+          <div className="mt-2 flex items-center gap-1">
+            <div className="flex-1 h-1 bg-muted/40 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full bg-primary transition-all"
+                style={{ width: `${(pack.scores.overall_attractiveness / 10) * 100}%` }}
+              />
+            </div>
+            <span className="text-[9px] font-bold text-primary">{pack.scores.overall_attractiveness}/10</span>
+          </div>
+        )}
+      </motion.button>
+
+      {/* Compare toggle */}
+      <button
+        onClick={(e) => { e.stopPropagation(); onToggleCompare(pack); }}
+        className={`absolute bottom-2 right-2 z-20 p-1.5 rounded-full transition-all ${
+          isComparing ? 'bg-primary text-primary-foreground' : 'bg-muted/60 text-muted-foreground hover:bg-muted'
+        }`}
+      >
+        <Scale className="w-3 h-3" />
+      </button>
+    </motion.div>
+  );
+}
+
+// ── Comparison Panel ──
+function ComparisonPanel({ packs, onClose, onRemove }: { packs: JadePack[]; onClose: () => void; onRemove: (id: string) => void }) {
+  if (packs.length === 0) return null;
+
+  const scoreKeys: (keyof JadePackScores)[] = [
+    'visual_desirability', 'perceived_value', 'real_margin', 'beginner_friendliness',
+    'collector_appeal', 'whale_appeal', 'urgency_strength', 'prestige_strength',
+    'retention_contribution', 'overall_attractiveness'
+  ];
+  const labels: Record<string, string> = {
+    visual_desirability: 'Visual', perceived_value: 'Value', real_margin: 'Margin',
+    beginner_friendliness: 'Beginner', collector_appeal: 'Collector', whale_appeal: 'Whale',
+    urgency_strength: 'Urgency', prestige_strength: 'Prestige', retention_contribution: 'Retention',
+    overall_attractiveness: 'Overall'
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 50 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 50 }}
+      className="fixed bottom-0 left-0 right-0 z-[60] bg-card border-t-2 border-primary/40 shadow-2xl max-h-[50vh] overflow-y-auto"
+    >
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+            <Scale className="w-4 h-4" /> Compare ({packs.length})
+          </h3>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-[10px]">
+            <thead>
+              <tr className="border-b border-border/30">
+                <th className="text-left py-1 pr-3 text-muted-foreground font-semibold">Metric</th>
+                {packs.map(p => (
+                  <th key={p.id} className="text-center py-1 px-2 min-w-[80px]">
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span>{p.icon}</span>
+                      <span className="font-bold text-foreground truncate max-w-[80px]">{p.name}</span>
+                      <button onClick={() => onRemove(p.id)} className="text-red-400 hover:text-red-300">✕</button>
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-border/20">
+                <td className="py-1 pr-3 text-muted-foreground">Price</td>
+                {packs.map(p => (
+                  <td key={p.id} className="text-center py-1 font-bold text-foreground">{p.priceGold.toLocaleString()}</td>
+                ))}
+              </tr>
+              <tr className="border-b border-border/20">
+                <td className="py-1 pr-3 text-muted-foreground">Rarity</td>
+                {packs.map(p => (
+                  <td key={p.id} className="text-center py-1"><RarityBadge rarity={p.rarity} /></td>
+                ))}
+              </tr>
+              {scoreKeys.map(key => {
+                const maxVal = Math.max(...packs.map(p => p.scores[key]));
+                return (
+                  <tr key={key} className="border-b border-border/20">
+                    <td className="py-1 pr-3 text-muted-foreground">{labels[key]}</td>
+                    {packs.map(p => (
+                      <td key={p.id} className={`text-center py-1 font-bold ${p.scores[key] === maxVal ? 'text-primary' : 'text-foreground'}`}>
+                        {p.scores[key]}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
-
-      {/* Rarity */}
-      <div className="mb-2">
-        <RarityBadge rarity={pack.rarity} />
-      </div>
-
-      {/* Quick rewards preview */}
-      <div className="flex flex-wrap gap-1 mb-2 flex-1">
-        {pack.coreRewards.slice(0, 3).map((r, i) => (
-          <span key={i} className="text-[10px] text-muted-foreground bg-muted/40 rounded px-1.5 py-0.5">
-            {r.icon} {r.quantity}x {r.name.length > 15 ? r.name.slice(0, 15) + '…' : r.name}
-          </span>
-        ))}
-        {pack.coreRewards.length > 3 && (
-          <span className="text-[10px] text-muted-foreground">+{pack.coreRewards.length - 3} more</span>
-        )}
-      </div>
-
-      {/* Price */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1">
-          <span className="text-sm font-bold text-foreground">{pack.priceGold.toLocaleString()}</span>
-          <span className="text-[10px] text-muted-foreground">gold</span>
-        </div>
-        {pack.priceUsd && (
-          <span className="text-[10px] font-semibold text-primary">${pack.priceUsd}</span>
-        )}
-      </div>
-    </motion.button>
+    </motion.div>
   );
 }
 
 // ── Pack Detail Modal ──
-function PackModal({ pack, onClose }: { pack: JadePack; onClose: () => void }) {
+function PackModal({ pack, onClose, showScores }: { pack: JadePack; onClose: () => void; showScores: boolean }) {
   const cfg = JADE_RARITY_CONFIG[pack.rarity];
 
   return (
@@ -117,14 +273,14 @@ function PackModal({ pack, onClose }: { pack: JadePack; onClose: () => void }) {
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
-        className="bg-card border-2 rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto shadow-2xl"
+        className="bg-card border-2 rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto shadow-2xl"
         style={{ borderColor: cfg.color, boxShadow: `${cfg.glow}, 0 25px 50px -12px rgb(0 0 0 / 0.5)` }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="relative p-5 border-b border-border/50">
           <div
-            className="absolute inset-0 opacity-20 pointer-events-none"
+            className="absolute inset-0 opacity-20 pointer-events-none rounded-t-2xl"
             style={{ background: `linear-gradient(180deg, ${cfg.color}30, transparent)` }}
           />
           <button onClick={onClose} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground z-10">
@@ -135,7 +291,7 @@ function PackModal({ pack, onClose }: { pack: JadePack; onClose: () => void }) {
             <div>
               <h2 className="text-lg font-bold text-foreground">{pack.name}</h2>
               <p className="text-sm text-muted-foreground italic">{pack.subtitle}</p>
-              <div className="mt-1 flex items-center gap-2">
+              <div className="mt-1 flex items-center gap-2 flex-wrap">
                 <RarityBadge rarity={pack.rarity} />
                 <PackBadges pack={pack} />
               </div>
@@ -199,12 +355,26 @@ function PackModal({ pack, onClose }: { pack: JadePack; onClose: () => void }) {
               <p className="text-sm font-bold text-foreground capitalize">{pack.rotationType}</p>
             </div>
             {pack.purchaseLimit && (
-              <div className="rounded-lg bg-muted/30 p-2 text-center col-span-2">
-                <p className="text-[10px] text-muted-foreground uppercase">Purchase Limit</p>
-                <p className="text-sm font-bold text-foreground">{pack.purchaseLimit}× per account</p>
+              <div className="rounded-lg bg-muted/30 p-2 text-center">
+                <p className="text-[10px] text-muted-foreground uppercase">Limit</p>
+                <p className="text-sm font-bold text-foreground">{pack.purchaseLimit}× per acct</p>
               </div>
             )}
+            <div className="rounded-lg bg-muted/30 p-2 text-center">
+              <p className="text-[10px] text-muted-foreground uppercase">Target</p>
+              <p className="text-sm font-bold text-foreground capitalize">{pack.targetSegment.replace(/_/g, ' ')}</p>
+            </div>
           </div>
+
+          {/* Admin scores */}
+          {showScores && (
+            <div className="mt-4">
+              <ScorePanel scores={pack.scores} />
+              {pack.adminNotes && (
+                <p className="mt-2 text-[10px] text-muted-foreground italic border-l-2 border-primary/30 pl-2">{pack.adminNotes}</p>
+              )}
+            </div>
+          )}
 
           {/* Buy */}
           <div className="mt-5 flex items-center gap-3">
@@ -222,7 +392,7 @@ function PackModal({ pack, onClose }: { pack: JadePack; onClose: () => void }) {
           {/* Fairness notice */}
           <div className="mt-3 flex items-start gap-2 text-[10px] text-muted-foreground">
             <ShieldCheck className="w-3 h-3 mt-0.5 shrink-0" />
-            <span>All odds and rarity tiers are transparently displayed. Pity progress carries across purchases. See Terms for full details.</span>
+            <span>All odds and rarity tiers are transparently displayed. Pity progress carries across purchases.</span>
           </div>
         </div>
       </motion.div>
@@ -233,35 +403,38 @@ function PackModal({ pack, onClose }: { pack: JadePack; onClose: () => void }) {
 // ── Featured Hero Banner ──
 function HeroBanner({ packs, onSelect }: { packs: JadePack[]; onSelect: (p: JadePack) => void }) {
   const [idx, setIdx] = useState(0);
-  const featured = packs.slice(0, 3);
+  const featured = packs.slice(0, 5);
   const current = featured[idx];
   if (!current) return null;
   const cfg = JADE_RARITY_CONFIG[current.rarity];
 
   return (
-    <div className="relative rounded-2xl overflow-hidden border-2 mb-6" style={{ borderColor: cfg.color, boxShadow: cfg.glow }}>
+    <div className="relative rounded-2xl overflow-hidden border-2 mb-4" style={{ borderColor: cfg.color, boxShadow: cfg.glow }}>
       <div
         className="absolute inset-0 pointer-events-none"
         style={{ background: `linear-gradient(135deg, ${cfg.color}25, transparent 60%, ${cfg.color}10)` }}
       />
-      <div className="relative z-10 p-6 flex items-center justify-between gap-4">
+      <div className="relative z-10 p-5 flex items-center justify-between gap-4">
         <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             <RarityBadge rarity={current.rarity} />
             <PackBadges pack={current} />
           </div>
-          <h2 className="text-xl font-bold text-foreground mb-1">{current.icon} {current.name}</h2>
-          <p className="text-sm text-muted-foreground italic mb-3">{current.subtitle}</p>
+          <h2 className="text-lg font-bold text-foreground mb-1">{current.icon} {current.name}</h2>
+          <p className="text-xs text-muted-foreground italic mb-2">{current.subtitle}</p>
           {current.emotionalHook && (
-            <p className="text-xs text-primary/80 italic mb-3">"{current.emotionalHook}"</p>
+            <p className="text-[10px] text-primary/80 italic mb-3">"{current.emotionalHook}"</p>
           )}
-          <Button onClick={() => onSelect(current)} className="bg-gradient-to-r from-primary to-primary/80">
-            View Details <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" onClick={() => onSelect(current)} className="bg-gradient-to-r from-primary to-primary/80">
+              View <ChevronRight className="w-3 h-3 ml-1" />
+            </Button>
+            <span className="text-sm font-bold text-foreground">{current.priceGold.toLocaleString()} gold</span>
+            {current.priceUsd && <span className="text-xs text-primary">(${current.priceUsd})</span>}
+          </div>
         </div>
-        <div className="text-6xl">{current.icon}</div>
+        <span className="text-5xl hidden sm:block">{current.icon}</span>
       </div>
-      {/* Dots */}
       {featured.length > 1 && (
         <div className="relative z-10 flex justify-center gap-2 pb-3">
           {featured.map((_, i) => (
@@ -277,99 +450,193 @@ function HeroBanner({ packs, onSelect }: { packs: JadePack[]; onSelect: (p: Jade
   );
 }
 
-// ── Category Section ──
+// ── Sort options ──
+type SortKey = 'default' | 'price_low' | 'price_high' | 'attractiveness' | 'prestige' |
+  'margin' | 'whale' | 'beginner' | 'collector' | 'urgency' | 'retention' | 'value';
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: 'default', label: 'Default' },
+  { value: 'price_low', label: 'Price ↑' },
+  { value: 'price_high', label: 'Price ↓' },
+  { value: 'attractiveness', label: '⭐ Overall' },
+  { value: 'prestige', label: '👑 Prestige' },
+  { value: 'margin', label: '📈 Margin' },
+  { value: 'whale', label: '🐋 Whale' },
+  { value: 'beginner', label: '🌱 Beginner' },
+  { value: 'collector', label: '🏛️ Collector' },
+  { value: 'urgency', label: '⏱️ Urgency' },
+  { value: 'retention', label: '🔄 Retention' },
+  { value: 'value', label: '💎 Value' },
+];
+
+const SCORE_MAP: Record<SortKey, keyof JadePackScores | null> = {
+  default: null, price_low: null, price_high: null,
+  attractiveness: 'overall_attractiveness', prestige: 'prestige_strength',
+  margin: 'real_margin', whale: 'whale_appeal', beginner: 'beginner_friendliness',
+  collector: 'collector_appeal', urgency: 'urgency_strength', retention: 'retention_contribution',
+  value: 'perceived_value',
+};
+
+// ── Quick filter presets ──
+type QuickFilter = 'all' | 'best_value' | 'most_popular' | 'limited' | 'new' | 'micro' | 'whale_tier';
+
 const CATEGORIES = Object.keys(CATEGORY_META) as JadeStoreCategory[];
 
 export default function JadeStorePage() {
   const [selectedPack, setSelectedPack] = useState<JadePack | null>(null);
   const [activeCategory, setActiveCategory] = useState<JadeStoreCategory | 'featured' | 'all'>('featured');
-  const [sortBy, setSortBy] = useState<'default' | 'price_low' | 'price_high' | 'attractiveness' | 'prestige'>('default');
+  const [sortBy, setSortBy] = useState<SortKey>('default');
+  const [showScores, setShowScores] = useState(false);
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>('all');
+  const [comparePacks, setComparePacks] = useState<JadePack[]>([]);
+  const [showCompare, setShowCompare] = useState(false);
 
   const featured = useMemo(() => getFeaturedPacks(), []);
+
+  const toggleCompare = useCallback((pack: JadePack) => {
+    setComparePacks(prev => {
+      const exists = prev.find(p => p.id === pack.id);
+      if (exists) return prev.filter(p => p.id !== pack.id);
+      if (prev.length >= 4) return prev;
+      return [...prev, pack];
+    });
+  }, []);
 
   const displayPacks = useMemo(() => {
     let packs: JadePack[];
     if (activeCategory === 'featured') {
       packs = featured;
     } else if (activeCategory === 'all') {
-      packs = JADE_STORE_PACKS;
+      packs = [...JADE_STORE_PACKS];
     } else {
       packs = getPacksByCategory(activeCategory);
     }
 
-    switch (sortBy) {
-      case 'price_low': return [...packs].sort((a, b) => a.priceGold - b.priceGold);
-      case 'price_high': return [...packs].sort((a, b) => b.priceGold - a.priceGold);
-      case 'attractiveness': return sortByScore(packs, 'overall_attractiveness');
-      case 'prestige': return sortByScore(packs, 'prestige_strength');
-      default: return packs;
+    // Quick filters
+    switch (quickFilter) {
+      case 'best_value': packs = packs.filter(p => p.bestValue); break;
+      case 'most_popular': packs = packs.filter(p => p.mostPopular); break;
+      case 'limited': packs = packs.filter(p => p.isLimited); break;
+      case 'new': packs = packs.filter(p => p.isNew); break;
+      case 'micro': packs = packs.filter(p => p.priceTier === 'micro' || p.priceTier === 'entry'); break;
+      case 'whale_tier': packs = packs.filter(p => p.priceTier === 'whale' || p.priceTier === 'absurd'); break;
     }
-  }, [activeCategory, sortBy, featured]);
+
+    // Sort
+    const scoreKey = SCORE_MAP[sortBy];
+    if (sortBy === 'price_low') return [...packs].sort((a, b) => a.priceGold - b.priceGold);
+    if (sortBy === 'price_high') return [...packs].sort((a, b) => b.priceGold - a.priceGold);
+    if (scoreKey) return sortByScore(packs, scoreKey);
+    return packs;
+  }, [activeCategory, sortBy, quickFilter, featured]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 pb-20">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <div>
-          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+          <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
             🏛️ <span className="bg-gradient-to-r from-emerald-400 to-amber-400 bg-clip-text text-transparent">Royal Jade Vault</span>
           </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Sacred jade. Reserve-grade material. Lineage-bound prestige.</p>
+          <p className="text-[10px] text-muted-foreground">Sacred jade · Reserve-grade · Lineage-bound</p>
         </div>
-        <select
-          value={sortBy}
-          onChange={e => setSortBy(e.target.value as typeof sortBy)}
-          className="text-xs bg-muted/50 border border-border rounded-lg px-2 py-1.5 text-foreground"
-        >
-          <option value="default">Default</option>
-          <option value="price_low">Price: Low → High</option>
-          <option value="price_high">Price: High → Low</option>
-          <option value="attractiveness">Most Attractive</option>
-          <option value="prestige">Most Prestige</option>
-        </select>
-      </div>
-
-      {/* Category nav */}
-      <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-none">
-        <button
-          onClick={() => setActiveCategory('featured')}
-          className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-            activeCategory === 'featured' ? 'bg-primary text-primary-foreground' : 'bg-muted/50 text-muted-foreground hover:bg-muted'
-          }`}
-        >
-          ⭐ Featured
-        </button>
-        <button
-          onClick={() => setActiveCategory('all')}
-          className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-            activeCategory === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted/50 text-muted-foreground hover:bg-muted'
-          }`}
-        >
-          📦 All ({JADE_STORE_PACKS.length})
-        </button>
-        {CATEGORIES.map(cat => {
-          const meta = CATEGORY_META[cat];
-          const count = getPacksByCategory(cat).length;
-          return (
+        <div className="flex items-center gap-1.5">
+          {/* Admin toggle */}
+          <button
+            onClick={() => setShowScores(!showScores)}
+            className={`p-1.5 rounded-lg transition-all ${showScores ? 'bg-primary text-primary-foreground' : 'bg-muted/50 text-muted-foreground hover:bg-muted'}`}
+            title="Toggle admin scores"
+          >
+            <BarChart3 className="w-4 h-4" />
+          </button>
+          {/* Compare button */}
+          {comparePacks.length > 0 && (
             <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                activeCategory === cat ? 'bg-primary text-primary-foreground' : 'bg-muted/50 text-muted-foreground hover:bg-muted'
-              }`}
+              onClick={() => setShowCompare(!showCompare)}
+              className="p-1.5 rounded-lg bg-primary text-primary-foreground relative"
             >
-              {meta.icon} {meta.label} ({count})
+              <Scale className="w-4 h-4" />
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] rounded-full flex items-center justify-center font-bold">
+                {comparePacks.length}
+              </span>
             </button>
-          );
-        })}
+          )}
+        </div>
       </div>
 
-      {/* Hero banner for featured */}
-      {activeCategory === 'featured' && <HeroBanner packs={featured} onSelect={setSelectedPack} />}
+      {/* Sort + Quick filters */}
+      <div className="space-y-2">
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
+          <select
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value as SortKey)}
+            className="text-[10px] bg-muted/50 border border-border rounded-lg px-2 py-1 text-foreground shrink-0"
+          >
+            {SORT_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+          {(['all', 'best_value', 'most_popular', 'limited', 'new', 'micro', 'whale_tier'] as QuickFilter[]).map(f => {
+            const labels: Record<QuickFilter, string> = {
+              all: '📦 All', best_value: '💚 Best Value', most_popular: '🔥 Popular',
+              limited: '⏳ Limited', new: '✨ New', micro: '💰 Budget', whale_tier: '🐋 Whale'
+            };
+            return (
+              <button
+                key={f}
+                onClick={() => setQuickFilter(f)}
+                className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-all ${
+                  quickFilter === f ? 'bg-primary text-primary-foreground' : 'bg-muted/40 text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                {labels[f]}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Category nav */}
+        <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
+          <button
+            onClick={() => setActiveCategory('featured')}
+            className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-all ${
+              activeCategory === 'featured' ? 'bg-primary text-primary-foreground' : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            ⭐ Featured
+          </button>
+          <button
+            onClick={() => setActiveCategory('all')}
+            className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-all ${
+              activeCategory === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            All ({JADE_STORE_PACKS.length})
+          </button>
+          {CATEGORIES.map(cat => {
+            const meta = CATEGORY_META[cat];
+            const count = getPacksByCategory(cat).length;
+            return (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-all ${
+                  activeCategory === cat ? 'bg-primary text-primary-foreground' : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                {meta.icon} {meta.label} ({count})
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Hero banner */}
+      {activeCategory === 'featured' && quickFilter === 'all' && <HeroBanner packs={featured} onSelect={setSelectedPack} />}
 
       {/* Category description */}
       {activeCategory !== 'featured' && activeCategory !== 'all' && (
-        <div className="rounded-xl bg-muted/20 border border-border/30 px-4 py-2.5">
+        <div className="rounded-xl bg-muted/20 border border-border/30 px-3 py-2">
           <div className="flex items-center gap-2">
             <span className="text-lg">{CATEGORY_META[activeCategory].icon}</span>
             <div>
@@ -380,24 +647,47 @@ export default function JadeStorePage() {
         </div>
       )}
 
+      {/* Pack count */}
+      <p className="text-[10px] text-muted-foreground">{displayPacks.length} packs</p>
+
       {/* Pack grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {displayPacks.map(pack => (
-          <PackCard key={pack.id} pack={pack} onSelect={setSelectedPack} />
-        ))}
+        <AnimatePresence mode="popLayout">
+          {displayPacks.map(pack => (
+            <PackCard
+              key={pack.id}
+              pack={pack}
+              onSelect={setSelectedPack}
+              showScores={showScores}
+              isComparing={!!comparePacks.find(p => p.id === pack.id)}
+              onToggleCompare={toggleCompare}
+            />
+          ))}
+        </AnimatePresence>
       </div>
 
       {displayPacks.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground text-sm">No packs in this category yet.</div>
+        <div className="text-center py-12 text-muted-foreground text-sm">No packs match these filters.</div>
       )}
 
       {/* Pack detail modal */}
       <AnimatePresence>
-        {selectedPack && <PackModal pack={selectedPack} onClose={() => setSelectedPack(null)} />}
+        {selectedPack && <PackModal pack={selectedPack} onClose={() => setSelectedPack(null)} showScores={showScores} />}
+      </AnimatePresence>
+
+      {/* Comparison panel */}
+      <AnimatePresence>
+        {showCompare && (
+          <ComparisonPanel
+            packs={comparePacks}
+            onClose={() => setShowCompare(false)}
+            onRemove={(id) => setComparePacks(prev => prev.filter(p => p.id !== id))}
+          />
+        )}
       </AnimatePresence>
 
       {/* Fairness footer */}
-      <div className="border-t border-border/30 pt-4 mt-6">
+      <div className="border-t border-border/30 pt-3 mt-4">
         <div className="flex items-start gap-2 text-[10px] text-muted-foreground">
           <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5 text-primary/60" />
           <p>
