@@ -1,4 +1,4 @@
-import type { JadePack, JadeStoreCategory, PriceTier, JadeRarity } from './jadeTypes';
+import type { JadePack, JadePackScores, JadeStoreCategory, PriceTier, JadeRarity } from './jadeTypes';
 
 // Helper to generate packs
 function pack(
