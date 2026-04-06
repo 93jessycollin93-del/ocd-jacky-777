@@ -177,17 +177,43 @@ export default function BattlePassPage() {
 
   const upgradeToPremium = useCallback(() => {
     if (bp.isPremium) return;
-    if ((state.resources.diamonds || 0) < 500) {
-      toast.error('Need 500 💎 to unlock Premium Pass');
+
+    const rateCheck = checkRateLimit('jade_store');
+    if (!rateCheck.allowed) {
+      toast.error(`Wait ${Math.ceil(rateCheck.retryAfterMs / 1000)}s`);
       return;
     }
-    setState(prev => ({
-      ...prev,
-      resources: { ...prev.resources, diamonds: (prev.resources.diamonds || 0) - 500 },
-      battlePass: { ...prev.battlePass!, isPremium: true },
-    }));
+
+    setState(prev => {
+      // Atomic check inside setState
+      const currentDiamonds = prev.resources.diamonds || 0;
+      if (currentDiamonds < 500) {
+        toast.error('Need 500 💎 to unlock Premium Pass');
+        return prev;
+      }
+      if (prev.battlePass?.isPremium) return prev; // Already premium
+
+      const ns = {
+        ...prev,
+        resources: { ...prev.resources, diamonds: currentDiamonds - 500 },
+        battlePass: { ...prev.battlePass!, isPremium: true },
+      };
+
+      logTransaction({
+        transaction_type: 'spend',
+        currency_type: 'diamonds',
+        amount: -500,
+        balance_before: currentDiamonds,
+        balance_after: currentDiamonds - 500,
+        source: 'battle_pass',
+        source_id: 'premium_upgrade',
+      });
+
+      saveStateChecksum(ns);
+      return ns;
+    });
     toast.success('👑 Premium Battle Pass unlocked!');
-  }, [bp, state.resources.diamonds, setState]);
+  }, [bp, setState]);
 
   const seasonEnd = bp.seasonStartedAt + (30 * 24 * 60 * 60 * 1000);
   const daysLeft = Math.max(0, Math.ceil((seasonEnd - Date.now()) / (24 * 60 * 60 * 1000)));
