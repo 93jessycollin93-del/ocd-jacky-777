@@ -39,6 +39,29 @@ import {
   TAG_COLORS,
   type Tag as TagType,
 } from "@/lib/jackie-tags";
+import {
+  buildMemoryContext,
+  upsertMemory,
+  extractMemoryCandidates,
+  getMemories,
+  deleteMemory,
+  searchMemories,
+} from "@/lib/jackie-memory";
+import {
+  buildTaskContext,
+  createTask,
+  getTasks,
+  updateTask,
+  completeTask,
+  deleteTask,
+  getTaskStats,
+} from "@/lib/jackie-tasks";
+import {
+  buildFileContext,
+  generateImage,
+  listFiles,
+  searchFiles,
+} from "@/lib/jackie-files";
 
 interface DisplayMessage {
   id: string;
