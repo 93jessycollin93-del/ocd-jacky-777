@@ -144,7 +144,7 @@ function PackCard({ pack, onSelect, showScores, isComparing, onToggleCompare, is
         {/* Price row */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
-            <span className="text-sm font-bold text-foreground">{pack.priceGold.toLocaleString()}</span>
+            <span className="text-sm font-bold text-foreground">{pack.priceDiamonds.toLocaleString()}</span>
             <span className="text-[10px] text-muted-foreground">gold</span>
           </div>
           {pack.priceUsd && (
@@ -242,7 +242,7 @@ function ComparisonPanel({ packs, onClose, onRemove }: { packs: JadePack[]; onCl
               <tr className="border-b border-border/20">
                 <td className="py-1 pr-3 text-muted-foreground">Price</td>
                 {packs.map(p => (
-                  <td key={p.id} className="text-center py-1 font-bold text-foreground">{p.priceGold.toLocaleString()}</td>
+                  <td key={p.id} className="text-center py-1 font-bold text-foreground">{p.priceDiamonds.toLocaleString()}</td>
                 ))}
               </tr>
               <tr className="border-b border-border/20">
@@ -298,7 +298,7 @@ function PackModal({ pack, onClose, showScores }: { pack: JadePack; onClose: () 
   const [purchasing, setPurchasing] = useState(false);
   const [purchased, setPurchased] = useState(false);
   const playerGold = state.resources.gold;
-  const affordable = playerGold >= pack.priceGold;
+  const affordable = playerGold >= pack.priceDiamonds;
 
   const handlePurchase = useCallback(() => {
     if (!affordable || purchasing) return;
@@ -306,7 +306,7 @@ function PackModal({ pack, onClose, showScores }: { pack: JadePack; onClose: () 
 
     setTimeout(() => {
       setState(prev => {
-        const newResources = { ...prev.resources, gold: prev.resources.gold - pack.priceGold };
+        const newResources = { ...prev.resources, gold: prev.resources.gold - pack.priceDiamonds };
         const newItems = rewardsToItems([...pack.coreRewards, ...(pack.bonusRewards || [])], pack.id);
         const newBag = [...(prev.bag || []), ...newItems];
 
@@ -459,7 +459,7 @@ function PackModal({ pack, onClose, showScores }: { pack: JadePack; onClose: () 
               ) : purchasing ? (
                 <motion.span animate={{ opacity: [1, 0.4, 1] }} transition={{ repeat: Infinity, duration: 1 }}>Opening Vault…</motion.span>
               ) : (
-                <><Crown className="w-4 h-4 mr-2" /> {pack.priceGold.toLocaleString()} Gold</>
+                <><Crown className="w-4 h-4 mr-2" /> {pack.priceDiamonds.toLocaleString()} Gold</>
               )}
             </Button>
             {pack.priceUsd && (
@@ -469,7 +469,7 @@ function PackModal({ pack, onClose, showScores }: { pack: JadePack; onClose: () 
             )}
           </div>
           {!affordable && !purchasing && !purchased && (
-            <p className="text-[10px] text-red-400 text-center mt-1">Insufficient gold — need {(pack.priceGold - playerGold).toLocaleString()} more</p>
+            <p className="text-[10px] text-red-400 text-center mt-1">Insufficient gold — need {(pack.priceDiamonds - playerGold).toLocaleString()} more</p>
           )}
 
           {/* Fairness notice */}
@@ -512,7 +512,7 @@ function HeroBanner({ packs, onSelect }: { packs: JadePack[]; onSelect: (p: Jade
             <Button size="sm" onClick={() => onSelect(current)} className="bg-gradient-to-r from-primary to-primary/80">
               View <ChevronRight className="w-3 h-3 ml-1" />
             </Button>
-            <span className="text-sm font-bold text-foreground">{current.priceGold.toLocaleString()} gold</span>
+            <span className="text-sm font-bold text-foreground">{current.priceDiamonds.toLocaleString()} gold</span>
             {current.priceUsd && <span className="text-xs text-primary">(${current.priceUsd})</span>}
           </div>
         </div>
@@ -622,8 +622,8 @@ export default function JadeStorePage() {
 
     // Sort
     const scoreKey = SCORE_MAP[sortBy];
-    if (sortBy === 'price_low') return [...packs].sort((a, b) => a.priceGold - b.priceGold);
-    if (sortBy === 'price_high') return [...packs].sort((a, b) => b.priceGold - a.priceGold);
+    if (sortBy === 'price_low') return [...packs].sort((a, b) => a.priceDiamonds - b.priceDiamonds);
+    if (sortBy === 'price_high') return [...packs].sort((a, b) => b.priceDiamonds - a.priceDiamonds);
     if (scoreKey) return sortByScore(packs, scoreKey);
     return packs;
   }, [activeCategory, sortBy, quickFilter, featured, wishlist]);

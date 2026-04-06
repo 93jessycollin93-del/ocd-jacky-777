@@ -4,12 +4,12 @@ import type { JadePack, JadePackScores, JadeStoreCategory, PriceTier, JadeRarity
 function pack(
   id: string, name: string, subtitle: string,
   category: JadeStoreCategory, rarity: JadeRarity, priceTier: PriceTier,
-  priceGold: number, icon: string, theme: string,
+  priceDiamonds: number, icon: string, theme: string,
   rewards: { name: string; icon: string; rarity: JadeRarity; qty: number; guaranteed: boolean }[],
   opts: Partial<JadePack> = {}
 ): JadePack {
   return {
-    id, name, subtitle, category, rarity, priceTier, priceGold, icon,
+    id, name, subtitle, category, rarity, priceTier, priceDiamonds, icon,
     visualTheme: theme,
     coreRewards: rewards.map(r => ({ name: r.name, icon: r.icon, rarity: r.rarity, quantity: r.qty, guaranteed: r.guaranteed })),
     pityContribution: priceTier === 'micro' ? 1 : priceTier === 'entry' ? 2 : priceTier === 'core' ? 3 : priceTier === 'mid' ? 5 : priceTier === 'elite' ? 8 : priceTier === 'whale' ? 15 : 25,
