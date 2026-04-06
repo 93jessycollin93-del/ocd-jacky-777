@@ -27,7 +27,36 @@ import {
 } from '@/game/cardEconomy';
 
 // ── UI Constants ──
-type ArenaTab = 'collection' | 'codex' | 'battle' | 'packs' | 'craft' | 'economy';
+type ArenaTab = 'collection' | 'codex' | 'battle' | 'tournament' | 'packs' | 'craft' | 'economy';
+
+// ── Tournament ──
+interface TournamentMatch {
+  round: number;
+  enemyFaction: string;
+  difficulty: number;
+  prize: { dust: number; gems: number; label: string };
+  status: 'upcoming' | 'won' | 'lost' | 'active';
+}
+
+function generateTournamentBracket(playerFaction: string): TournamentMatch[] {
+  const enemies = FACTIONS.filter(f => f !== playerFaction);
+  const shuffled = [...enemies].sort(() => Math.random() - 0.5);
+  // 3 rounds, last round is random repeat
+  const foes = [shuffled[0], shuffled[1], shuffled[Math.floor(Math.random() * 2)]];
+  return [
+    { round: 1, enemyFaction: foes[0], difficulty: 1, prize: { dust: 30, gems: 10, label: '30 Dust + 10 Gems' }, status: 'upcoming' },
+    { round: 2, enemyFaction: foes[1], difficulty: 2, prize: { dust: 75, gems: 25, label: '75 Dust + 25 Gems + Card Chance' }, status: 'upcoming' },
+    { round: 3, enemyFaction: foes[2], difficulty: 3, prize: { dust: 150, gems: 50, label: '150 Dust + 50 Gems + Guaranteed Card' }, status: 'upcoming' },
+  ];
+}
+
+// ── Bred card loading ──
+function loadBredCards(): CardDef[] {
+  try {
+    const raw = localStorage.getItem('bred_card_defs');
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
 
 const RARITY_CONFIG: Record<CardRarity, { label: string; color: string; glow: string; bg: string }> = {
   common:    { label: 'Common',    color: 'hsl(0,0%,65%)',      glow: 'none',                                    bg: 'hsl(0,0%,20%)' },
@@ -154,13 +183,15 @@ function LaneRow({ label, playerUnits, enemyUnits, onPlayerUnitTap, onEnemyUnitT
 }
 
 // ── Battle Screen ──
-function BattleScreen({ playerFaction, onExit, onRewards }: {
-  playerFaction: string; onExit: () => void; onRewards: (won: boolean, rounds: number) => void;
+function BattleScreen({ playerFaction, onExit, onRewards, forcedEnemy, difficulty = 1 }: {
+  playerFaction: string; onExit: () => void; onRewards: (won: boolean, rounds: number, enemyFaction: string) => void;
+  forcedEnemy?: string; difficulty?: number;
 }) {
   const enemyFaction = useMemo(() => {
+    if (forcedEnemy) return forcedEnemy;
     const others = FACTIONS.filter(f => f !== playerFaction);
     return others[Math.floor(Math.random() * others.length)];
-  }, [playerFaction]);
+  }, [playerFaction, forcedEnemy]);
 
   const [battle, setBattle] = useState<BattleState>(() =>
     createBattleState(buildFactionDeck(playerFaction), buildFactionDeck(enemyFaction))
@@ -372,7 +403,7 @@ function BattleScreen({ playerFaction, onExit, onRewards }: {
           const gw = ns.player > ns.enemy ? 'player' : ns.enemy > ns.player ? 'enemy' : null;
           addLog(`═══ ${gw === 'player' ? 'VICTORY!' : gw === 'enemy' ? 'DEFEAT' : 'DRAW'} ═══`);
           setGameEnded(true);
-          onRewards(gw === 'player', prev.round);
+          onRewards(gw === 'player', prev.round, enemyFaction);
           return { ...s, turn: nextTurn, phase: 'game_over' as const, winner: gw, round: prev.round };
         }
 
@@ -511,6 +542,15 @@ export default function CardArena({ onBack }: CardArenaProps) {
   const [inBattle, setInBattle] = useState(false);
   const [packResults, setPackResults] = useState<PackResult | null>(null);
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
+  const [tournament, setTournament] = useState<TournamentMatch[] | null>(null);
+  const [tournamentRound, setTournamentRound] = useState(0);
+  const [tournamentEnemy, setTournamentEnemy] = useState<string | null>(null);
+  const [tournamentDifficulty, setTournamentDifficulty] = useState(1);
+  const [lastRewardMsg, setLastRewardMsg] = useState<string | null>(null);
+
+  // Load bred cards from Creature Lab
+  const bredCards = useMemo(() => loadBredCards(), [state]);
+  const allCards = useMemo(() => [...STARTER_CARDS, ...bredCards], [bredCards]);
 
   // Save on change
   useEffect(() => { saveState(state); }, [state]);
@@ -518,32 +558,27 @@ export default function CardArena({ onBack }: CardArenaProps) {
   const ownedIds = useMemo(() => new Set(state.ownedCards.map(o => o.cardId)), [state.ownedCards]);
 
   const filteredCards = useMemo(() =>
-    STARTER_CARDS.filter(c => {
+    allCards.filter(c => {
       if (filterRarity !== 'all' && c.rarity !== filterRarity) return false;
       if (filterFaction !== 'all' && c.faction !== filterFaction) return false;
       return true;
     }),
-  [filterRarity, filterFaction]);
+  [allCards, filterRarity, filterFaction]);
 
-  const progress = collectionProgress(state.ownedCards, STARTER_CARDS.length);
+  const progress = collectionProgress(state.ownedCards, allCards.length);
 
   // Open pack
   const handleOpenPack = useCallback((packType: 'standard' | 'premium' | 'mythic') => {
     const pity = state.pityCounters[packType] || 0;
     const results = openPack(STARTER_CARDS, state.ownedCards, packType, pity);
-
-    // Add cards to collection
     const newOwned = [...state.ownedCards];
-    results.cards.forEach((card, i) => {
+    results.cards.forEach((card) => {
       const existing = newOwned.find(o => o.cardId === card.id);
       if (existing) { existing.copies++; }
       else { newOwned.push({ cardId: card.id, copies: 1, foil: false, animated: false, firstObtained: Date.now(), source: 'pack' }); }
     });
-
     setState(prev => ({
-      ...prev,
-      ownedCards: newOwned,
-      dust: prev.dust + results.dust,
+      ...prev, ownedCards: newOwned, dust: prev.dust + results.dust,
       pityCounters: { ...prev.pityCounters, [packType]: results.pityReset ? 0 : pity + 5 },
       totalPacks: prev.totalPacks + 1,
     }));
@@ -565,32 +600,84 @@ export default function CardArena({ onBack }: CardArenaProps) {
 
   // Disenchant
   const handleDisenchant = useCallback((cardId: string) => {
-    const card = STARTER_CARDS.find(c => c.id === cardId);
+    const card = allCards.find(c => c.id === cardId);
     const owned = state.ownedCards.find(o => o.cardId === cardId);
     if (!card || !owned || owned.copies <= 1) return;
     owned.copies--;
     setState(prev => ({ ...prev, ownedCards: [...prev.ownedCards], dust: prev.dust + disenchantValue(card.rarity) }));
     haptic.light();
-  }, [state]);
+  }, [state, allCards]);
 
-  // Battle rewards
-  const handleBattleRewards = useCallback((won: boolean, rounds: number) => {
-    const rewards = calculateBattleRewards(won, rounds, 1);
-    setState(prev => ({
-      ...prev,
-      dust: prev.dust + rewards.dust,
-      seasonPassTier: prev.seasonPassTier + (won ? 1 : 0),
-    }));
+  // Battle rewards with enemy faction card drops
+  const handleBattleRewards = useCallback((won: boolean, rounds: number, enemyFaction: string) => {
+    const rewards = calculateBattleRewards(won, rounds, tournamentDifficulty);
+    const msgs: string[] = [`+${rewards.dust} dust, +${rewards.xp} XP`];
+
+    // Card drop from enemy faction
+    let droppedCard: CardDef | null = null;
+    if (Math.random() < rewards.cardChance) {
+      const enemyPool = STARTER_CARDS.filter(c => c.faction === enemyFaction);
+      if (enemyPool.length > 0) {
+        droppedCard = enemyPool[Math.floor(Math.random() * enemyPool.length)];
+        msgs.push(`🃏 Discovered: ${droppedCard.name}!`);
+      }
+    }
+
+    setState(prev => {
+      const newOwned = [...prev.ownedCards];
+      if (droppedCard) {
+        const existing = newOwned.find(o => o.cardId === droppedCard!.id);
+        if (existing) existing.copies++;
+        else newOwned.push({ cardId: droppedCard.id, copies: 1, foil: false, animated: false, firstObtained: Date.now(), source: 'battle' });
+      }
+      return {
+        ...prev,
+        ownedCards: newOwned,
+        dust: prev.dust + rewards.dust,
+        gems: prev.gems + (won ? Math.round(tournamentDifficulty * 5) : 0),
+        seasonPassTier: prev.seasonPassTier + (won ? 1 : 0),
+      };
+    });
+    setLastRewardMsg(msgs.join(' · '));
+
+    // Update tournament state if in tournament
+    if (tournament) {
+      setTournament(prev => {
+        if (!prev) return null;
+        return prev.map((m, i) => {
+          if (i === tournamentRound) return { ...m, status: won ? 'won' as const : 'lost' as const };
+          if (i === tournamentRound + 1 && won) return { ...m, status: 'upcoming' as const };
+          return m;
+        });
+      });
+      if (won && tournamentRound < 2) {
+        setTournamentRound(r => r + 1);
+      }
+    }
+  }, [tournament, tournamentRound, tournamentDifficulty]);
+
+  // Start tournament battle
+  const startTournamentBattle = useCallback((match: TournamentMatch) => {
+    setTournamentEnemy(match.enemyFaction);
+    setTournamentDifficulty(match.difficulty);
+    setInBattle(true);
   }, []);
 
   if (inBattle) {
-    return <BattleScreen playerFaction={deckFaction} onExit={() => setInBattle(false)} onRewards={handleBattleRewards} />;
+    return <BattleScreen
+      playerFaction={deckFaction}
+      onExit={() => { setInBattle(false); setTournamentEnemy(null); }}
+      onRewards={handleBattleRewards}
+      forcedEnemy={tournamentEnemy || undefined}
+      difficulty={tournamentDifficulty}
+    />;
   }
 
   const tabs: { id: ArenaTab; label: string; icon: React.ReactNode }[] = [
     { id: 'collection', label: 'Cards', icon: <Layers size={14} /> },
     { id: 'codex', label: 'Codex', icon: <BookOpen size={14} /> },
     { id: 'battle', label: 'Battle', icon: <Swords size={14} /> },
+    { id: 'tournament', label: 'Tourney', icon: <Trophy size={14} /> },
     { id: 'packs', label: 'Packs', icon: <Gift size={14} /> },
     { id: 'craft', label: 'Craft', icon: <Flame size={14} /> },
     { id: 'economy', label: 'Info', icon: <Archive size={14} /> },
@@ -760,9 +847,16 @@ export default function CardArena({ onBack }: CardArenaProps) {
           {/* ═══ BATTLE ═══ */}
           {tab === 'battle' && (
             <motion.div key="battle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center">
+              {lastRewardMsg && (
+                <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+                  className="mb-3 p-2.5 rounded-xl bg-green-500/10 border border-green-500/20 text-[10px] text-green-400 font-medium">
+                  🏆 {lastRewardMsg}
+                  <button className="ml-2 text-muted-foreground underline" onClick={() => setLastRewardMsg(null)}>✕</button>
+                </motion.div>
+              )}
               <motion.div animate={{ scale: [1, 1.05, 1] }} transition={{ duration: 2, repeat: Infinity }} className="text-5xl mb-3">⚔</motion.div>
-              <h2 className="text-base font-bold text-foreground mb-1">Enter Battle</h2>
-              <p className="text-[10px] text-muted-foreground mb-4">3 lanes · Best of 3 · Abilities + Elements + Combos</p>
+              <h2 className="text-base font-bold text-foreground mb-1">Quick Match</h2>
+              <p className="text-[10px] text-muted-foreground mb-2">Win to earn dust, XP, and a chance to discover enemy faction cards</p>
 
               <div className="flex gap-2 mb-4">
                 {FACTIONS.map(f => (
@@ -774,6 +868,19 @@ export default function CardArena({ onBack }: CardArenaProps) {
                 ))}
               </div>
 
+              {bredCards.length > 0 && (
+                <Card className="mb-3 text-left">
+                  <CardContent className="p-2.5">
+                    <p className="text-[10px] font-bold text-foreground mb-1">🐉 Bred Cards in Pool: {bredCards.length}</p>
+                    <div className="flex gap-1 overflow-x-auto">
+                      {bredCards.slice(0, 5).map(c => (
+                        <span key={c.id} className="text-lg" title={c.name}>{c.art}</span>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               <Card className="mb-3 text-left">
                 <CardContent className="p-3 text-[9px] text-muted-foreground space-y-0.5">
                   <p>⚡ Energy scales 1→10 per turn</p>
@@ -782,13 +889,99 @@ export default function CardArena({ onBack }: CardArenaProps) {
                   <p>💥 Crit: 5% base, ×1.5, cap 35%</p>
                   <p>🌊 Element advantage: +25%</p>
                   <p>🩸 Statuses: burn, frost, poison, bleed, shield</p>
-                  <p>🏆 Win: +30 gold, +15 dust, +25 XP + card chance</p>
+                  <p>🃏 Win: dust + XP + chance for enemy faction card</p>
                 </CardContent>
               </Card>
 
-              <Button size="lg" onClick={() => { haptic.heavy(); setInBattle(true); }} className="w-full">
-                <Swords size={16} /> Start Battle as {FACTION_ICONS[deckFaction]} {deckFaction}
+              <Button size="lg" onClick={() => { haptic.heavy(); setTournamentDifficulty(1); setInBattle(true); }} className="w-full">
+                <Swords size={16} /> Quick Match as {FACTION_ICONS[deckFaction]} {deckFaction}
               </Button>
+            </motion.div>
+          )}
+
+          {/* ═══ TOURNAMENT ═══ */}
+          {tab === 'tournament' && (
+            <motion.div key="tourney" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <div className="text-center mb-4">
+                <Trophy size={32} className="text-yellow-400 mx-auto mb-2" />
+                <h2 className="text-base font-bold text-foreground">Tournament Bracket</h2>
+                <p className="text-[10px] text-muted-foreground">3 rounds · Increasing difficulty · Escalating prizes</p>
+              </div>
+
+              {/* Faction select */}
+              <div className="flex gap-2 mb-4">
+                {FACTIONS.map(f => (
+                  <button key={f} onClick={() => { haptic.light(); setDeckFaction(f); }}
+                    className={`flex-1 p-2 rounded-xl text-center ${deckFaction === f ? 'bg-primary/20 border-2 border-primary' : 'bg-muted border border-border'}`}>
+                    <span className="text-xl">{FACTION_ICONS[f]}</span>
+                    <p className="text-[8px] font-bold text-foreground mt-0.5">{f}</p>
+                  </button>
+                ))}
+              </div>
+
+              {!tournament ? (
+                <Button className="w-full mb-4" onClick={() => {
+                  haptic.heavy();
+                  setTournament(generateTournamentBracket(deckFaction));
+                  setTournamentRound(0);
+                }}>
+                  <Trophy size={16} /> Start New Tournament
+                </Button>
+              ) : (
+                <div className="space-y-3">
+                  {tournament.map((match, i) => {
+                    const isActive = i === tournamentRound && match.status !== 'won' && match.status !== 'lost';
+                    const canFight = isActive && (i === 0 || tournament[i - 1]?.status === 'won');
+                    return (
+                      <Card key={i} className={`overflow-hidden ${match.status === 'won' ? 'border-green-500/30' : match.status === 'lost' ? 'border-red-500/30 opacity-50' : ''}`}>
+                        <CardContent className="p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg font-bold text-foreground">R{match.round}</span>
+                              <span className="text-xl">{FACTION_ICONS[match.enemyFaction]}</span>
+                              <span className="text-[10px] font-bold text-foreground">{match.enemyFaction}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {Array.from({ length: match.difficulty }, (_, k) => (
+                                <Star key={k} size={10} className="text-yellow-400 fill-yellow-400" />
+                              ))}
+                            </div>
+                          </div>
+                          <p className="text-[9px] text-muted-foreground mb-2">Prize: {match.prize.label}</p>
+                          <div className="flex items-center justify-between">
+                            {match.status === 'won' && <Badge className="bg-green-500/20 text-green-400 text-[8px]">✓ Won</Badge>}
+                            {match.status === 'lost' && <Badge variant="destructive" className="text-[8px]">✕ Lost</Badge>}
+                            {match.status === 'upcoming' && !canFight && <Badge variant="outline" className="text-[8px]">Locked</Badge>}
+                            {canFight && (
+                              <Button size="sm" className="h-7 text-[10px]" onClick={() => startTournamentBattle(match)}>
+                                <Swords size={12} /> Fight!
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+
+                  {/* Tournament result */}
+                  {tournament.every(m => m.status === 'won') && (
+                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
+                      className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-center">
+                      <Crown size={28} className="text-yellow-400 mx-auto mb-2" />
+                      <p className="text-sm font-bold text-foreground">🏆 Tournament Champion!</p>
+                      <p className="text-[10px] text-muted-foreground">All prizes claimed</p>
+                    </motion.div>
+                  )}
+                  {tournament.some(m => m.status === 'lost') && (
+                    <div className="text-center">
+                      <p className="text-[10px] text-muted-foreground mb-2">Tournament ended</p>
+                      <Button variant="outline" size="sm" onClick={() => {
+                        setTournament(null); setTournamentRound(0);
+                      }}>Start New Tournament</Button>
+                    </div>
+                  )}
+                </div>
+              )}
             </motion.div>
           )}
 

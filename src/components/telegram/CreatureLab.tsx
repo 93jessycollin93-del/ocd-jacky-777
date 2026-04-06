@@ -77,6 +77,31 @@ export default function CreatureLab({ onBack }: CreatureLabProps) {
       ? ` with ${result.newMutations.length} new mutation(s)!`
       : '!';
     toast.success(`${result.child.name} has been bred${mutMsg} Rarity: ${RARITY_CONFIG[result.child.rarity].label}`);
+
+    // Auto-generate matching card in Card Arena collection
+    try {
+      const { creatureToCard } = require('@/game/creatureSystem');
+      const cardDef = creatureToCard(result.child);
+      const CARD_STORAGE = 'card_arena_state';
+      const raw = localStorage.getItem(CARD_STORAGE);
+      if (raw) {
+        const cardState = JSON.parse(raw);
+        const alreadyOwned = cardState.ownedCards?.some((o: { cardId: string }) => o.cardId === cardDef.id);
+        if (!alreadyOwned) {
+          cardState.ownedCards = cardState.ownedCards || [];
+          cardState.ownedCards.push({
+            cardId: cardDef.id, copies: 1, foil: false, animated: false,
+            firstObtained: Date.now(), source: 'battle',
+          });
+          // Store the bred card definition for Card Arena to pick up
+          const bredCards = JSON.parse(localStorage.getItem('bred_card_defs') || '[]');
+          bredCards.push(cardDef);
+          localStorage.setItem('bred_card_defs', JSON.stringify(bredCards));
+          localStorage.setItem(CARD_STORAGE, JSON.stringify(cardState));
+          toast.success(`🃏 Card "${cardDef.name}" added to your Card Arena collection!`);
+        }
+      }
+    } catch {}
   };
 
   const handleRetire = async (creature: Creature) => {

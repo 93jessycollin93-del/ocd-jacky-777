@@ -235,3 +235,69 @@ export function breedCreatures(parentA: Creature, parentB: Creature): BreedingRe
 
   return { child, inheritedMutations: inherited, newMutations: newMuts, dominantParent: dominant };
 }
+
+// ── Creature → Card Conversion ──
+// Maps creature species to card element
+const SPECIES_ELEMENT: Record<CreatureSpecies, string> = {
+  dragon: 'fire', phoenix: 'fire', serpent: 'water', wolf: 'shadow',
+  eagle: 'air', panther: 'shadow', bear: 'earth', stag: 'light',
+  hawk: 'air', rex: 'earth',
+};
+
+const CREATURE_RARITY_TO_CARD: Record<CreatureRarity, string> = {
+  common: 'common', uncommon: 'uncommon', rare: 'rare',
+  epic: 'epic', legendary: 'legendary', mythic: 'mythic',
+};
+
+/**
+ * Convert a Creature into a CardDef for the Card Arena.
+ * Stats map: strength→power, endurance→guard, intelligence→abilityValue
+ * Mutations become keywords. Element derived from species.
+ */
+export function creatureToCard(creature: Creature): {
+  id: string; name: string; type: 'unit'; element: string; rarity: string;
+  cost: number; power: number; guard: number; ability: string; abilityDesc: string;
+  abilityValue: number; art: string; lane: string; keywords: string[]; faction: string;
+} {
+  const totalStats = Object.values(creature.stats).reduce((a, b) => a + b, 0);
+  const cost = Math.max(1, Math.min(10, Math.round(totalStats / 80)));
+  const power = Math.max(1, Math.round(creature.stats.strength / 12));
+  const guard = Math.max(1, Math.round(creature.stats.endurance / 15));
+  const abilityValue = Math.round(creature.stats.intelligence / 20);
+
+  const keywords: string[] = [];
+  const abilityParts: string[] = [];
+
+  if (creature.stats.agility > 70) { keywords.push('swift'); abilityParts.push('Swift strike'); }
+  if (creature.stats.charisma > 70) { keywords.push('inspire'); abilityParts.push('+1P to adjacent allies'); }
+  if (creature.stats.luck > 60) { keywords.push('lucky'); abilityParts.push('+10% crit'); }
+  for (const m of creature.mutations.slice(0, 2)) {
+    keywords.push(m.name.toLowerCase().replace(/\s/g, '_'));
+    abilityParts.push(m.description);
+  }
+
+  const lane = creature.stats.strength > creature.stats.agility ? 'front'
+    : creature.stats.intelligence > creature.stats.agility ? 'back' : 'mid';
+
+  const abilityName = creature.mutations.length > 0
+    ? creature.mutations[0].name
+    : `${SPECIES_META[creature.species].label} Instinct`;
+
+  return {
+    id: `bred_${creature.id}`,
+    name: creature.name,
+    type: 'unit',
+    element: SPECIES_ELEMENT[creature.species],
+    rarity: CREATURE_RARITY_TO_CARD[creature.rarity],
+    cost,
+    power,
+    guard,
+    ability: abilityName,
+    abilityDesc: abilityParts.join('. ') || 'No special ability',
+    abilityValue,
+    art: SPECIES_META[creature.species].icon,
+    lane,
+    keywords,
+    faction: 'Bred',
+  };
+}
