@@ -150,7 +150,7 @@ const Sidebar = ({
       )}
       <aside
         className={`
-          w-[280px] min-h-screen border-r border-border bg-sidebar flex-col
+          w-[280px] h-screen border-r border-border bg-sidebar flex-col
           hidden md:flex
           ${isMobileOpen ? "!flex fixed inset-y-0 left-0 z-50" : ""}
         `}
@@ -1079,7 +1079,7 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-screen bg-background overflow-hidden">
       <Sidebar
         conversations={conversations}
         activeId={activeConvId}
@@ -1103,7 +1103,7 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
       />
 
       <main
-        className="flex-1 flex flex-col min-h-screen relative"
+        className="flex-1 flex flex-col h-full overflow-hidden relative"
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
