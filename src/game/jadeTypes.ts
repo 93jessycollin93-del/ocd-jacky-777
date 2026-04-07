@@ -14,7 +14,11 @@ export type JadeStoreCategory =
   | 'whale_packs'
   | 'beginner_packs'
   | 'utility_packs'
-  | 'subscription_passes';
+  | 'subscription_passes'
+  | 'sculpting_accessories'
+  | 'master_materials'
+  | 'guild_packs'
+  | 'prestige_titles';
 
 export type PriceTier = 'micro' | 'entry' | 'core' | 'mid' | 'elite' | 'whale' | 'absurd';
 
