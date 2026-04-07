@@ -14,7 +14,11 @@ export type JadeStoreCategory =
   | 'whale_packs'
   | 'beginner_packs'
   | 'utility_packs'
-  | 'subscription_passes';
+  | 'subscription_passes'
+  | 'sculpting_accessories'
+  | 'master_materials'
+  | 'guild_packs'
+  | 'prestige_titles';
 
 export type PriceTier = 'micro' | 'entry' | 'core' | 'mid' | 'elite' | 'whale' | 'absurd';
 
@@ -108,4 +112,8 @@ export const CATEGORY_META: Record<JadeStoreCategory, { label: string; icon: str
   beginner_packs: { label: 'Welcome', icon: '🌱', description: 'First-timer onboarding offers' },
   utility_packs: { label: 'Recovery', icon: '🔧', description: 'Fracture repair and session recovery' },
   subscription_passes: { label: 'Passes', icon: '🎫', description: 'Recurring membership and stipends' },
+  sculpting_accessories: { label: 'Sculpting Gear', icon: '🪚', description: 'Specialized sculpting accessories and attachments' },
+  master_materials: { label: 'Master Materials', icon: '🧱', description: 'Rare raw materials for advanced crafting' },
+  guild_packs: { label: 'Guild Packs', icon: '⚔️', description: 'Group benefits and guild treasury items' },
+  prestige_titles: { label: 'Titles & Ranks', icon: '🏆', description: 'Exclusive titles, ranks, and status markers' },
 };
