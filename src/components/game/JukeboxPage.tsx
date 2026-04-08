@@ -1,1 +1,0 @@
-export default function JukeboxPage() { return <div className="p-4 text-foreground"><h2 className="font-display text-xl">🎶 Jukebox</h2><p className="text-muted-foreground mt-2">Cultural music collection — unlock songs across 10 languages.</p></div>; }

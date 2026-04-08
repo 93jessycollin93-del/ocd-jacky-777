@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { streamChat, JACKIE_MODELS, type ChatMessage, type JackieModelId } from "@/lib/jackie-stream";
 import {
@@ -27,7 +26,6 @@ import { ChatMediaBar, type PendingFile } from "@/components/ChatMediaBar";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { AttachmentDisplay } from "@/components/AttachmentDisplay";
 import { toast } from "sonner";
-import { getGameStateContext } from "@/lib/game-state-context";
 import { Plus, Trash2, MessageSquare, LogOut, Send, Menu, X, Sun, Moon, Volume2, VolumeX, Download, Mic, ChevronDown, Zap, DollarSign, Search, Tag, XCircle } from "lucide-react";
 import {
   listTags,
@@ -40,29 +38,6 @@ import {
   TAG_COLORS,
   type Tag as TagType,
 } from "@/lib/jackie-tags";
-import {
-  buildMemoryContext,
-  upsertMemory,
-  extractMemoryCandidates,
-  getMemories,
-  deleteMemory,
-  searchMemories,
-} from "@/lib/jackie-memory";
-import {
-  buildTaskContext,
-  createTask,
-  getTasks,
-  updateTask,
-  completeTask,
-  deleteTask,
-  getTaskStats,
-} from "@/lib/jackie-tasks";
-import {
-  buildFileContext,
-  generateImage,
-  listFiles,
-  searchFiles,
-} from "@/lib/jackie-files";
 
 interface DisplayMessage {
   id: string;
@@ -150,7 +125,7 @@ const Sidebar = ({
       )}
       <aside
         className={`
-          w-[280px] h-screen border-r border-border bg-sidebar flex-col
+          w-[280px] min-h-screen border-r border-border bg-sidebar flex-col
           hidden md:flex
           ${isMobileOpen ? "!flex fixed inset-y-0 left-0 z-50" : ""}
         `}
@@ -354,9 +329,6 @@ const Sidebar = ({
         </div>
 
         <div className="p-2 border-t border-border space-y-0.5">
-          <a href="/play" className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors">
-            ⚔️ Play Game
-          </a>
           <a href="/design" className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors">
             🎮 Game Design Hub
           </a>
@@ -501,8 +473,6 @@ const Index = () => {
   const [tags, setTags] = useState<TagType[]>([]);
   const [tagMap, setTagMap] = useState<Record<string, string[]>>({});
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
-  const [rateLimitCooldown, setRateLimitCooldown] = useState(0);
-  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const changeModel = useCallback(async (model: JackieModelId) => {
     setSelectedModel(model);
@@ -643,189 +613,8 @@ const Index = () => {
     }, 50);
   };
 
-  // ── Slash Command Handler ──
-  const handleSlashCommand = async (text: string, convId: string): Promise<string | null> => {
-    const parts = text.split(/\s+/);
-    const cmd = parts[0].toLowerCase();
-    const args = parts.slice(1).join(' ');
-
-    switch (cmd) {
-      case '/remember': {
-        if (!args) return "**Usage:** `/remember <key> = <value>`\nExample: `/remember preferred_framework = React with TypeScript`";
-        const [key, ...valParts] = args.split('=');
-        const value = valParts.join('=').trim();
-        if (!key.trim() || !value) return "**Format:** `/remember key = value`";
-        try {
-          await upsertMemory(key.trim(), value, 'preference', convId);
-          return `✅ **Remembered:** ${key.trim()} → ${value}`;
-        } catch (e: any) {
-          return `❌ Failed to save memory: ${e.message}`;
-        }
-      }
-      case '/memories': {
-        try {
-          const mems = args ? await searchMemories(args) : await getMemories();
-          if (mems.length === 0) return "📭 No memories stored yet. Use `/remember key = value` to teach me.";
-          let out = "## 🧠 Jackie's Memory\n\n";
-          for (const m of mems.slice(0, 20)) {
-            out += `- **${m.key}** → ${m.value} _(${m.category}, ${(m.confidence * 100).toFixed(0)}%)_\n`;
-          }
-          return out;
-        } catch (e: any) {
-          return `❌ ${e.message}`;
-        }
-      }
-      case '/forget': {
-        if (!args) return "**Usage:** `/forget <search term>`";
-        try {
-          const mems = await searchMemories(args);
-          if (mems.length === 0) return "No matching memories found.";
-          for (const m of mems) await deleteMemory(m.id);
-          return `🗑️ Forgot ${mems.length} memor${mems.length === 1 ? 'y' : 'ies'} matching "${args}"`;
-        } catch (e: any) {
-          return `❌ ${e.message}`;
-        }
-      }
-      case '/task': {
-        if (!args) return "**Usage:** `/task <title>` — Creates a new task\nOr: `/task done <id>` `/task list`";
-        if (args.toLowerCase() === 'list') {
-          const tasks = await getTasks();
-          if (tasks.length === 0) return "📋 No tasks. Create one with `/task <title>`";
-          let out = "## 📋 Tasks\n\n";
-          const statusEmoji: Record<string, string> = { todo: '📋', in_progress: '🔧', done: '✅', blocked: '🚫' };
-          const prioEmoji: Record<string, string> = { critical: '🔴', high: '🟠', medium: '🟡', low: '🟢' };
-          for (const t of tasks) {
-            out += `- ${statusEmoji[t.status] || ''} ${prioEmoji[t.priority] || ''} **${t.title}** _(${t.status})_ \`${t.id.slice(0, 8)}\`\n`;
-          }
-          return out;
-        }
-        try {
-          const task = await createTask(args);
-          return `✅ **Task created:** ${task.title} \`${task.id.slice(0, 8)}\``;
-        } catch (e: any) {
-          return `❌ ${e.message}`;
-        }
-      }
-      case '/done': {
-        if (!args) return "**Usage:** `/done <task-id-prefix>`";
-        try {
-          const tasks = await getTasks();
-          const match = tasks.find(t => t.id.startsWith(args.trim()));
-          if (!match) return "❌ No task found with that ID prefix.";
-          await completeTask(match.id);
-          return `✅ **Completed:** ${match.title}`;
-        } catch (e: any) {
-          return `❌ ${e.message}`;
-        }
-      }
-      case '/files': {
-        try {
-          const files = args ? await searchFiles(args) : await listFiles(convId);
-          if (files.length === 0) return "📁 No files found.";
-          let out = "## 📁 Files\n\n";
-          for (const f of files.slice(0, 20)) {
-            const size = f.size < 1024 ? `${f.size}B` : f.size < 1048576 ? `${(f.size / 1024).toFixed(1)}KB` : `${(f.size / 1048576).toFixed(1)}MB`;
-            out += `- 📎 **${f.name}** (${f.type}, ${size})\n`;
-          }
-          return out;
-        } catch (e: any) {
-          return `❌ ${e.message}`;
-        }
-      }
-      case '/imagine': {
-        if (!args) return "**Usage:** `/imagine <description>`\nExample: `/imagine a futuristic city skyline at sunset`";
-        try {
-          toast.info("🎨 Generating image...");
-          const result = await generateImage(args);
-          return `## 🎨 Generated Image\n\n![Generated](${result.image})\n\n${result.text || ''}`;
-        } catch (e: any) {
-          return `❌ Image generation failed: ${e.message}`;
-        }
-      }
-      case '/stats': {
-        try {
-          const [taskStats, memCount] = await Promise.all([getTaskStats(), getMemories()]);
-          return `## 📊 Jackie Stats\n\n**Tasks:** ${taskStats.total} total (${taskStats.todo} todo, ${taskStats.inProgress} active, ${taskStats.done} done, ${taskStats.blocked} blocked)\n**Critical:** ${taskStats.critical}\n**Memories:** ${memCount.length} stored\n**Model:** ${selectedModel}`;
-        } catch {
-          return "❌ Failed to load stats.";
-        }
-      }
-      case '/discernment': {
-        if (!args) return "**Usage:** `/discernment <URL, tool name, or description>`\nExample: `/discernment https://free-followers-now.xyz`\nJackie will analyze it through Jessy's discernment lens.";
-        try {
-          toast.info("🔍 Analyzing...");
-          const discernmentPrompt = `Analyze the following through Jessy's discernment lens. Evaluate whether this is signal or bait, real value or distraction, trustworthy or a trap. Be calm, precise, and protective — not harsh or reactive.
-
-Subject to evaluate: "${args}"
-
-Provide your assessment in this structure:
-1. **Trust Level** — rate as: ✅ Clean, ⚠️ Caution, or 🚫 Avoid
-2. **What it claims** — what does it present itself as?
-3. **What it likely is** — your honest read
-4. **Red flags** — specific concerns (or "None detected")
-5. **Recommendation** — calm, actionable guidance
-
-Keep it concise but thorough. No hype, no false alarm — just truth.`;
-
-          const res = await fetch(
-            `https://rkwhhbxgjdpehfuxsult.supabase.co/functions/v1/jackie-chat`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-                'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-              },
-              body: JSON.stringify({
-                model: selectedModel,
-                messages: [{ role: 'user', content: discernmentPrompt }],
-              }),
-            }
-          );
-          if (!res.ok) throw new Error('Analysis failed');
-          const reader = res.body?.getReader();
-          if (!reader) throw new Error('No response stream');
-          let result = '';
-          const decoder = new TextDecoder();
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            const chunk = decoder.decode(value);
-            for (const line of chunk.split('\n')) {
-              if (!line.startsWith('data: ') || line.includes('[DONE]')) continue;
-              try {
-                const j = JSON.parse(line.slice(6));
-                result += j.choices?.[0]?.delta?.content || '';
-              } catch {}
-            }
-          }
-          return `## 🔍 Discernment Analysis\n\n${result || 'No assessment could be generated.'}`;
-        } catch (e: any) {
-          return `❌ Discernment analysis failed: ${e.message}`;
-        }
-      }
-      case '/help':
-        return `## Jackie Commands\n
-| Command | Description |
-|---------|------------|
-| \`/remember key = value\` | Teach Jackie a preference or decision |
-| \`/memories [search]\` | View stored memories |
-| \`/forget <search>\` | Delete matching memories |
-| \`/task <title>\` | Create a coding task |
-| \`/task list\` | Show all tasks |
-| \`/done <id>\` | Mark task complete |
-| \`/files [search]\` | Browse uploaded files |
-| \`/imagine <prompt>\` | Generate an image |
-| \`/discernment <subject>\` | Analyze a URL, tool, or offer for trust |
-| \`/stats\` | View Jackie's stats |
-| \`/help\` | Show this guide |`;
-      default:
-        return null; // Not a recognized command, proceed as normal message
-    }
-  };
-
   const handleSubmit = async () => {
-    if ((!input.trim() && pendingFiles.length === 0) || isProcessing || rateLimitCooldown > 0) return;
+    if ((!input.trim() && pendingFiles.length === 0) || isProcessing) return;
 
     const userText = input.trim();
     const filesToUpload = [...pendingFiles];
@@ -844,25 +633,6 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
       } catch {
         toast.error("Failed to create conversation.");
         setIsProcessing(false);
-        return;
-      }
-    }
-
-    // ── Slash Commands ──
-    if (userText.startsWith('/')) {
-      const slashResult = await handleSlashCommand(userText, convId);
-      if (slashResult) {
-        const sysMsg: DisplayMessage = {
-          id: Date.now().toString(),
-          role: "assistant",
-          content: slashResult,
-          timestamp: new Date(),
-          memoryTier: 1,
-        };
-        setMessages((prev) => [...prev, sysMsg]);
-        try { await saveMessage({ conversation_id: convId, role: "assistant", content: slashResult }); } catch {}
-        setIsProcessing(false);
-        scrollToBottom();
         return;
       }
     }
@@ -910,22 +680,9 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
       { id: assistantTempId, role: "assistant", content: "", timestamp: new Date(), memoryTier: 1 },
     ]);
 
-    const gameContext = getGameStateContext();
-    // Inject Jackie's memory + tasks into context
-    let jackieContext = gameContext;
-    try {
-      const [memCtx, taskCtx, fileCtx] = await Promise.all([
-        buildMemoryContext(),
-        buildTaskContext(),
-        convId ? buildFileContext(convId) : Promise.resolve(""),
-      ]);
-      jackieContext = [gameContext, memCtx, taskCtx, fileCtx].filter(Boolean).join("\n");
-    } catch { /* graceful degradation */ }
-
     await streamChat({
       messages: newHistory,
       model: selectedModel,
-      context: jackieContext,
       onDelta: (chunk) => {
         assistantContent += chunk;
         setMessages((prev) =>
@@ -962,34 +719,10 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
           console.error("Failed to persist assistant message");
         }
 
-        // Auto-extract memories from conversation
-        try {
-          const candidates = extractMemoryCandidates(userText, assistantContent);
-          for (const c of candidates) {
-            await upsertMemory(c.key, c.value, c.category, convId!);
-          }
-        } catch { /* silent */ }
-
         setIsProcessing(false);
       },
       onError: (err) => {
-        if (err.includes("Rate limit") || err.includes("rate limit")) {
-          const seconds = 30;
-          setRateLimitCooldown(seconds);
-          if (cooldownRef.current) clearInterval(cooldownRef.current);
-          cooldownRef.current = setInterval(() => {
-            setRateLimitCooldown((prev) => {
-              if (prev <= 1) {
-                clearInterval(cooldownRef.current!);
-                cooldownRef.current = null;
-                return 0;
-              }
-              return prev - 1;
-            });
-          }, 1000);
-        } else {
-          toast.error(err);
-        }
+        toast.error(err);
         setMessages((prev) => prev.filter((m) => m.id !== assistantTempId));
         setIsProcessing(false);
       },
@@ -1079,7 +812,7 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
   };
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="flex min-h-screen bg-background">
       <Sidebar
         conversations={conversations}
         activeId={activeConvId}
@@ -1103,7 +836,7 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
       />
 
       <main
-        className="flex-1 flex flex-col h-full overflow-hidden relative"
+        className="flex-1 flex flex-col min-h-screen relative"
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
@@ -1210,21 +943,14 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
                 }}
                 disabled={isProcessing}
               />
-              {rateLimitCooldown > 0 ? (
-                <div className="p-3 rounded-sm bg-destructive/20 border border-destructive/40 text-destructive font-mono text-xs flex items-center gap-2 flex-shrink-0 animate-pulse">
-                  <Zap size={14} />
-                  {rateLimitCooldown}s
-                </div>
-              ) : (
-                <button
-                  onClick={handleSubmit}
-                  disabled={isProcessing || (!input.trim() && pendingFiles.length === 0)}
-                  className="p-3 rounded-sm bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-30 transition-opacity btn-mechanical flex-shrink-0"
-                  title="Send (Enter)"
-                >
-                  <Send size={16} />
-                </button>
-              )}
+              <button
+                onClick={handleSubmit}
+                disabled={isProcessing || (!input.trim() && pendingFiles.length === 0)}
+                className="p-3 rounded-sm bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-30 transition-opacity btn-mechanical flex-shrink-0"
+                title="Send (Enter)"
+              >
+                <Send size={16} />
+              </button>
             </div>
             <div className="flex items-center justify-between mt-1.5 ml-5">
               <div className="relative">

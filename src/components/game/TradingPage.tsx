@@ -1,1 +1,0 @@
-export default function TradingPage() { return <div className="p-4 text-foreground"><h2 className="font-display text-xl">🏪 Trading</h2><p className="text-muted-foreground mt-2">Exchange resources at the market.</p></div>; }

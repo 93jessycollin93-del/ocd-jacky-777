@@ -1,1 +1,0 @@
-export default function ShopPage() { return <div className="p-4 text-foreground"><h2 className="font-display text-xl">🏪 Shop</h2><p className="text-muted-foreground mt-2">Purchase items and speedups.</p></div>; }

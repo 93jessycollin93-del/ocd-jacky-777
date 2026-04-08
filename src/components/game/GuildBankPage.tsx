@@ -1,1 +1,0 @@
-export default function GuildBankPage() { return <div className="p-4 text-foreground"><h2 className="font-display text-xl">🏦 Guild Bank</h2><p className="text-muted-foreground mt-2">Manage guild funds and activate boosts.</p></div>; }

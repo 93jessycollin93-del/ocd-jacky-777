@@ -1,1 +1,0 @@
-export default function LeaderboardPage() { return <div className="p-4 text-foreground"><h2 className="font-display text-xl">🏅 Leaderboard</h2><p className="text-muted-foreground mt-2">Top realms across the world.</p></div>; }

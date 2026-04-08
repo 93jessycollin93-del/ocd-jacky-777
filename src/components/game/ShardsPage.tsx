@@ -1,1 +1,0 @@
-export default function ShardsPage() { return <div className="p-4 text-foreground"><h2 className="font-display text-xl">🔮 Shards</h2><p className="text-muted-foreground mt-2">Collect and balance shards of Light, Dark, and Balance.</p></div>; }

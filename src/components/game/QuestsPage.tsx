@@ -1,1 +1,0 @@
-export default function QuestsPage() { return <div className="p-4 text-foreground"><h2 className="font-display text-xl">📋 Quests</h2><p className="text-muted-foreground mt-2">Daily and weekly quests for rewards.</p></div>; }

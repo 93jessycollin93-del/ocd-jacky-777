@@ -1,31 +1,65 @@
-# Jackie Intelligence Upgrade — All Four Systems
 
-## 1. Database Migration
-Create two new tables:
-- **`jackie_memory`** — stores extracted facts, preferences, decisions from conversations
-  - Fields: user_id, key, value, category (preference/decision/context/pattern), source_conversation_id, confidence, created_at, updated_at
-  - RLS: users can only access their own memories
-- **`jackie_tasks`** — persistent coding task tracker
-  - Fields: user_id, title, description, status (todo/in_progress/done/blocked), priority (low/medium/high/critical), category, due_date, created_at, updated_at
-  - RLS: users can only access their own tasks
 
-## 2. Edge Function: `jackie-image`
-- New edge function that calls Lovable AI image generation models
-- Accepts a text prompt, returns base64 image data
-- Stores generated images in the `chat-attachments` storage bucket
-- Uses LOVABLE_API_KEY (already configured)
+# Enhanced Jackie Output Visualization + FORGE Link + Testing
 
-## 3. Backend Logic (`src/lib/`)
-- **`jackie-memory.ts`** — CRUD for memory entries, auto-extraction of key facts from AI responses, memory injection into chat context
-- **`jackie-tasks.ts`** — CRUD for tasks, status management, task summary for context injection
-- **`jackie-files.ts`** — Browse/search attachments in storage, retrieve file metadata, display in chat
+## Summary
 
-## 4. Frontend Integration
-- Update `jackie-chat` edge function system prompt to include memory context + active tasks
-- Add `/` commands in chat: `/remember`, `/tasks`, `/files`, `/imagine`
-- Task panel accessible from chat sidebar
-- Memory auto-extracts from conversations (no manual work needed)
+Three things to build:
 
-## 5. Chat Context Enhancement
-- Before each message, inject: recent memories, active tasks, uploaded file context
-- Jackie becomes aware of past decisions and current priorities automatically
+1. **Rich markdown/code output rendering** — upgrade Jackie's message display from basic `ReactMarkdown` to a proper REPL-style output with syntax-highlighted code blocks, copy buttons, collapsible sections, and table rendering.
+
+2. **FORGE link in sidebar** — add a link to `https://eru-1.base44.app` in the sidebar navigation.
+
+3. **Testing** — demo login, tag deletion, and FORGE link verification.
+
+---
+
+## Step 1: Enhanced Output Visualization
+
+Currently, Jackie renders responses via `<ReactMarkdown>{message.content}</ReactMarkdown>` with basic CSS prose styling (lines 420-422). This needs upgrading to a proper REPL-quality output.
+
+**Changes:**
+- Install `react-syntax-highlighter` for code block highlighting
+- Create a `MarkdownRenderer` component that provides custom renderers to `ReactMarkdown`:
+  - **Code blocks**: syntax-highlighted with language label, copy-to-clipboard button, line numbers for blocks > 5 lines
+  - **Inline code**: styled pill with monospace font
+  - **Tables**: styled with borders and alternating row colors
+  - **Blockquotes**: styled as callout panels
+  - **Lists**: properly spaced with custom markers
+- Replace the raw `<ReactMarkdown>` call in `JackieMessage` with the new component
+
+**New file:** `src/components/MarkdownRenderer.tsx`
+
+**Modified file:** `src/pages/Index.tsx` — swap `ReactMarkdown` usage in `JackieMessage`
+
+## Step 2: FORGE Link in Sidebar
+
+Add a link below the "Game Design Hub" link in the sidebar (around line 332):
+```
+<a href="https://eru-1.base44.app" target="_blank" rel="noopener noreferrer">
+  🔥 FORGE
+</a>
+```
+Same styling as the Game Design Hub link.
+
+**Modified file:** `src/pages/Index.tsx` — sidebar footer section
+
+## Step 3: Testing (manual)
+
+After implementation, the user should test:
+- Demo login flow
+- Tag creation, assignment, filtering, and deletion
+- FORGE link opens correctly
+- Code blocks in Jackie responses render with syntax highlighting and copy button
+
+---
+
+## Technical Details
+
+| Item | File | Change |
+|------|------|--------|
+| MarkdownRenderer component | `src/components/MarkdownRenderer.tsx` | New file — custom ReactMarkdown with syntax highlighting, copy buttons, table styling |
+| JackieMessage update | `src/pages/Index.tsx` (line ~420) | Replace `<ReactMarkdown>` with `<MarkdownRenderer>` |
+| FORGE sidebar link | `src/pages/Index.tsx` (line ~333) | Add external link |
+| Package | `package.json` | Add `react-syntax-highlighter` + types |
+

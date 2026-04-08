@@ -1,1 +1,0 @@
-export default function BagPage() { return <div className="p-4 text-foreground"><h2 className="font-display text-xl">🎒 Bag</h2><p className="text-muted-foreground mt-2">Your inventory of items, speedups, and battle plans.</p></div>; }

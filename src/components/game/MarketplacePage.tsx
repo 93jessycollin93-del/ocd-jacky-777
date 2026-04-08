@@ -1,1 +1,0 @@
-export default function MarketplacePage() { return <div className="p-4 text-foreground"><h2 className="font-display text-xl">🏬 Marketplace</h2><p className="text-muted-foreground mt-2">Player-to-player trading hub.</p></div>; }

@@ -1,1 +1,0 @@
-export default function DiplomacyPage() { return <div className="p-4 text-foreground"><h2 className="font-display text-xl">🤝 Diplomacy</h2><p className="text-muted-foreground mt-2">Manage faction relations and trade routes.</p></div>; }

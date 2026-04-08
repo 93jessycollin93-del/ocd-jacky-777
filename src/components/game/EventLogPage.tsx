@@ -1,1 +1,0 @@
-export default function EventLogPage() { return <div className="p-4 text-foreground"><h2 className="font-display text-xl">📜 Event Log</h2><p className="text-muted-foreground mt-2">AI-driven events and realm history.</p></div>; }
