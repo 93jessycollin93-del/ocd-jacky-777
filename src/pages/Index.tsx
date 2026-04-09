@@ -360,6 +360,9 @@ const Sidebar = ({
           <a href="/design" className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors">
             🎮 Game Design Hub
           </a>
+          <a href="/bots" className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors">
+            🤖 Bot Foundry
+          </a>
           <a href="https://eru-1.base44.app" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors">
             🔥 FORGE
           </a>

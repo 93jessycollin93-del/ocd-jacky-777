@@ -12,6 +12,7 @@ import Play from "./pages/Play";
 import TelegramShell from "./pages/TelegramShell";
 import NotFound from "./pages/NotFound";
 import Vault from "./pages/Vault";
+import BotFoundry from "./pages/BotFoundry";
 
 const queryClient = new QueryClient();
 
@@ -70,6 +71,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Vault />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/bots"
+                element={
+                  <ProtectedRoute>
+                    <BotFoundry />
                   </ProtectedRoute>
                 }
               />
