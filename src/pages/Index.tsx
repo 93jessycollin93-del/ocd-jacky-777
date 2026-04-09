@@ -363,6 +363,9 @@ const Sidebar = ({
           <a href="/bots" className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors">
             🤖 Bot Foundry
           </a>
+          <a href="/keys" className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors">
+            🔑 API Key Vault
+          </a>
           <a href="https://eru-1.base44.app" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors">
             🔥 FORGE
           </a>
