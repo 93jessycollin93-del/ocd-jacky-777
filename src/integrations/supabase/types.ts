@@ -441,6 +441,54 @@ export type Database = {
         }
         Relationships: []
       }
+      user_bots: {
+        Row: {
+          api_keys: Json
+          behavior_style: string
+          created_at: string
+          generated_code: string | null
+          id: string
+          language: string
+          logic_modules: Json
+          name: string
+          platform: string
+          purpose: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          api_keys?: Json
+          behavior_style?: string
+          created_at?: string
+          generated_code?: string | null
+          id?: string
+          language?: string
+          logic_modules?: Json
+          name: string
+          platform?: string
+          purpose?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          api_keys?: Json
+          behavior_style?: string
+          created_at?: string
+          generated_code?: string | null
+          id?: string
+          language?: string
+          logic_modules?: Json
+          name?: string
+          platform?: string
+          purpose?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
