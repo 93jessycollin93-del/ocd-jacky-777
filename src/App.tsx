@@ -13,6 +13,7 @@ import TelegramShell from "./pages/TelegramShell";
 import NotFound from "./pages/NotFound";
 import Vault from "./pages/Vault";
 import BotFoundry from "./pages/BotFoundry";
+import ApiKeyManager from "./pages/ApiKeyManager";
 
 const queryClient = new QueryClient();
 
