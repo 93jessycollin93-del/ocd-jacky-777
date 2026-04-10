@@ -451,6 +451,120 @@ export type Database = {
         }
         Relationships: []
       }
+      gunit_agents: {
+        Row: {
+          created_at: string
+          id: string
+          last_run_at: string | null
+          name: string
+          next_run_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_run_at?: string | null
+          name: string
+          next_run_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_run_at?: string | null
+          name?: string
+          next_run_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      gunit_bots: {
+        Row: {
+          code: string
+          created_at: string
+          description: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          code?: string
+          created_at?: string
+          description?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      gunit_improvements: {
+        Row: {
+          analysis: string
+          created_at: string
+          execution: string
+          goal: string
+          id: string
+          improvement: string
+          score: number
+          user_id: string
+        }
+        Insert: {
+          analysis?: string
+          created_at?: string
+          execution?: string
+          goal: string
+          id?: string
+          improvement?: string
+          score?: number
+          user_id: string
+        }
+        Update: {
+          analysis?: string
+          created_at?: string
+          execution?: string
+          goal?: string
+          id?: string
+          improvement?: string
+          score?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      gunit_memory: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       jackie_memory: {
         Row: {
           category: string
