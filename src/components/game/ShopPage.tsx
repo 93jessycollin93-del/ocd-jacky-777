@@ -98,7 +98,7 @@ export default function ShopPage() {
   return (
     <div className="p-4 space-y-4">
       <h2 className="font-display text-xl text-foreground">🏪 Shop</h2>
-      <p className="text-xs text-muted-foreground">Purchase items with gold. Items go to your Bag.</p>
+      <p className="text-xs text-muted-foreground">Purchase items with diamonds. Items go to your Bag.</p>
 
       <Tabs value={category} onValueChange={setCategory}>
         <TabsList className="flex flex-wrap h-auto gap-1">
