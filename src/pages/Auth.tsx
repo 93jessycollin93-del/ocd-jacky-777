@@ -10,6 +10,7 @@ const DEMO_EMAIL = "demo@jackie.dev";
 const DEMO_PASSWORD = "J4ck!3_D3m0#2026xQ";
 
 const Auth = () => {
+  const navigate = useNavigate();
   const [view, setView] = useState<AuthView>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
