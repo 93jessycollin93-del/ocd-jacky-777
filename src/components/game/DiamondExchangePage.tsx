@@ -39,6 +39,8 @@ const DIAMOND_PACKAGES: DiamondPackage[] = [
   { id: 'dm-07', name: 'Imperial Vault', diamonds: 5500, bonusDiamonds: 1500, priceUsd: 99.99, priceTon: 20, icon: '🏛️', tag: '+27% Bonus' },
   // Whale tier
   { id: 'dm-08', name: 'Dynasty Reserve', diamonds: 15000, bonusDiamonds: 5000, priceUsd: 249.99, priceTon: 50, icon: '🐉', tag: '+33% Bonus', limited: true },
+  // Legendary tier
+  { id: 'dm-09', name: 'Eternal Throne', diamonds: 100000, bonusDiamonds: 40000, priceUsd: 999.99, priceTon: 200, icon: '⚜️', tag: '+40% Bonus', limited: true },
 ];
 
 // ── First Purchase Bonus ──
