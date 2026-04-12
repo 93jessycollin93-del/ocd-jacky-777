@@ -128,6 +128,14 @@ const App = () => (
                 <Route path="users" element={<GunitUsers />} />
                 <Route path="keys" element={<GunitApiKeys />} />
               </Route>
+              <Route
+                path="/sphere"
+                element={
+                  <ProtectedRoute>
+                    <SphereCommand />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="*" element={<NotFound />} />
             </Routes>
             </SandboxCatcher>
