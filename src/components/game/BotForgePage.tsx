@@ -5,6 +5,24 @@ import { useAuth } from '@/hooks/useAuth';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
+const API_KEYS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/api-keys`;
+
+async function apiKeysCall(action: string, method: 'GET' | 'POST' | 'DELETE', body?: unknown) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Not authenticated');
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${session.access_token}`,
+    apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+  };
+  const opts: RequestInit = { method, headers };
+  if (body) {
+    headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  const res = await fetch(`${API_KEYS_URL}/${action}`, opts);
+  return res.json();
+}
+
 interface BotConfig {
   name: string;
   purpose: 'scout' | 'trader' | 'diplomat' | 'warlord' | 'spy';
