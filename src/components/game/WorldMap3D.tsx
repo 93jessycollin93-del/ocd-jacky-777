@@ -666,15 +666,15 @@ function WorldScene({ onSelect }: { onSelect: (id: string | null) => void }) {
       const wx = 15 + (i % 4) * 30 + Math.sin(i * 1.5) * 10;
       const wz = 15 + Math.floor(i / 4) * 30 + Math.cos(i * 2.1) * 10;
       const h = getRawHeight(wx, wz, WORLD_SEED) * HEIGHT_SCALE;
-      m.push({ id: exp.id, x: wx, z: wz, y: Math.max(h, SEA_LEVEL_Y + 0.5), icon: '⚔️', label: exp.name, type: 'expedition' });
+      m.push({ id: exp.id, x: wx, z: wz, y: Math.max(h, SEA_LEVEL_Y + 0.5), icon: exp.icon || '⚔️', label: `${exp.type} Lv${exp.difficulty}`, type: 'expedition' });
     });
 
     // Creatures
     LEGENDARY_CREATURES.forEach((c, i) => {
-      const wx = -20 - i * 25 + Math.sin(i * 3) * 15;
-      const wz = 10 + i * 20 + Math.cos(i * 2) * 15;
+      const wx = c.x || (-20 - i * 25 + Math.sin(i * 3) * 15);
+      const wz = c.y || (10 + i * 20 + Math.cos(i * 2) * 15);
       const h = getRawHeight(wx, wz, WORLD_SEED) * HEIGHT_SCALE;
-      m.push({ id: `creature_${c.id}`, x: wx, z: wz, y: Math.max(h, SEA_LEVEL_Y + 0.5), icon: '🐉', label: c.name, type: 'creature' });
+      m.push({ id: `creature_${c.id}`, x: wx, z: wz, y: Math.max(h, SEA_LEVEL_Y + 0.5), icon: c.icon || '🐉', label: c.id.replace(/_/g, ' '), type: 'creature' });
     });
 
     // Gathering nodes
