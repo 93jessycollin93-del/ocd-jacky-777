@@ -76,6 +76,7 @@ export default function GameLayout() {
     { id: 'diamonds', label: 'Diamond Exchange', icon: '💠' },
     { id: 'jadestore', label: 'Jade Vault', icon: '🏛️' },
     { id: 'jadeadmin', label: 'Admin Curation', icon: '⚙️' },
+    { id: 'botforge', label: 'Bot Forge', icon: '🤖' },
   ];
 
   const handleTabChange = (tab: Tab) => {
@@ -112,6 +113,7 @@ export default function GameLayout() {
       case 'diamonds': return <DiamondExchangePage />;
       case 'jadestore': return <JadeStorePage />;
       case 'jadeadmin': return <JadeAdminPage />;
+      case 'botforge': return <BotForgePage />;
     }
   };
 
