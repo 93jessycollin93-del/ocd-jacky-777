@@ -129,7 +129,7 @@ export default function ShopPage() {
                         <button className="w-6 h-6 rounded bg-muted text-foreground text-xs" onClick={() => setQuantities(p => ({ ...p, [item.id]: Math.min(99, (p[item.id] || 1) + 1) }))}>+</button>
                       </div>
                       <Button size="sm" className="h-7 text-xs" disabled={!affordable} onClick={() => buyItem(item)}>
-                        Buy · {totalCost.toLocaleString()} 💰
+                        Buy · {totalCost.toLocaleString()} 💎
                       </Button>
                     </div>
                   </div>
