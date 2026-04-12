@@ -24,6 +24,7 @@ import GunitChat from "./pages/gunit/GunitChat";
 import GunitAgents from "./pages/gunit/GunitAgents";
 import GunitUsers from "./pages/gunit/GunitUsers";
 import GunitApiKeys from "./pages/gunit/GunitApiKeys";
+import SphereCommand from "./pages/SphereCommand";
 
 const queryClient = new QueryClient();
 
@@ -127,6 +128,14 @@ const App = () => (
                 <Route path="users" element={<GunitUsers />} />
                 <Route path="keys" element={<GunitApiKeys />} />
               </Route>
+              <Route
+                path="/sphere"
+                element={
+                  <ProtectedRoute>
+                    <SphereCommand />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="*" element={<NotFound />} />
             </Routes>
             </SandboxCatcher>
