@@ -312,6 +312,17 @@ const Auth = () => {
               {view === "login" ? "Need an account? Sign up" : "Already have an account? Sign in"}
             </button>
 
+            {/* Sandbox mode */}
+            <button
+              onClick={() => {
+                sessionStorage.setItem("sandbox", "true");
+                navigate("/sandbox");
+              }}
+              className="w-full py-3 rounded-sm font-mono text-sm uppercase tracking-wider border border-dashed border-primary/30 text-primary/70 hover:text-primary hover:border-primary/60 hover:bg-primary/5 transition-all disabled:opacity-50 btn-mechanical flex items-center justify-center gap-2"
+            >
+              🧪 Sandbox Mode
+            </button>
+
           </>
         )}
       </div>
