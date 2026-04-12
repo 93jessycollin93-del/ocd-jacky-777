@@ -13,7 +13,7 @@ interface ShopItem {
   category: BagCategory;
   rarity: GearRarity;
   description: string;
-  cost: { resource: string; amount: number };
+  cost: { resource: 'diamonds'; amount: number };
   value?: number;
   resourceType?: string;
   duration?: number;
