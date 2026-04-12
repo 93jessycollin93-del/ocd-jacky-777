@@ -10,7 +10,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Sandbox from "./pages/Sandbox";
 import { SandboxBanner } from "./components/SandboxBanner";
-import Design from "./pages/Design";
+
 import Play from "./pages/Play";
 import TelegramShell from "./pages/TelegramShell";
 import NotFound from "./pages/NotFound";
@@ -77,14 +77,8 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="/design"
-                element={
-                  <ProtectedRoute>
-                    <Design />
-                  </ProtectedRoute>
-                }
-              />
+
+
               <Route
                 path="/play"
                 element={

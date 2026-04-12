@@ -1,10 +1,10 @@
 import { useNavigate } from "react-router-dom";
-import { Zap, Gamepad2, Palette, Bot, Key, Shield, Package, Globe } from "lucide-react";
+import { Zap, Gamepad2, Bot, Key, Shield, Package, Globe } from "lucide-react";
 
 const sections = [
   { path: "/", label: "Jackie Chat", icon: Zap, desc: "AI assistant" },
   { path: "/play", label: "Play Game", icon: Gamepad2, desc: "Strategy game" },
-  { path: "/design", label: "Game Design", icon: Palette, desc: "Design hub" },
+  
   { path: "/bots", label: "Bot Foundry", icon: Bot, desc: "Build bots" },
   { path: "/keys", label: "API Keys", icon: Key, desc: "Key vault" },
   { path: "/gunit", label: "G-UNIT", icon: Shield, desc: "AI platform" },
