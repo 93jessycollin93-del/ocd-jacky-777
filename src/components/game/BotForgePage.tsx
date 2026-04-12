@@ -183,15 +183,8 @@ export default function BotForgePage() {
   const linkKeyToBot = async (botId: string, keyId: string) => {
     if (!user) return;
     try {
-      // Remove existing link for this bot
       await supabase.from('bot_api_keys').delete().eq('bot_id', botId).eq('user_id', user.id);
-      // Insert new link
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      await supabase.functions.invoke('api-keys/link-bot', {
-        body: { bot_id: botId, api_key_id: keyId },
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
+      await apiKeysCall('link-bot', 'POST', { bot_id: botId, api_key_id: keyId });
       toast.success('🔗 Key linked to bot');
       setLinkingBotId(null);
       loadBots();
