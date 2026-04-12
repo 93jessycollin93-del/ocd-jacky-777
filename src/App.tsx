@@ -65,6 +65,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <SandboxBanner />
+            <SandboxCatcher>
               <Routes>
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/sandbox" element={<Sandbox />} />
