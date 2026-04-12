@@ -116,12 +116,8 @@ export default function BotForgePage() {
   const loadKeys = async () => {
     if (!user) return;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      const res = await supabase.functions.invoke('api-keys/list', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      if (res.data?.keys) setKeys(res.data.keys);
+      const res = await apiKeysCall('list', 'GET');
+      if (res?.keys) setKeys(res.keys);
     } catch { /* ignore */ }
   };
 
