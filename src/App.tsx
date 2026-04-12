@@ -9,6 +9,7 @@ import { useEffect } from "react";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Sandbox from "./pages/Sandbox";
+import { SandboxBanner } from "./components/SandboxBanner";
 import Design from "./pages/Design";
 import Play from "./pages/Play";
 import TelegramShell from "./pages/TelegramShell";
@@ -63,6 +64,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <SandboxBanner />
             <SandboxCatcher>
               <Routes>
                 <Route path="/auth" element={<Auth />} />
