@@ -197,7 +197,7 @@ export interface FactionState {
 }
 
 // ── Bag System ──
-export type BagCategory = 'speedups' | 'resources' | 'nfts' | 'boosts' | 'equipment' | 'shields' | 'notes';
+export type BagCategory = 'speedups' | 'resources' | 'nfts' | 'boosts' | 'equipment' | 'shields' | 'notes' | 'teleports' | 'scouting' | 'healing' | 'war' | 'vip' | 'talents' | 'cosmetics' | 'guild' | 'special';
 
 export interface BagItem {
   id: string;
