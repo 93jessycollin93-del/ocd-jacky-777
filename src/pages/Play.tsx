@@ -40,7 +40,9 @@ export default function Play() {
     <I18nProvider>
       <AudioProvider>
         <GameProvider>
-          <PlayContent />
+          <GameErrorBoundary>
+            <PlayContent />
+          </GameErrorBoundary>
         </GameProvider>
       </AudioProvider>
     </I18nProvider>
