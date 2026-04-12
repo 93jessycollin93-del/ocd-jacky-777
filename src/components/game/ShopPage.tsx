@@ -21,26 +21,26 @@ interface ShopItem {
 
 const SHOP_ITEMS: ShopItem[] = [
   // Speedups
-  { id: 'speed_5m', name: '5-Min Speed Up', icon: '⏩', category: 'speedups', rarity: 'common', description: 'Reduce timer by 5 min', cost: { resource: 'gold', amount: 50 }, duration: 300 },
-  { id: 'speed_15m', name: '15-Min Speed Up', icon: '⏩', category: 'speedups', rarity: 'uncommon', description: 'Reduce timer by 15 min', cost: { resource: 'gold', amount: 120 }, duration: 900 },
-  { id: 'speed_1h', name: '1-Hour Speed Up', icon: '⏩', category: 'speedups', rarity: 'rare', description: 'Reduce timer by 1 hour', cost: { resource: 'gold', amount: 400 }, duration: 3600 },
-  { id: 'speed_8h', name: '8-Hour Speed Up', icon: '⏩', category: 'speedups', rarity: 'ultra_rare', description: 'Reduce timer by 8 hours', cost: { resource: 'gold', amount: 2500 }, duration: 28800 },
+  { id: 'speed_5m', name: '5-Min Speed Up', icon: '⏩', category: 'speedups', rarity: 'common', description: 'Reduce timer by 5 min', cost: { resource: 'diamonds', amount: 5 }, duration: 300 },
+  { id: 'speed_15m', name: '15-Min Speed Up', icon: '⏩', category: 'speedups', rarity: 'uncommon', description: 'Reduce timer by 15 min', cost: { resource: 'diamonds', amount: 12 }, duration: 900 },
+  { id: 'speed_1h', name: '1-Hour Speed Up', icon: '⏩', category: 'speedups', rarity: 'rare', description: 'Reduce timer by 1 hour', cost: { resource: 'diamonds', amount: 40 }, duration: 3600 },
+  { id: 'speed_8h', name: '8-Hour Speed Up', icon: '⏩', category: 'speedups', rarity: 'ultra_rare', description: 'Reduce timer by 8 hours', cost: { resource: 'diamonds', amount: 250 }, duration: 28800 },
   // Resource packs
-  { id: 'food_1k', name: 'Food Pack (1K)', icon: '🌾', category: 'resources', rarity: 'common', description: '+1,000 food', cost: { resource: 'gold', amount: 30 }, value: 1000, resourceType: 'food' },
-  { id: 'wood_1k', name: 'Wood Pack (1K)', icon: '🪵', category: 'resources', rarity: 'common', description: '+1,000 wood', cost: { resource: 'gold', amount: 30 }, value: 1000, resourceType: 'wood' },
-  { id: 'stone_1k', name: 'Stone Pack (1K)', icon: '⛏️', category: 'resources', rarity: 'common', description: '+1,000 stone', cost: { resource: 'gold', amount: 35 }, value: 1000, resourceType: 'stone' },
-  { id: 'iron_500', name: 'Iron Pack (500)', icon: '⚙️', category: 'resources', rarity: 'uncommon', description: '+500 iron', cost: { resource: 'gold', amount: 50 }, value: 500, resourceType: 'iron' },
-  { id: 'food_10k', name: 'Food Crate (10K)', icon: '🌾', category: 'resources', rarity: 'rare', description: '+10,000 food', cost: { resource: 'gold', amount: 250 }, value: 10000, resourceType: 'food' },
-  { id: 'iron_5k', name: 'Iron Crate (5K)', icon: '⚙️', category: 'resources', rarity: 'rare', description: '+5,000 iron', cost: { resource: 'gold', amount: 400 }, value: 5000, resourceType: 'iron' },
+  { id: 'food_1k', name: 'Food Pack (1K)', icon: '🌾', category: 'resources', rarity: 'common', description: '+1,000 food', cost: { resource: 'diamonds', amount: 3 }, value: 1000, resourceType: 'food' },
+  { id: 'wood_1k', name: 'Wood Pack (1K)', icon: '🪵', category: 'resources', rarity: 'common', description: '+1,000 wood', cost: { resource: 'diamonds', amount: 3 }, value: 1000, resourceType: 'wood' },
+  { id: 'stone_1k', name: 'Stone Pack (1K)', icon: '⛏️', category: 'resources', rarity: 'common', description: '+1,000 stone', cost: { resource: 'diamonds', amount: 4 }, value: 1000, resourceType: 'stone' },
+  { id: 'iron_500', name: 'Iron Pack (500)', icon: '⚙️', category: 'resources', rarity: 'uncommon', description: '+500 iron', cost: { resource: 'diamonds', amount: 5 }, value: 500, resourceType: 'iron' },
+  { id: 'food_10k', name: 'Food Crate (10K)', icon: '🌾', category: 'resources', rarity: 'rare', description: '+10,000 food', cost: { resource: 'diamonds', amount: 25 }, value: 10000, resourceType: 'food' },
+  { id: 'iron_5k', name: 'Iron Crate (5K)', icon: '⚙️', category: 'resources', rarity: 'rare', description: '+5,000 iron', cost: { resource: 'diamonds', amount: 40 }, value: 5000, resourceType: 'iron' },
   // Shields
-  { id: 'shield_4h', name: 'Peace Shield (4hr)', icon: '🛡️', category: 'shields', rarity: 'uncommon', description: '4-hour shield', cost: { resource: 'gold', amount: 200 }, duration: 14400 },
-  { id: 'shield_8h', name: 'Peace Shield (8hr)', icon: '🛡️', category: 'shields', rarity: 'rare', description: '8-hour shield', cost: { resource: 'gold', amount: 350 }, duration: 28800 },
-  { id: 'shield_24h', name: 'Peace Shield (24hr)', icon: '🛡️✨', category: 'shields', rarity: 'ultra_rare', description: '24-hour shield', cost: { resource: 'gold', amount: 800 }, duration: 86400 },
+  { id: 'shield_4h', name: 'Peace Shield (4hr)', icon: '🛡️', category: 'shields', rarity: 'uncommon', description: '4-hour shield', cost: { resource: 'diamonds', amount: 20 }, duration: 14400 },
+  { id: 'shield_8h', name: 'Peace Shield (8hr)', icon: '🛡️', category: 'shields', rarity: 'rare', description: '8-hour shield', cost: { resource: 'diamonds', amount: 35 }, duration: 28800 },
+  { id: 'shield_24h', name: 'Peace Shield (24hr)', icon: '🛡️✨', category: 'shields', rarity: 'ultra_rare', description: '24-hour shield', cost: { resource: 'diamonds', amount: 80 }, duration: 86400 },
   // Boosts
-  { id: 'atk_boost', name: 'ATK Boost (30min)', icon: '⚔️', category: 'boosts', rarity: 'uncommon', description: '+20% attack for 30 min', cost: { resource: 'gold', amount: 150 }, duration: 1800 },
-  { id: 'def_boost', name: 'DEF Boost (30min)', icon: '🛡️', category: 'boosts', rarity: 'uncommon', description: '+20% defense for 30 min', cost: { resource: 'gold', amount: 150 }, duration: 1800 },
-  { id: 'gather_boost', name: 'Gather Boost (1hr)', icon: '🍀', category: 'boosts', rarity: 'rare', description: '+30% gathering for 1 hour', cost: { resource: 'gold', amount: 300 }, duration: 3600 },
-  { id: 'train_boost', name: 'Training Boost (1hr)', icon: '🏋️', category: 'boosts', rarity: 'rare', description: '+50% training speed for 1 hr', cost: { resource: 'gold', amount: 350 }, duration: 3600 },
+  { id: 'atk_boost', name: 'ATK Boost (30min)', icon: '⚔️', category: 'boosts', rarity: 'uncommon', description: '+20% attack for 30 min', cost: { resource: 'diamonds', amount: 15 }, duration: 1800 },
+  { id: 'def_boost', name: 'DEF Boost (30min)', icon: '🛡️', category: 'boosts', rarity: 'uncommon', description: '+20% defense for 30 min', cost: { resource: 'diamonds', amount: 15 }, duration: 1800 },
+  { id: 'gather_boost', name: 'Gather Boost (1hr)', icon: '🍀', category: 'boosts', rarity: 'rare', description: '+30% gathering for 1 hour', cost: { resource: 'diamonds', amount: 30 }, duration: 3600 },
+  { id: 'train_boost', name: 'Training Boost (1hr)', icon: '🏋️', category: 'boosts', rarity: 'rare', description: '+50% training speed for 1 hr', cost: { resource: 'diamonds', amount: 35 }, duration: 3600 },
 ];
 
 const RARITY_COLORS: Record<GearRarity, string> = {
@@ -98,7 +98,7 @@ export default function ShopPage() {
   return (
     <div className="p-4 space-y-4">
       <h2 className="font-display text-xl text-foreground">🏪 Shop</h2>
-      <p className="text-xs text-muted-foreground">Purchase items with gold. Items go to your Bag.</p>
+      <p className="text-xs text-muted-foreground">Purchase items with diamonds. Items go to your Bag.</p>
 
       <Tabs value={category} onValueChange={setCategory}>
         <TabsList className="flex flex-wrap h-auto gap-1">
@@ -129,7 +129,7 @@ export default function ShopPage() {
                         <button className="w-6 h-6 rounded bg-muted text-foreground text-xs" onClick={() => setQuantities(p => ({ ...p, [item.id]: Math.min(99, (p[item.id] || 1) + 1) }))}>+</button>
                       </div>
                       <Button size="sm" className="h-7 text-xs" disabled={!affordable} onClick={() => buyItem(item)}>
-                        Buy · {totalCost.toLocaleString()} 💰
+                        Buy · {totalCost.toLocaleString()} 💎
                       </Button>
                     </div>
                   </div>

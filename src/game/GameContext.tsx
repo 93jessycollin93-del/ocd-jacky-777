@@ -952,6 +952,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     if (!skipCostDeduction) {
       if (banner.costType === 'gold') {
         if (state.resources.gold < cost) return [];
+      } else if (banner.costType === 'diamonds') {
+        if ((state.resources.diamonds || 0) < cost) return [];
       } else if (banner.costType === 'stars') {
         if ((state.telegramStars || 0) < cost) return [];
       }
@@ -989,6 +991,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       // Only deduct locally if not already done server-side
       if (!skipCostDeduction) {
         if (banner.costType === 'gold') resources.gold -= cost;
+        if (banner.costType === 'diamonds') resources.diamonds = (resources.diamonds || 0) - cost;
         if (banner.costType === 'stars') stars -= cost;
       }
 
@@ -1030,6 +1033,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       let stars = prev.telegramStars || 0;
 
       if (costType === 'gold') resources.gold = Math.max(0, resources.gold - costDeducted);
+      if (costType === 'diamonds') resources.diamonds = Math.max(0, (resources.diamonds || 0) - costDeducted);
       if (costType === 'stars') stars = Math.max(0, stars - costDeducted);
 
       // Merge into inventory

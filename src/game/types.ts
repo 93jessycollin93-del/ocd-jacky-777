@@ -379,7 +379,7 @@ export interface GachaBanner {
   description: string;
   theme: string;
   pool: GachaBannerItem[];
-  costType: 'gold' | 'ton' | 'stars';
+  costType: 'gold' | 'ton' | 'stars' | 'diamonds';
   costSingle: number;
   costMulti: number;
   pityThreshold: number;

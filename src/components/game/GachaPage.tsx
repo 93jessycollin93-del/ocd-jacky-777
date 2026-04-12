@@ -54,7 +54,7 @@ export default function GachaPage() {
   };
 
   const canFree = !state.lastFreePull || Date.now() - state.lastFreePull >= 86400000;
-  const costType = banner.costType === 'gold' ? '💰' : banner.costType === 'stars' ? '⭐' : '💎';
+  const costType = banner.costType === 'gold' ? '💰' : banner.costType === 'stars' ? '⭐' : banner.costType === 'diamonds' ? '💎' : '💎';
 
   return (
     <div className="p-4 space-y-4">
