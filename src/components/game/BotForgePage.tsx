@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useGame } from '@/game/GameContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -10,6 +10,7 @@ interface BotConfig {
   purpose: 'scout' | 'trader' | 'diplomat' | 'warlord' | 'spy';
   personality: 'aggressive' | 'defensive' | 'balanced' | 'cunning';
   modules: string[];
+  autoMode: boolean;
 }
 
 interface CreatedBot {
@@ -19,6 +20,8 @@ interface CreatedBot {
   personality: string;
   status: string;
   created_at: string;
+  linkedKeyId?: string | null;
+  linkedKeyName?: string | null;
 }
 
 interface ApiKey {
@@ -28,6 +31,11 @@ interface ApiKey {
   is_active: boolean;
   created_at: string;
   scopes: string[];
+}
+
+interface BotKeyLink {
+  bot_id: string;
+  api_key_id: string;
 }
 
 const PURPOSES = [
@@ -59,12 +67,15 @@ export default function BotForgePage() {
   const { user } = useAuth();
   const [view, setView] = useState<'forge' | 'bots' | 'keys'>('forge');
   const [step, setStep] = useState(0);
-  const [config, setConfig] = useState<BotConfig>({ name: '', purpose: 'scout', personality: 'balanced', modules: [] });
+  const [config, setConfig] = useState<BotConfig>({ name: '', purpose: 'scout', personality: 'balanced', modules: [], autoMode: true });
   const [bots, setBots] = useState<CreatedBot[]>([]);
   const [keys, setKeys] = useState<ApiKey[]>([]);
+  const [botKeyLinks, setBotKeyLinks] = useState<BotKeyLink[]>([]);
   const [loading, setLoading] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
   const [revealedKey, setRevealedKey] = useState<string | null>(null);
+  const [expandedBot, setExpandedBot] = useState<string | null>(null);
+  const [linkingBotId, setLinkingBotId] = useState<string | null>(null);
 
   const toggleModule = (id: string) => {
     setConfig(c => ({
@@ -75,8 +86,13 @@ export default function BotForgePage() {
 
   const loadBots = async () => {
     if (!user) return;
-    const { data } = await supabase.from('user_bots').select('id, name, purpose, behavior_style, status, created_at').eq('user_id', user.id).order('created_at', { ascending: false });
-    if (data) setBots(data.map(b => ({ ...b, personality: b.behavior_style })));
+    const { data } = await supabase.from('user_bots').select('id, name, purpose, behavior_style, status, created_at').eq('user_id', user.id).eq('platform', 'game').order('created_at', { ascending: false });
+    const { data: links } = await supabase.from('bot_api_keys').select('bot_id, api_key_id').eq('user_id', user.id);
+    if (links) setBotKeyLinks(links);
+    if (data) setBots(data.map(b => {
+      const link = links?.find(l => l.bot_id === b.id);
+      return { ...b, personality: b.behavior_style, linkedKeyId: link?.api_key_id || null };
+    }));
   };
 
   const loadKeys = async () => {
@@ -93,10 +109,11 @@ export default function BotForgePage() {
 
   const handleViewChange = (v: 'forge' | 'bots' | 'keys') => {
     setView(v);
-    if (v === 'bots') loadBots();
+    if (v === 'bots') { loadBots(); loadKeys(); }
     if (v === 'keys') loadKeys();
   };
 
+  // ── Bot CRUD ──
   const createBot = async () => {
     if (!user || !config.name.trim()) { toast.error('Name your bot, commander!'); return; }
     setLoading(true);
@@ -110,11 +127,11 @@ export default function BotForgePage() {
         language: 'typescript',
         logic_modules: config.modules,
         api_keys: {},
-        status: 'active',
+        status: config.autoMode ? 'active' : 'draft',
       });
       if (error) throw error;
       toast.success(`🤖 ${config.name} has been forged!`);
-      setConfig({ name: '', purpose: 'scout', personality: 'balanced', modules: [] });
+      setConfig({ name: '', purpose: 'scout', personality: 'balanced', modules: [], autoMode: true });
       setStep(0);
       handleViewChange('bots');
     } catch (e: any) {
@@ -124,6 +141,63 @@ export default function BotForgePage() {
     }
   };
 
+  const updateBotStatus = async (botId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase.from('user_bots').update({ status: newStatus }).eq('id', botId).eq('user_id', user!.id);
+      if (error) throw error;
+      toast.success(`Bot ${newStatus === 'active' ? 'activated' : newStatus === 'paused' ? 'paused' : 'updated'}!`);
+      loadBots();
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to update bot');
+    }
+  };
+
+  const deleteBot = async (botId: string, botName: string) => {
+    try {
+      // Unlink keys first
+      await supabase.from('bot_api_keys').delete().eq('bot_id', botId).eq('user_id', user!.id);
+      const { error } = await supabase.from('user_bots').delete().eq('id', botId).eq('user_id', user!.id);
+      if (error) throw error;
+      toast.success(`🗑️ ${botName} decommissioned`);
+      loadBots();
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to delete bot');
+    }
+  };
+
+  // ── Key linking ──
+  const linkKeyToBot = async (botId: string, keyId: string) => {
+    if (!user) return;
+    try {
+      // Remove existing link for this bot
+      await supabase.from('bot_api_keys').delete().eq('bot_id', botId).eq('user_id', user.id);
+      // Insert new link
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      await supabase.functions.invoke('api-keys/link-bot', {
+        body: { bot_id: botId, api_key_id: keyId },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      toast.success('🔗 Key linked to bot');
+      setLinkingBotId(null);
+      loadBots();
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to link key');
+    }
+  };
+
+  const unlinkKeyFromBot = async (botId: string) => {
+    if (!user) return;
+    try {
+      await supabase.from('bot_api_keys').delete().eq('bot_id', botId).eq('user_id', user.id);
+      toast.success('🔓 Key unlinked');
+      loadBots();
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to unlink');
+    }
+  };
+
+  // ── API Keys ──
   const createApiKey = async () => {
     if (!user || !newKeyName.trim()) { toast.error('Name your key'); return; }
     setLoading(true);
@@ -160,12 +234,13 @@ export default function BotForgePage() {
     } catch { toast.error('Failed to revoke'); }
   };
 
-  const steps = ['Purpose', 'Personality', 'Modules', 'Name & Deploy'];
+  const steps = ['Purpose', 'Personality', 'Modules', 'Configure & Deploy'];
+  const activeKeys = keys.filter(k => k.is_active);
 
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h2 className="text-xl font-display text-foreground flex items-center gap-2">🤖 Bot Forge</h2>
           <p className="text-xs text-muted-foreground">Create AI allies to automate your kingdom</p>
@@ -173,7 +248,7 @@ export default function BotForgePage() {
         <div className="flex gap-1">
           {(['forge', 'bots', 'keys'] as const).map(v => (
             <button key={v} onClick={() => handleViewChange(v)} className={`px-3 py-1.5 rounded-lg text-xs font-display capitalize transition-colors ${view === v ? 'bg-primary/20 text-primary ring-1 ring-primary/40' : 'bg-muted/50 text-muted-foreground hover:bg-muted'}`}>
-              {v === 'forge' ? '⚒️ Forge' : v === 'bots' ? '🤖 My Bots' : '🔑 API Keys'}
+              {v === 'forge' ? '⚒️ Forge' : v === 'bots' ? `🤖 My Bots (${bots.length})` : '🔑 API Keys'}
             </button>
           ))}
         </div>
@@ -184,7 +259,7 @@ export default function BotForgePage() {
         {view === 'forge' && (
           <motion.div key="forge" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
             {/* Step indicator */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {steps.map((s, i) => (
                 <button key={s} onClick={() => setStep(i)} className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-display transition-colors ${step === i ? 'bg-primary/20 text-primary' : step > i ? 'bg-accent/20 text-accent' : 'bg-muted/30 text-muted-foreground'}`}>
                   <span className="w-4 h-4 rounded-full bg-current/20 flex items-center justify-center text-[9px]">{i + 1}</span>
@@ -238,7 +313,7 @@ export default function BotForgePage() {
               </div>
             )}
 
-            {/* Step 3: Name & Deploy */}
+            {/* Step 3: Name, Mode & Deploy */}
             {step === 3 && (
               <div className="space-y-3">
                 <div className="bg-card border border-border rounded-xl p-4 space-y-3">
@@ -253,13 +328,30 @@ export default function BotForgePage() {
                     />
                   </div>
 
+                  {/* Auto/Manual toggle */}
+                  <div className="flex items-center justify-between bg-muted/30 rounded-lg p-3">
+                    <div>
+                      <p className="text-xs font-display text-foreground">Operation Mode</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {config.autoMode ? '🟢 Automated — bot runs autonomously' : '🟡 Manual — you trigger each action'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setConfig(c => ({ ...c, autoMode: !c.autoMode }))}
+                      className={`relative w-12 h-6 rounded-full transition-colors ${config.autoMode ? 'bg-primary' : 'bg-muted-foreground/30'}`}
+                    >
+                      <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-primary-foreground shadow transition-transform ${config.autoMode ? 'left-6' : 'left-0.5'}`} />
+                    </button>
+                  </div>
+
                   {/* Summary */}
                   <div className="bg-muted/30 rounded-lg p-3 space-y-1">
                     <p className="text-[10px] text-muted-foreground font-display uppercase tracking-wider">Build Summary</p>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div><span className="text-muted-foreground">Purpose:</span> <span className="text-foreground">{PURPOSES.find(p => p.id === config.purpose)?.label}</span></div>
                       <div><span className="text-muted-foreground">Style:</span> <span className="text-foreground capitalize">{config.personality}</span></div>
-                      <div className="col-span-2"><span className="text-muted-foreground">Modules:</span> <span className="text-foreground">{config.modules.length > 0 ? config.modules.map(m => MODULES.find(mod => mod.id === m)?.label).join(', ') : 'None'}</span></div>
+                      <div><span className="text-muted-foreground">Mode:</span> <span className="text-foreground">{config.autoMode ? 'Automated' : 'Manual'}</span></div>
+                      <div><span className="text-muted-foreground">Modules:</span> <span className="text-foreground">{config.modules.length}</span></div>
                     </div>
                   </div>
 
@@ -279,18 +371,101 @@ export default function BotForgePage() {
               <div className="text-center py-12">
                 <p className="text-3xl mb-2">🤖</p>
                 <p className="text-sm text-muted-foreground">No bots forged yet. Head to the Forge!</p>
+                <button onClick={() => setView('forge')} className="mt-2 px-4 py-2 bg-primary/20 text-primary rounded-lg text-xs font-display hover:bg-primary/30">
+                  ⚒️ Go to Forge
+                </button>
               </div>
             ) : (
               bots.map(bot => (
-                <div key={bot.id} className="bg-card border border-border rounded-xl p-3 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{PURPOSES.find(p => p.id === bot.purpose)?.icon || '🤖'}</span>
-                    <div>
-                      <p className="text-sm font-display text-foreground">{bot.name}</p>
-                      <p className="text-[10px] text-muted-foreground capitalize">{bot.purpose} • {bot.personality} • {bot.status}</p>
+                <div key={bot.id} className="bg-card border border-border rounded-xl overflow-hidden">
+                  {/* Bot header row */}
+                  <button
+                    onClick={() => setExpandedBot(expandedBot === bot.id ? null : bot.id)}
+                    className="w-full p-3 flex items-center justify-between hover:bg-muted/20 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{PURPOSES.find(p => p.id === bot.purpose)?.icon || '🤖'}</span>
+                      <div className="text-left">
+                        <p className="text-sm font-display text-foreground">{bot.name}</p>
+                        <p className="text-[10px] text-muted-foreground capitalize">{bot.purpose} • {bot.personality}</p>
+                      </div>
                     </div>
-                  </div>
-                  <span className={`w-2 h-2 rounded-full ${bot.status === 'active' ? 'bg-green-500' : 'bg-muted-foreground'}`} />
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                        bot.status === 'active' ? 'bg-primary/20 text-primary' :
+                        bot.status === 'paused' ? 'bg-yellow-500/20 text-yellow-400' :
+                        'bg-muted text-muted-foreground'
+                      }`}>
+                        {bot.status === 'active' ? '🟢 Active' : bot.status === 'paused' ? '⏸️ Paused' : `📝 ${bot.status}`}
+                      </span>
+                      <span className="text-muted-foreground text-xs">{expandedBot === bot.id ? '▲' : '▼'}</span>
+                    </div>
+                  </button>
+
+                  {/* Expanded controls */}
+                  <AnimatePresence>
+                    {expandedBot === bot.id && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="border-t border-border overflow-hidden"
+                      >
+                        <div className="p-3 space-y-3">
+                          {/* Status controls */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[10px] text-muted-foreground font-display">Controls:</span>
+                            {bot.status !== 'active' && (
+                              <button onClick={() => updateBotStatus(bot.id, 'active')} className="px-3 py-1 rounded-lg bg-primary/20 text-primary text-[10px] font-display hover:bg-primary/30 transition-colors">
+                                ▶️ Activate
+                              </button>
+                            )}
+                            {bot.status === 'active' && (
+                              <button onClick={() => updateBotStatus(bot.id, 'paused')} className="px-3 py-1 rounded-lg bg-yellow-500/20 text-yellow-400 text-[10px] font-display hover:bg-yellow-500/30 transition-colors">
+                                ⏸️ Pause
+                              </button>
+                            )}
+                            <button onClick={() => deleteBot(bot.id, bot.name)} className="px-3 py-1 rounded-lg bg-destructive/20 text-destructive text-[10px] font-display hover:bg-destructive/30 transition-colors">
+                              🗑️ Delete
+                            </button>
+                          </div>
+
+                          {/* API Key linking */}
+                          <div className="bg-muted/30 rounded-lg p-2 space-y-2">
+                            <p className="text-[10px] font-display text-muted-foreground">🔑 Linked API Key</p>
+                            {bot.linkedKeyId ? (
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-foreground font-mono">
+                                  {keys.find(k => k.id === bot.linkedKeyId)?.name || bot.linkedKeyId.slice(0, 8) + '...'}
+                                </span>
+                                <button onClick={() => unlinkKeyFromBot(bot.id)} className="text-[10px] text-destructive hover:underline">Unlink</button>
+                              </div>
+                            ) : linkingBotId === bot.id ? (
+                              <div className="space-y-1">
+                                {activeKeys.length === 0 ? (
+                                  <p className="text-[10px] text-muted-foreground">No active keys. Create one in API Keys tab first.</p>
+                                ) : (
+                                  activeKeys.map(k => (
+                                    <button key={k.id} onClick={() => linkKeyToBot(bot.id, k.id)} className="w-full text-left px-2 py-1.5 rounded bg-card border border-border text-xs text-foreground hover:border-primary/30 transition-colors">
+                                      🔑 {k.name} <span className="text-muted-foreground font-mono">({k.prefix}...)</span>
+                                    </button>
+                                  ))
+                                )}
+                                <button onClick={() => setLinkingBotId(null)} className="text-[10px] text-muted-foreground hover:text-foreground">Cancel</button>
+                              </div>
+                            ) : (
+                              <button onClick={() => setLinkingBotId(bot.id)} className="text-[10px] text-primary hover:underline">
+                                + Link an API Key
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Info */}
+                          <p className="text-[10px] text-muted-foreground">Created: {new Date(bot.created_at).toLocaleDateString()}</p>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               ))
             )}
@@ -337,23 +512,38 @@ export default function BotForgePage() {
                 <p className="text-xs text-muted-foreground">No API keys yet</p>
               </div>
             ) : (
-              keys.map(k => (
-                <div key={k.id} className="bg-card border border-border rounded-xl p-3 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-display text-foreground">{k.name}</p>
-                    <p className="text-[10px] text-muted-foreground font-mono">{k.prefix}••••••••</p>
-                    <p className="text-[10px] text-muted-foreground">{new Date(k.created_at).toLocaleDateString()}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${k.is_active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                      {k.is_active ? 'Active' : 'Revoked'}
-                    </span>
-                    {k.is_active && (
-                      <button onClick={() => revokeKey(k.id)} className="text-[10px] text-red-400 hover:text-red-300 hover:underline">Revoke</button>
+              keys.map(k => {
+                const linkedBots = bots.filter(b => botKeyLinks.some(l => l.api_key_id === k.id && l.bot_id === b.id));
+                return (
+                  <div key={k.id} className="bg-card border border-border rounded-xl p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-display text-foreground">{k.name}</p>
+                        <p className="text-[10px] text-muted-foreground font-mono">{k.prefix}••••••••</p>
+                        <p className="text-[10px] text-muted-foreground">{new Date(k.created_at).toLocaleDateString()}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${k.is_active ? 'bg-primary/20 text-primary' : 'bg-destructive/20 text-destructive'}`}>
+                          {k.is_active ? 'Active' : 'Revoked'}
+                        </span>
+                        {k.is_active && (
+                          <button onClick={() => revokeKey(k.id)} className="text-[10px] text-destructive hover:underline">Revoke</button>
+                        )}
+                      </div>
+                    </div>
+                    {linkedBots.length > 0 && (
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <span className="text-[10px] text-muted-foreground">Linked to:</span>
+                        {linkedBots.map(b => (
+                          <span key={b.id} className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-foreground">
+                            {PURPOSES.find(p => p.id === b.purpose)?.icon} {b.name}
+                          </span>
+                        ))}
+                      </div>
                     )}
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </motion.div>
         )}
