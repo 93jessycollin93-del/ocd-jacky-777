@@ -24,6 +24,7 @@ import GunitChat from "./pages/gunit/GunitChat";
 import GunitAgents from "./pages/gunit/GunitAgents";
 import GunitUsers from "./pages/gunit/GunitUsers";
 import GunitApiKeys from "./pages/gunit/GunitApiKeys";
+import SphereCommand from "./pages/SphereCommand";
 
 const queryClient = new QueryClient();
 
