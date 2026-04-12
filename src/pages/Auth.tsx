@@ -6,7 +6,7 @@ import { toast } from "sonner";
 type AuthView = "login" | "signup" | "forgot" | "reset";
 
 const DEMO_EMAIL = "demo@jackie.dev";
-const DEMO_PASSWORD = "demo123456";
+const DEMO_PASSWORD = "J4ck!3_D3m0#2026xQ";
 
 const Auth = () => {
   const [view, setView] = useState<AuthView>("login");
