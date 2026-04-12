@@ -209,14 +209,9 @@ export default function BotForgePage() {
     if (!user || !newKeyName.trim()) { toast.error('Name your key'); return; }
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Not authenticated');
-      const res = await supabase.functions.invoke('api-keys/create', {
-        body: { name: newKeyName.trim(), scopes: ['bot:create', 'bot:read', 'game:read'] },
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      if (res.data?.raw_key) {
-        setRevealedKey(res.data.raw_key);
+      const res = await apiKeysCall('create', 'POST', { name: newKeyName.trim(), scopes: ['bot:create', 'bot:read', 'game:read'] });
+      if (res?.raw_key) {
+        setRevealedKey(res.raw_key);
         setNewKeyName('');
         toast.success('🔑 API Key forged! Copy it now — it won\'t be shown again.');
         loadKeys();
