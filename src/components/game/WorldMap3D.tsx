@@ -884,13 +884,30 @@ function WorldScene({ onSelect, quality }: { onSelect: (id: string | null) => vo
 //  EXPORTED COMPONENT
 // ═══════════════════════════════════════════
 
+const QUALITY_STORAGE_KEY = 'dcw.worldmap.quality';
+
 export default function WorldMap3D() {
   const isMobile = useIsMobile();
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [tier, setTier] = useState<QualityTier>(() => {
+    if (typeof window === 'undefined') return 'high';
+    const saved = window.localStorage.getItem(QUALITY_STORAGE_KEY) as QualityTier | null;
+    if (saved && saved in QUALITY_PRESETS) return saved;
+    return detectDefaultQuality();
+  });
+
+  const quality = QUALITY_PRESETS[tier];
+
+  const handleTierChange = useCallback((next: QualityTier) => {
+    setTier(next);
+    try { window.localStorage.setItem(QUALITY_STORAGE_KEY, next); } catch { /* ignore */ }
+  }, []);
 
   return (
     <div className="relative w-full h-full min-h-[400px]">
       <Canvas
+        // Re-mount canvas when MSAA or DPR ceiling changes (cannot toggle live)
+        key={`${quality.antialias}-${quality.dpr[1]}`}
         camera={{
           position: [0, 80, 100],
           fov: isMobile ? 52 : 38,
@@ -899,16 +916,16 @@ export default function WorldMap3D() {
         }}
         style={{ width: '100%', height: '100%', background: '#040812', touchAction: 'none' }}
         gl={{
-          antialias: true,
+          antialias: quality.antialias,
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: 1.25,
           outputColorSpace: THREE.SRGBColorSpace,
           powerPreference: 'high-performance',
         }}
         shadows={false}
-        dpr={isMobile ? [1, 1.5] : [1, 2]}
+        dpr={quality.dpr}
       >
-        <WorldScene onSelect={setSelectedNode} />
+        <WorldScene onSelect={setSelectedNode} quality={quality} />
       </Canvas>
 
       {/* HUD overlay */}
@@ -916,6 +933,27 @@ export default function WorldMap3D() {
         <div className="bg-background/80 backdrop-blur-sm border border-border rounded-lg px-2.5 py-1.5 pointer-events-auto">
           <p className="text-[10px] text-muted-foreground font-mono">3D WORLD MAP</p>
           <p className="text-xs text-foreground font-display">🏰 Dragon Chaos Wars</p>
+        </div>
+      </div>
+
+      {/* Quality selector */}
+      <div className="absolute bottom-2 right-2 bg-background/80 backdrop-blur-sm border border-border rounded-lg px-2 py-1.5 pointer-events-auto">
+        <p className="text-[9px] text-muted-foreground font-mono mb-1">QUALITY</p>
+        <div className="flex gap-1">
+          {(['low', 'medium', 'high', 'ultra'] as QualityTier[]).map(t => (
+            <button
+              key={t}
+              onClick={() => handleTierChange(t)}
+              className={`text-[10px] font-mono px-1.5 py-0.5 rounded border transition-colors ${
+                tier === t
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-background/40 text-muted-foreground border-border hover:text-foreground'
+              }`}
+              aria-pressed={tier === t}
+            >
+              {t.toUpperCase()}
+            </button>
+          ))}
         </div>
       </div>
 
