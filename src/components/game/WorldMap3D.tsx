@@ -643,16 +643,19 @@ function WorldScene({ onSelect }: { onSelect: (id: string | null) => void }) {
   const [camPos, setCamPos] = useState({ x: 0, z: 0 });
   const [chunks, setChunks] = useState<Map<string, ChunkData>>(() => {
     const init = new Map<string, ChunkData>();
-    loadChunksAround(init, 0, 0, 3);
-    return init;
+    return loadChunksAround(init, 0, 0, 3).map;
   });
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
 
+  const lastChunkCenter = useRef({ cx: 0, cy: 0 });
   const handleCameraMove = useCallback((x: number, z: number) => {
-    setCamPos({ x, z });
+    setCamPos(prev => (Math.abs(prev.x - x) < 0.5 && Math.abs(prev.z - z) < 0.5 ? prev : { x, z }));
+    const ccx = Math.floor(x / CHUNK_SIZE), ccy = Math.floor(z / CHUNK_SIZE);
+    if (lastChunkCenter.current.cx === ccx && lastChunkCenter.current.cy === ccy) return;
+    lastChunkCenter.current = { cx: ccx, cy: ccy };
     setChunks(prev => {
-      const next = loadChunksAround(new Map(prev), x, z, 3);
-      return next;
+      const { map, changed } = loadChunksAround(prev, x, z, 3);
+      return changed ? map : prev;
     });
   }, []);
 
