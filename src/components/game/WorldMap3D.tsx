@@ -148,10 +148,18 @@ function generateChunk(cx: number, cy: number): ChunkData {
 
 function chunkKey(cx: number, cy: number) { return `${cx},${cy}`; }
 
-function loadChunksAround(chunks: Map<string, ChunkData>, camX: number, camZ: number, radius: number): { map: Map<string, ChunkData>; changed: boolean } {
+function loadChunksAround(
+  chunks: Map<string, ChunkData>,
+  camX: number,
+  camZ: number,
+  radius: number,
+  velocity?: { vx: number; vz: number },
+): { map: Map<string, ChunkData>; changed: boolean } {
   const ccx = Math.floor(camX / CHUNK_SIZE), ccy = Math.floor(camZ / CHUNK_SIZE);
   let changed = false;
   const next = chunks;
+
+  // Core ring: always loaded around current chunk
   for (let dy = -radius; dy <= radius; dy++) {
     for (let dx = -radius; dx <= radius; dx++) {
       const key = chunkKey(ccx + dx, ccy + dy);
@@ -161,9 +169,60 @@ function loadChunksAround(chunks: Map<string, ChunkData>, camX: number, camZ: nu
       }
     }
   }
-  // Unload far
+
+  // Velocity-based prefetch: extend the load region in the direction of travel
+  // so chunks generate before the player crosses into them.
+  let prefetchCells: Array<[number, number]> = [];
+  if (velocity) {
+    const speed = Math.hypot(velocity.vx, velocity.vz);
+    // Only prefetch when actually moving — convert world units/s to chunk lookahead
+    if (speed > 1.5) {
+      // Lookahead: ~2s of travel, capped at +3 chunks beyond core radius
+      const lookSec = 2.0;
+      const aheadX = (velocity.vx * lookSec) / CHUNK_SIZE;
+      const aheadZ = (velocity.vz * lookSec) / CHUNK_SIZE;
+      const reachX = clamp(Math.ceil(Math.abs(aheadX)), 1, 3);
+      const reachZ = clamp(Math.ceil(Math.abs(aheadZ)), 1, 3);
+      const dirX = Math.sign(aheadX);
+      const dirZ = Math.sign(aheadZ);
+      // Build a wedge of cells in front of motion, beyond the core radius
+      const widen = 1; // half-width perpendicular padding
+      for (let ex = 0; ex <= reachX; ex++) {
+        for (let ez = 0; ez <= reachZ; ez++) {
+          // Skip cells already inside core radius
+          const offX = ex * dirX;
+          const offZ = ez * dirZ;
+          if (Math.abs(offX) <= radius && Math.abs(offZ) <= radius) continue;
+          // Only keep cells "in front" — i.e. on the motion side
+          if ((dirX !== 0 && Math.sign(offX) !== dirX && offX !== 0) ||
+              (dirZ !== 0 && Math.sign(offZ) !== dirZ && offZ !== 0)) continue;
+          for (let pad = -widen; pad <= widen; pad++) {
+            const cx = ccx + offX + (dirZ !== 0 ? pad : 0);
+            const cy = ccy + offZ + (dirX !== 0 ? pad : 0);
+            prefetchCells.push([cx, cy]);
+          }
+        }
+      }
+    }
+  }
+
+  // Generate at most a few prefetch chunks per call to keep frame budget
+  const MAX_PREFETCH_PER_CALL = 2;
+  let prefetched = 0;
+  for (const [cx, cy] of prefetchCells) {
+    if (prefetched >= MAX_PREFETCH_PER_CALL) break;
+    const key = chunkKey(cx, cy);
+    if (!next.has(key)) {
+      next.set(key, generateChunk(cx, cy));
+      changed = true;
+      prefetched++;
+    }
+  }
+
+  // Unload far chunks (use a wider keep radius so prefetch survives brief stops)
+  const keep = radius + 3;
   for (const [key, chunk] of next) {
-    if (Math.abs(chunk.cx - ccx) > radius + 2 || Math.abs(chunk.cy - ccy) > radius + 2) {
+    if (Math.abs(chunk.cx - ccx) > keep || Math.abs(chunk.cy - ccy) > keep) {
       next.delete(key);
       changed = true;
     }
@@ -620,18 +679,39 @@ function SimpleParticles({ camX, camZ, count = 250 }: { camX: number; camZ: numb
 //  CAMERA CONTROLLER
 // ═══════════════════════════════════════════
 
-function CameraController({ controlsRef, onCameraMove }: { controlsRef: React.RefObject<any>; onCameraMove: (x: number, z: number) => void }) {
+function CameraController({
+  controlsRef,
+  onCameraMove,
+}: {
+  controlsRef: React.RefObject<any>;
+  onCameraMove: (x: number, z: number, vx: number, vz: number) => void;
+}) {
   const lastSync = useRef(0);
-  const lastChunkCheck = useRef(0);
+  const lastPos = useRef<{ x: number; z: number; t: number } | null>(null);
+  const velocity = useRef({ vx: 0, vz: 0 });
 
-  useFrame(({ clock, camera }) => {
+  useFrame(({ clock }) => {
     const controls = controlsRef.current;
     if (!controls) return;
     const t = clock.elapsedTime;
+    const x = controls.target.x;
+    const z = controls.target.z;
 
-    if (t - lastSync.current > 0.2) {
+    // Update velocity estimate every frame (EMA-smoothed) so prefetch reacts quickly
+    if (lastPos.current) {
+      const dt = Math.max(1 / 120, t - lastPos.current.t);
+      const instVx = (x - lastPos.current.x) / dt;
+      const instVz = (z - lastPos.current.z) / dt;
+      // Exponential moving average: smooth out jitter from damped controls
+      const a = 0.25;
+      velocity.current.vx = velocity.current.vx * (1 - a) + instVx * a;
+      velocity.current.vz = velocity.current.vz * (1 - a) + instVz * a;
+    }
+    lastPos.current = { x, z, t };
+
+    if (t - lastSync.current > 0.15) {
       lastSync.current = t;
-      onCameraMove(controls.target.x, controls.target.z);
+      onCameraMove(x, z, velocity.current.vx, velocity.current.vz);
     }
   });
 
@@ -655,13 +735,17 @@ function WorldScene({ onSelect }: { onSelect: (id: string | null) => void }) {
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
 
   const lastChunkCenter = useRef({ cx: 0, cy: 0 });
-  const handleCameraMove = useCallback((x: number, z: number) => {
+  const handleCameraMove = useCallback((x: number, z: number, vx: number, vz: number) => {
     setCamPos(prev => (Math.abs(prev.x - x) < 0.5 && Math.abs(prev.z - z) < 0.5 ? prev : { x, z }));
     const ccx = Math.floor(x / CHUNK_SIZE), ccy = Math.floor(z / CHUNK_SIZE);
-    if (lastChunkCenter.current.cx === ccx && lastChunkCenter.current.cy === ccy) return;
+    const crossedBoundary =
+      lastChunkCenter.current.cx !== ccx || lastChunkCenter.current.cy !== ccy;
+    const speed = Math.hypot(vx, vz);
+    // Run loader if we crossed a chunk or we're moving fast enough that prefetch matters
+    if (!crossedBoundary && speed < 1.5) return;
     lastChunkCenter.current = { cx: ccx, cy: ccy };
     setChunks(prev => {
-      const { map, changed } = loadChunksAround(prev, x, z, 3);
+      const { map, changed } = loadChunksAround(prev, x, z, 3, { vx, vz });
       return changed ? map : prev;
     });
   }, []);
