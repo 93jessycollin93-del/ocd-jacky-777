@@ -148,25 +148,27 @@ function generateChunk(cx: number, cy: number): ChunkData {
 
 function chunkKey(cx: number, cy: number) { return `${cx},${cy}`; }
 
-function loadChunksAround(chunks: Map<string, ChunkData>, camX: number, camZ: number, radius: number) {
+function loadChunksAround(chunks: Map<string, ChunkData>, camX: number, camZ: number, radius: number): { map: Map<string, ChunkData>; changed: boolean } {
   const ccx = Math.floor(camX / CHUNK_SIZE), ccy = Math.floor(camZ / CHUNK_SIZE);
   let changed = false;
+  const next = chunks;
   for (let dy = -radius; dy <= radius; dy++) {
     for (let dx = -radius; dx <= radius; dx++) {
       const key = chunkKey(ccx + dx, ccy + dy);
-      if (!chunks.has(key)) {
-        chunks.set(key, generateChunk(ccx + dx, ccy + dy));
+      if (!next.has(key)) {
+        next.set(key, generateChunk(ccx + dx, ccy + dy));
         changed = true;
       }
     }
   }
   // Unload far
-  for (const [key, chunk] of chunks) {
+  for (const [key, chunk] of next) {
     if (Math.abs(chunk.cx - ccx) > radius + 2 || Math.abs(chunk.cy - ccy) > radius + 2) {
-      chunks.delete(key); changed = true;
+      next.delete(key);
+      changed = true;
     }
   }
-  return changed ? new Map(chunks) : chunks;
+  return { map: changed ? new Map(next) : next, changed };
 }
 
 // ═══════════════════════════════════════════
@@ -228,7 +230,7 @@ const _color = new THREE.Color();
 function ChunkMesh({ chunk }: { chunk: ChunkData }) {
   const geometry = useMemo(() => {
     const size = CHUNK_SIZE;
-    const segments = size * 4;
+    const segments = size * 2; // 128 segments — smooth enough at this scale, 4x cheaper
     const geo = new THREE.PlaneGeometry(size, size, segments, segments);
     geo.rotateX(-Math.PI / 2);
     const baseX = chunk.cx * CHUNK_SIZE, baseY = chunk.cy * CHUNK_SIZE;
@@ -281,7 +283,9 @@ function ChunkMesh({ chunk }: { chunk: ChunkData }) {
     fragmentShader: terrainFrag,
   }), []);
 
-  return <mesh geometry={geometry} material={material} />;
+  useEffect(() => () => { geometry.dispose(); material.dispose(); }, [geometry, material]);
+
+  return <mesh geometry={geometry} material={material} frustumCulled={true} />;
 }
 
 // ═══════════════════════════════════════════
@@ -397,7 +401,7 @@ function WaterPlane({ camX, camZ }: { camX: number; camZ: number }) {
       position={[Math.round(camX / CHUNK_SIZE) * CHUNK_SIZE, SEA_LEVEL_Y, Math.round(camZ / CHUNK_SIZE) * CHUNK_SIZE]}
       rotation={[-Math.PI / 2, 0, 0]}
     >
-      <planeGeometry args={[planeSize, planeSize, 128, 128]} />
+      <planeGeometry args={[planeSize, planeSize, 80, 80]} />
       <shaderMaterial ref={matRef} uniforms={uniforms} vertexShader={waterVert} fragmentShader={waterFrag} transparent depthWrite={false} />
     </mesh>
   );
@@ -415,6 +419,11 @@ function Atmosphere() {
   const { scene } = useThree();
   const fogRef = useRef<THREE.Fog | null>(null);
   const hourRef = useRef(10); // start at 10am
+  // Reusable color targets to avoid per-frame allocations
+  const dayFog = useMemo(() => new THREE.Color(0.52, 0.58, 0.74), []);
+  const duskFog = useMemo(() => new THREE.Color(0.40, 0.25, 0.15), []);
+  const nightFog = useMemo(() => new THREE.Color(0.02, 0.03, 0.07), []);
+  const targetFog = useMemo(() => new THREE.Color(), []);
 
   useEffect(() => {
     // Day cycle: slowly advance hour
@@ -460,13 +469,15 @@ function Atmosphere() {
       fogRef.current = new THREE.Fog('#060a14', 200, 650);
       scene.fog = fogRef.current;
     }
-    const fogColor = dl > 0.3
-      ? new THREE.Color(0.52, 0.58, 0.74)
-      : dl > 0.1
-      ? new THREE.Color(0.40, 0.25, 0.15)
-      : new THREE.Color(0.02, 0.03, 0.07);
-    fogRef.current.color.lerp(fogColor, 0.02);
-    scene.background = fogRef.current.color.clone();
+    if (dl > 0.3) targetFog.copy(dayFog);
+    else if (dl > 0.1) targetFog.copy(duskFog);
+    else targetFog.copy(nightFog);
+    fogRef.current.color.lerp(targetFog, 0.02);
+    if (scene.background instanceof THREE.Color) {
+      scene.background.copy(fogRef.current.color);
+    } else {
+      scene.background = fogRef.current.color.clone();
+    }
   });
 
   return (
@@ -549,16 +560,14 @@ function FloatingMarker({ marker, onClick, selected }: { marker: MapMarker; onCl
 //  PARTICLE SYSTEM
 // ═══════════════════════════════════════════
 
-const MAX_PARTICLES = 500;
-
-function SimpleParticles({ camX, camZ }: { camX: number; camZ: number }) {
+function SimpleParticles({ camX, camZ, count = 250 }: { camX: number; camZ: number; count?: number }) {
   const pointsRef = useRef<THREE.Points>(null);
 
   const { positions, colors, sizes } = useMemo(() => ({
-    positions: new Float32Array(MAX_PARTICLES * 3),
-    colors: new Float32Array(MAX_PARTICLES * 3),
-    sizes: new Float32Array(MAX_PARTICLES),
-  }), []);
+    positions: new Float32Array(count * 3),
+    colors: new Float32Array(count * 3),
+    sizes: new Float32Array(count),
+  }), [count]);
 
   const geometry = useMemo(() => {
     const geo = new THREE.BufferGeometry();
@@ -580,7 +589,7 @@ function SimpleParticles({ camX, camZ }: { camX: number; camZ: number }) {
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
-    for (let i = 0; i < MAX_PARTICLES; i++) {
+    for (let i = 0; i < count; i++) {
       const seed = i * 73.7;
       const radius = 30 + (hash(i, 0, 42) * 80);
       const angle = t * 0.03 * (1 + hash(i, 1, 42) * 0.5) + seed;
@@ -641,16 +650,19 @@ function WorldScene({ onSelect }: { onSelect: (id: string | null) => void }) {
   const [camPos, setCamPos] = useState({ x: 0, z: 0 });
   const [chunks, setChunks] = useState<Map<string, ChunkData>>(() => {
     const init = new Map<string, ChunkData>();
-    loadChunksAround(init, 0, 0, 3);
-    return init;
+    return loadChunksAround(init, 0, 0, 3).map;
   });
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
 
+  const lastChunkCenter = useRef({ cx: 0, cy: 0 });
   const handleCameraMove = useCallback((x: number, z: number) => {
-    setCamPos({ x, z });
+    setCamPos(prev => (Math.abs(prev.x - x) < 0.5 && Math.abs(prev.z - z) < 0.5 ? prev : { x, z }));
+    const ccx = Math.floor(x / CHUNK_SIZE), ccy = Math.floor(z / CHUNK_SIZE);
+    if (lastChunkCenter.current.cx === ccx && lastChunkCenter.current.cy === ccy) return;
+    lastChunkCenter.current = { cx: ccx, cy: ccy };
     setChunks(prev => {
-      const next = loadChunksAround(new Map(prev), x, z, 3);
-      return next;
+      const { map, changed } = loadChunksAround(prev, x, z, 3);
+      return changed ? map : prev;
     });
   }, []);
 
@@ -708,7 +720,7 @@ function WorldScene({ onSelect }: { onSelect: (id: string | null) => void }) {
           <ChunkMesh key={chunkKey(chunk.cx, chunk.cy)} chunk={chunk} />
         ))}
         <WaterPlane camX={camPos.x} camZ={camPos.z} />
-        <SimpleParticles camX={camPos.x} camZ={camPos.z} />
+        <SimpleParticles camX={camPos.x} camZ={camPos.z} count={isMobile ? 120 : 250} />
         {markers.map(m => (
           <FloatingMarker
             key={m.id}
