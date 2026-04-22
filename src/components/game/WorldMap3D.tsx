@@ -102,6 +102,54 @@ const HEIGHT_SCALE = 16;
 const WORLD_SEED = 42069;
 const SEA_LEVEL_Y = 0.32 * HEIGHT_SCALE * 0.82 + 0.08;
 
+// ═══════════════════════════════════════════
+//  QUALITY PRESETS
+// ═══════════════════════════════════════════
+
+export type QualityTier = 'low' | 'medium' | 'high' | 'ultra';
+
+export interface QualitySettings {
+  /** Multiplier on CHUNK_SIZE for terrain plane segments */
+  terrainSegmentMul: number;
+  /** Water plane tessellation (segments per side) */
+  waterSegments: number;
+  /** Animated particle count */
+  particleCount: number;
+  /** Active chunk radius around camera */
+  chunkRadius: number;
+  /** Max device pixel ratio range */
+  dpr: [number, number];
+  /** MSAA antialias on canvas */
+  antialias: boolean;
+}
+
+export const QUALITY_PRESETS: Record<QualityTier, QualitySettings> = {
+  low:    { terrainSegmentMul: 1,    waterSegments: 32,  particleCount: 60,  chunkRadius: 2, dpr: [1, 1],   antialias: false },
+  medium: { terrainSegmentMul: 1.5,  waterSegments: 56,  particleCount: 140, chunkRadius: 3, dpr: [1, 1.5], antialias: true  },
+  high:   { terrainSegmentMul: 2,    waterSegments: 80,  particleCount: 250, chunkRadius: 3, dpr: [1, 2],   antialias: true  },
+  ultra:  { terrainSegmentMul: 3,    waterSegments: 128, particleCount: 400, chunkRadius: 4, dpr: [1, 2],   antialias: true  },
+};
+
+/** Detect a sensible default tier from device hints. */
+export function detectDefaultQuality(): QualityTier {
+  if (typeof window === 'undefined') return 'high';
+  const ua = navigator.userAgent || '';
+  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+  const cores = (navigator as any).hardwareConcurrency ?? 4;
+  const mem = (navigator as any).deviceMemory ?? 4;
+  const dpr = window.devicePixelRatio ?? 1;
+  if (isMobile) {
+    if (cores >= 8 && mem >= 6) return 'medium';
+    return 'low';
+  }
+  // Desktop
+  if (cores >= 12 && mem >= 16 && dpr >= 2) return 'ultra';
+  if (cores >= 8) return 'high';
+  if (cores >= 4) return 'medium';
+  return 'low';
+}
+
+
 type BiomeType = 'grassland' | 'desert' | 'snow' | 'forest' | 'volcanic' | 'swamp' | 'wasteland';
 
 interface Tile { x: number; y: number; height: number; biome: BiomeType; explored: boolean; }
@@ -286,10 +334,10 @@ const terrainFrag = `
 
 const _color = new THREE.Color();
 
-function ChunkMesh({ chunk }: { chunk: ChunkData }) {
+function ChunkMesh({ chunk, segmentMul }: { chunk: ChunkData; segmentMul: number }) {
   const geometry = useMemo(() => {
     const size = CHUNK_SIZE;
-    const segments = size * 2; // 128 segments — smooth enough at this scale, 4x cheaper
+    const segments = Math.max(16, Math.round(size * segmentMul));
     const geo = new THREE.PlaneGeometry(size, size, segments, segments);
     geo.rotateX(-Math.PI / 2);
     const baseX = chunk.cx * CHUNK_SIZE, baseY = chunk.cy * CHUNK_SIZE;
@@ -326,7 +374,7 @@ function ChunkMesh({ chunk }: { chunk: ChunkData }) {
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     geo.computeVertexNormals();
     return geo;
-  }, [chunk]);
+  }, [chunk, segmentMul]);
 
   const material = useMemo(() => new THREE.ShaderMaterial({
     uniforms: {
@@ -427,7 +475,7 @@ const waterFrag = `
   }
 `;
 
-function WaterPlane({ camX, camZ }: { camX: number; camZ: number }) {
+function WaterPlane({ camX, camZ, segments }: { camX: number; camZ: number; segments: number }) {
   const matRef = useRef<THREE.ShaderMaterial>(null);
   const uniforms = useMemo(() => ({
     uTime: { value: 0 },
@@ -460,7 +508,7 @@ function WaterPlane({ camX, camZ }: { camX: number; camZ: number }) {
       position={[Math.round(camX / CHUNK_SIZE) * CHUNK_SIZE, SEA_LEVEL_Y, Math.round(camZ / CHUNK_SIZE) * CHUNK_SIZE]}
       rotation={[-Math.PI / 2, 0, 0]}
     >
-      <planeGeometry args={[planeSize, planeSize, 80, 80]} />
+      <planeGeometry args={[planeSize, planeSize, segments, segments]} />
       <shaderMaterial ref={matRef} uniforms={uniforms} vertexShader={waterVert} fragmentShader={waterFrag} transparent depthWrite={false} />
     </mesh>
   );
@@ -722,7 +770,7 @@ function CameraController({
 //  MAIN WORLD SCENE
 // ═══════════════════════════════════════════
 
-function WorldScene({ onSelect }: { onSelect: (id: string | null) => void }) {
+function WorldScene({ onSelect, quality }: { onSelect: (id: string | null) => void; quality: QualitySettings }) {
   const { state } = useGame();
   const controlsRef = useRef<any>(null);
   const isMobile = useIsMobile();
@@ -730,7 +778,7 @@ function WorldScene({ onSelect }: { onSelect: (id: string | null) => void }) {
   const [camPos, setCamPos] = useState({ x: 0, z: 0 });
   const [chunks, setChunks] = useState<Map<string, ChunkData>>(() => {
     const init = new Map<string, ChunkData>();
-    return loadChunksAround(init, 0, 0, 3).map;
+    return loadChunksAround(init, 0, 0, quality.chunkRadius).map;
   });
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
 
@@ -741,14 +789,13 @@ function WorldScene({ onSelect }: { onSelect: (id: string | null) => void }) {
     const crossedBoundary =
       lastChunkCenter.current.cx !== ccx || lastChunkCenter.current.cy !== ccy;
     const speed = Math.hypot(vx, vz);
-    // Run loader if we crossed a chunk or we're moving fast enough that prefetch matters
     if (!crossedBoundary && speed < 1.5) return;
     lastChunkCenter.current = { cx: ccx, cy: ccy };
     setChunks(prev => {
-      const { map, changed } = loadChunksAround(prev, x, z, 3, { vx, vz });
+      const { map, changed } = loadChunksAround(prev, x, z, quality.chunkRadius, { vx, vz });
       return changed ? map : prev;
     });
-  }, []);
+  }, [quality.chunkRadius]);
 
   // Generate markers from game data
   const markers: MapMarker[] = useMemo(() => {
@@ -801,10 +848,10 @@ function WorldScene({ onSelect }: { onSelect: (id: string | null) => void }) {
       <Atmosphere />
       <Suspense fallback={null}>
         {chunkArray.map(chunk => (
-          <ChunkMesh key={chunkKey(chunk.cx, chunk.cy)} chunk={chunk} />
+          <ChunkMesh key={chunkKey(chunk.cx, chunk.cy)} chunk={chunk} segmentMul={quality.terrainSegmentMul} />
         ))}
-        <WaterPlane camX={camPos.x} camZ={camPos.z} />
-        <SimpleParticles camX={camPos.x} camZ={camPos.z} count={isMobile ? 120 : 250} />
+        <WaterPlane camX={camPos.x} camZ={camPos.z} segments={quality.waterSegments} />
+        <SimpleParticles camX={camPos.x} camZ={camPos.z} count={quality.particleCount} />
         {markers.map(m => (
           <FloatingMarker
             key={m.id}
@@ -837,13 +884,30 @@ function WorldScene({ onSelect }: { onSelect: (id: string | null) => void }) {
 //  EXPORTED COMPONENT
 // ═══════════════════════════════════════════
 
+const QUALITY_STORAGE_KEY = 'dcw.worldmap.quality';
+
 export default function WorldMap3D() {
   const isMobile = useIsMobile();
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [tier, setTier] = useState<QualityTier>(() => {
+    if (typeof window === 'undefined') return 'high';
+    const saved = window.localStorage.getItem(QUALITY_STORAGE_KEY) as QualityTier | null;
+    if (saved && saved in QUALITY_PRESETS) return saved;
+    return detectDefaultQuality();
+  });
+
+  const quality = QUALITY_PRESETS[tier];
+
+  const handleTierChange = useCallback((next: QualityTier) => {
+    setTier(next);
+    try { window.localStorage.setItem(QUALITY_STORAGE_KEY, next); } catch { /* ignore */ }
+  }, []);
 
   return (
     <div className="relative w-full h-full min-h-[400px]">
       <Canvas
+        // Re-mount canvas when MSAA or DPR ceiling changes (cannot toggle live)
+        key={`${quality.antialias}-${quality.dpr[1]}`}
         camera={{
           position: [0, 80, 100],
           fov: isMobile ? 52 : 38,
@@ -852,16 +916,16 @@ export default function WorldMap3D() {
         }}
         style={{ width: '100%', height: '100%', background: '#040812', touchAction: 'none' }}
         gl={{
-          antialias: true,
+          antialias: quality.antialias,
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: 1.25,
           outputColorSpace: THREE.SRGBColorSpace,
           powerPreference: 'high-performance',
         }}
         shadows={false}
-        dpr={isMobile ? [1, 1.5] : [1, 2]}
+        dpr={quality.dpr}
       >
-        <WorldScene onSelect={setSelectedNode} />
+        <WorldScene onSelect={setSelectedNode} quality={quality} />
       </Canvas>
 
       {/* HUD overlay */}
@@ -869,6 +933,27 @@ export default function WorldMap3D() {
         <div className="bg-background/80 backdrop-blur-sm border border-border rounded-lg px-2.5 py-1.5 pointer-events-auto">
           <p className="text-[10px] text-muted-foreground font-mono">3D WORLD MAP</p>
           <p className="text-xs text-foreground font-display">🏰 Dragon Chaos Wars</p>
+        </div>
+      </div>
+
+      {/* Quality selector */}
+      <div className="absolute bottom-2 right-2 bg-background/80 backdrop-blur-sm border border-border rounded-lg px-2 py-1.5 pointer-events-auto">
+        <p className="text-[9px] text-muted-foreground font-mono mb-1">QUALITY</p>
+        <div className="flex gap-1">
+          {(['low', 'medium', 'high', 'ultra'] as QualityTier[]).map(t => (
+            <button
+              key={t}
+              onClick={() => handleTierChange(t)}
+              className={`text-[10px] font-mono px-1.5 py-0.5 rounded border transition-colors ${
+                tier === t
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-background/40 text-muted-foreground border-border hover:text-foreground'
+              }`}
+              aria-pressed={tier === t}
+            >
+              {t.toUpperCase()}
+            </button>
+          ))}
         </div>
       </div>
 
