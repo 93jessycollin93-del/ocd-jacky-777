@@ -419,6 +419,11 @@ function Atmosphere() {
   const { scene } = useThree();
   const fogRef = useRef<THREE.Fog | null>(null);
   const hourRef = useRef(10); // start at 10am
+  // Reusable color targets to avoid per-frame allocations
+  const dayFog = useMemo(() => new THREE.Color(0.52, 0.58, 0.74), []);
+  const duskFog = useMemo(() => new THREE.Color(0.40, 0.25, 0.15), []);
+  const nightFog = useMemo(() => new THREE.Color(0.02, 0.03, 0.07), []);
+  const targetFog = useMemo(() => new THREE.Color(), []);
 
   useEffect(() => {
     // Day cycle: slowly advance hour
@@ -464,13 +469,15 @@ function Atmosphere() {
       fogRef.current = new THREE.Fog('#060a14', 200, 650);
       scene.fog = fogRef.current;
     }
-    const fogColor = dl > 0.3
-      ? new THREE.Color(0.52, 0.58, 0.74)
-      : dl > 0.1
-      ? new THREE.Color(0.40, 0.25, 0.15)
-      : new THREE.Color(0.02, 0.03, 0.07);
-    fogRef.current.color.lerp(fogColor, 0.02);
-    scene.background = fogRef.current.color.clone();
+    if (dl > 0.3) targetFog.copy(dayFog);
+    else if (dl > 0.1) targetFog.copy(duskFog);
+    else targetFog.copy(nightFog);
+    fogRef.current.color.lerp(targetFog, 0.02);
+    if (scene.background instanceof THREE.Color) {
+      scene.background.copy(fogRef.current.color);
+    } else {
+      scene.background = fogRef.current.color.clone();
+    }
   });
 
   return (
