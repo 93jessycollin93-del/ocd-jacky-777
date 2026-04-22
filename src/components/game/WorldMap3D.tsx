@@ -560,16 +560,14 @@ function FloatingMarker({ marker, onClick, selected }: { marker: MapMarker; onCl
 //  PARTICLE SYSTEM
 // ═══════════════════════════════════════════
 
-const MAX_PARTICLES = 500;
-
-function SimpleParticles({ camX, camZ }: { camX: number; camZ: number }) {
+function SimpleParticles({ camX, camZ, count = 250 }: { camX: number; camZ: number; count?: number }) {
   const pointsRef = useRef<THREE.Points>(null);
 
   const { positions, colors, sizes } = useMemo(() => ({
-    positions: new Float32Array(MAX_PARTICLES * 3),
-    colors: new Float32Array(MAX_PARTICLES * 3),
-    sizes: new Float32Array(MAX_PARTICLES),
-  }), []);
+    positions: new Float32Array(count * 3),
+    colors: new Float32Array(count * 3),
+    sizes: new Float32Array(count),
+  }), [count]);
 
   const geometry = useMemo(() => {
     const geo = new THREE.BufferGeometry();
