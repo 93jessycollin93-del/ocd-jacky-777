@@ -102,6 +102,54 @@ const HEIGHT_SCALE = 16;
 const WORLD_SEED = 42069;
 const SEA_LEVEL_Y = 0.32 * HEIGHT_SCALE * 0.82 + 0.08;
 
+// ═══════════════════════════════════════════
+//  QUALITY PRESETS
+// ═══════════════════════════════════════════
+
+export type QualityTier = 'low' | 'medium' | 'high' | 'ultra';
+
+export interface QualitySettings {
+  /** Multiplier on CHUNK_SIZE for terrain plane segments */
+  terrainSegmentMul: number;
+  /** Water plane tessellation (segments per side) */
+  waterSegments: number;
+  /** Animated particle count */
+  particleCount: number;
+  /** Active chunk radius around camera */
+  chunkRadius: number;
+  /** Max device pixel ratio range */
+  dpr: [number, number];
+  /** MSAA antialias on canvas */
+  antialias: boolean;
+}
+
+export const QUALITY_PRESETS: Record<QualityTier, QualitySettings> = {
+  low:    { terrainSegmentMul: 1,    waterSegments: 32,  particleCount: 60,  chunkRadius: 2, dpr: [1, 1],   antialias: false },
+  medium: { terrainSegmentMul: 1.5,  waterSegments: 56,  particleCount: 140, chunkRadius: 3, dpr: [1, 1.5], antialias: true  },
+  high:   { terrainSegmentMul: 2,    waterSegments: 80,  particleCount: 250, chunkRadius: 3, dpr: [1, 2],   antialias: true  },
+  ultra:  { terrainSegmentMul: 3,    waterSegments: 128, particleCount: 400, chunkRadius: 4, dpr: [1, 2],   antialias: true  },
+};
+
+/** Detect a sensible default tier from device hints. */
+export function detectDefaultQuality(): QualityTier {
+  if (typeof window === 'undefined') return 'high';
+  const ua = navigator.userAgent || '';
+  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+  const cores = (navigator as any).hardwareConcurrency ?? 4;
+  const mem = (navigator as any).deviceMemory ?? 4;
+  const dpr = window.devicePixelRatio ?? 1;
+  if (isMobile) {
+    if (cores >= 8 && mem >= 6) return 'medium';
+    return 'low';
+  }
+  // Desktop
+  if (cores >= 12 && mem >= 16 && dpr >= 2) return 'ultra';
+  if (cores >= 8) return 'high';
+  if (cores >= 4) return 'medium';
+  return 'low';
+}
+
+
 type BiomeType = 'grassland' | 'desert' | 'snow' | 'forest' | 'volcanic' | 'swamp' | 'wasteland';
 
 interface Tile { x: number; y: number; height: number; biome: BiomeType; explored: boolean; }
