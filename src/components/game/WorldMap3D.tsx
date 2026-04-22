@@ -230,7 +230,7 @@ const _color = new THREE.Color();
 function ChunkMesh({ chunk }: { chunk: ChunkData }) {
   const geometry = useMemo(() => {
     const size = CHUNK_SIZE;
-    const segments = size * 4;
+    const segments = size * 2; // 128 segments — smooth enough at this scale, 4x cheaper
     const geo = new THREE.PlaneGeometry(size, size, segments, segments);
     geo.rotateX(-Math.PI / 2);
     const baseX = chunk.cx * CHUNK_SIZE, baseY = chunk.cy * CHUNK_SIZE;
