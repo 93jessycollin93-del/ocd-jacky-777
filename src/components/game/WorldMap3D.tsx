@@ -589,7 +589,7 @@ function SimpleParticles({ camX, camZ, count = 250 }: { camX: number; camZ: numb
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
-    for (let i = 0; i < MAX_PARTICLES; i++) {
+    for (let i = 0; i < count; i++) {
       const seed = i * 73.7;
       const radius = 30 + (hash(i, 0, 42) * 80);
       const angle = t * 0.03 * (1 + hash(i, 1, 42) * 0.5) + seed;
