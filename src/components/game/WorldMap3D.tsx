@@ -848,10 +848,10 @@ function WorldScene({ onSelect, quality }: { onSelect: (id: string | null) => vo
       <Atmosphere />
       <Suspense fallback={null}>
         {chunkArray.map(chunk => (
-          <ChunkMesh key={chunkKey(chunk.cx, chunk.cy)} chunk={chunk} />
+          <ChunkMesh key={chunkKey(chunk.cx, chunk.cy)} chunk={chunk} segmentMul={quality.terrainSegmentMul} />
         ))}
-        <WaterPlane camX={camPos.x} camZ={camPos.z} />
-        <SimpleParticles camX={camPos.x} camZ={camPos.z} count={isMobile ? 120 : 250} />
+        <WaterPlane camX={camPos.x} camZ={camPos.z} segments={quality.waterSegments} />
+        <SimpleParticles camX={camPos.x} camZ={camPos.z} count={quality.particleCount} />
         {markers.map(m => (
           <FloatingMarker
             key={m.id}
