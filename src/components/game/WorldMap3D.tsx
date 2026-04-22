@@ -720,7 +720,7 @@ function WorldScene({ onSelect }: { onSelect: (id: string | null) => void }) {
           <ChunkMesh key={chunkKey(chunk.cx, chunk.cy)} chunk={chunk} />
         ))}
         <WaterPlane camX={camPos.x} camZ={camPos.z} />
-        <SimpleParticles camX={camPos.x} camZ={camPos.z} />
+        <SimpleParticles camX={camPos.x} camZ={camPos.z} count={isMobile ? 120 : 250} />
         {markers.map(m => (
           <FloatingMarker
             key={m.id}
