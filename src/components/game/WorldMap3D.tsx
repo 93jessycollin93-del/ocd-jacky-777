@@ -196,6 +196,33 @@ function generateChunk(cx: number, cy: number): ChunkData {
 
 function chunkKey(cx: number, cy: number) { return `${cx},${cy}`; }
 
+// Recent-prefetch tracker: prevents re-scheduling the same chunks during
+// jittery movement near the speed threshold (e.g. camera oscillating across
+// the 1.5 u/s gate). Stores key -> last-touched timestamp (ms).
+const RECENT_PREFETCH_TTL_MS = 4000;
+const RECENT_PREFETCH_MAX = 64;
+const recentPrefetch = new Map<string, number>();
+
+function touchRecentPrefetch(key: string, now: number) {
+  recentPrefetch.delete(key);
+  recentPrefetch.set(key, now);
+  if (recentPrefetch.size > RECENT_PREFETCH_MAX) {
+    // Drop oldest (Map preserves insertion order)
+    const oldest = recentPrefetch.keys().next().value;
+    if (oldest !== undefined) recentPrefetch.delete(oldest);
+  }
+}
+
+function isRecentlyPrefetched(key: string, now: number): boolean {
+  const t = recentPrefetch.get(key);
+  if (t === undefined) return false;
+  if (now - t > RECENT_PREFETCH_TTL_MS) {
+    recentPrefetch.delete(key);
+    return false;
+  }
+  return true;
+}
+
 function loadChunksAround(
   chunks: Map<string, ChunkData>,
   camX: number,
@@ -203,6 +230,7 @@ function loadChunksAround(
   radius: number,
   velocity?: { vx: number; vz: number },
 ): { map: Map<string, ChunkData>; changed: boolean } {
+  const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
   const ccx = Math.floor(camX / CHUNK_SIZE), ccy = Math.floor(camZ / CHUNK_SIZE);
   let changed = false;
   const next = chunks;
