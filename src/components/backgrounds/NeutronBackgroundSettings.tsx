@@ -1,17 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Sparkles, X } from 'lucide-react';
+import type { BackgroundTheme } from './AnimatedBackgrounds';
 
 const STORAGE_KEY = 'jackie:neutron-bg-settings';
 
 export interface NeutronBackgroundSettings {
+  theme: BackgroundTheme;
   opacity: number; // 0–1
   glow: number;    // 0–2
 }
 
 export const DEFAULT_NEUTRON_SETTINGS: NeutronBackgroundSettings = {
+  theme: 'neutron_star',
   opacity: 0.4,
   glow: 1,
 };
+
+const VALID_THEMES: BackgroundTheme[] = [
+  'none', 'galaxy', 'neutron_star', 'black_hole', 'starscape', 'aurora',
+];
 
 export function loadNeutronSettings(): NeutronBackgroundSettings {
   if (typeof window === 'undefined') return DEFAULT_NEUTRON_SETTINGS;
@@ -19,7 +26,11 @@ export function loadNeutronSettings(): NeutronBackgroundSettings {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_NEUTRON_SETTINGS;
     const parsed = JSON.parse(raw);
+    const theme: BackgroundTheme = VALID_THEMES.includes(parsed.theme)
+      ? parsed.theme
+      : DEFAULT_NEUTRON_SETTINGS.theme;
     return {
+      theme,
       opacity: clamp(Number(parsed.opacity), 0, 1, DEFAULT_NEUTRON_SETTINGS.opacity),
       glow: clamp(Number(parsed.glow), 0, 2, DEFAULT_NEUTRON_SETTINGS.glow),
     };
@@ -38,12 +49,43 @@ interface Props {
   onChange: (next: NeutronBackgroundSettings) => void;
 }
 
+interface IntensityPreset {
+  id: 'off' | 'calm' | 'default' | 'ultra';
+  label: string;
+  opacity: number;
+  glow: number;
+}
+
+const INTENSITY_PRESETS: IntensityPreset[] = [
+  { id: 'off',     label: 'Off',     opacity: 0,    glow: 0    },
+  { id: 'calm',    label: 'Calm',    opacity: 0.22, glow: 0.55 },
+  { id: 'default', label: 'Default', opacity: 0.4,  glow: 1    },
+  { id: 'ultra',   label: 'Ultra',   opacity: 0.7,  glow: 1.6  },
+];
+
+interface ThemeChoice {
+  id: BackgroundTheme;
+  label: string;
+  icon: string;
+}
+
+const THEME_CHOICES: ThemeChoice[] = [
+  { id: 'galaxy',       label: 'Galaxy',       icon: '🌌' },
+  { id: 'neutron_star', label: 'Neutron',      icon: '💫' },
+  { id: 'black_hole',   label: 'Black Hole',   icon: '🕳️' },
+  { id: 'starscape',    label: 'Starscape',    icon: '⭐' },
+  { id: 'aurora',       label: 'Aurora',       icon: '🌈' },
+];
+
 export default function NeutronBackgroundSettings({ value, onChange }: Props) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(value)); } catch { /* ignore */ }
   }, [value]);
+
+  const matchesPreset = (p: IntensityPreset) =>
+    Math.abs(value.opacity - p.opacity) < 0.02 && Math.abs(value.glow - p.glow) < 0.05;
 
   return (
     <>
@@ -57,11 +99,11 @@ export default function NeutronBackgroundSettings({ value, onChange }: Props) {
       </button>
 
       {open && (
-        <div className="fixed bottom-20 right-4 z-50 w-72 rounded-2xl border border-border/40 bg-card/95 backdrop-blur-xl shadow-2xl p-4 animate-fade-in">
+        <div className="fixed bottom-20 right-4 z-50 w-80 rounded-2xl border border-border/40 bg-card/95 backdrop-blur-xl shadow-2xl p-4 animate-fade-in">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Sparkles size={14} className="text-primary" />
-              <h4 className="text-sm font-semibold text-foreground">Neutron Star Backdrop</h4>
+              <h4 className="text-sm font-semibold text-foreground">Cosmic Backdrop</h4>
             </div>
             <button
               onClick={() => setOpen(false)}
@@ -70,6 +112,53 @@ export default function NeutronBackgroundSettings({ value, onChange }: Props) {
             >
               <X size={14} />
             </button>
+          </div>
+
+          {/* Theme picker */}
+          <div className="mb-3">
+            <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Scene</div>
+            <div className="grid grid-cols-5 gap-1.5">
+              {THEME_CHOICES.map(t => {
+                const active = value.theme === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => onChange({ ...value, theme: t.id })}
+                    className={`flex flex-col items-center gap-0.5 py-2 rounded-lg border text-[9px] font-medium transition-all ${
+                      active
+                        ? 'border-primary bg-primary/15 text-primary'
+                        : 'border-border/30 bg-muted/20 text-foreground/80 hover:border-border/60'
+                    }`}
+                  >
+                    <span className="text-base leading-none">{t.icon}</span>
+                    <span className="leading-tight">{t.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Intensity presets */}
+          <div className="mb-3">
+            <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Intensity</div>
+            <div className="grid grid-cols-4 gap-1.5">
+              {INTENSITY_PRESETS.map(p => {
+                const active = matchesPreset(p);
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => onChange({ ...value, opacity: p.opacity, glow: p.glow })}
+                    className={`py-2 rounded-lg text-[11px] font-semibold border transition-all ${
+                      active
+                        ? 'border-primary bg-primary/15 text-primary'
+                        : 'border-border/30 bg-muted/20 text-foreground/80 hover:border-border/60'
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <Slider

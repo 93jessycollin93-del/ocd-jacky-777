@@ -1085,7 +1085,7 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
     <div className="flex h-screen bg-background overflow-hidden relative">
       {/* Epic neutron-star ambient backdrop — sits behind everything, low opacity for readability */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-        <AnimatedCanvas theme="neutron_star" opacity={bgSettings.opacity} glow={bgSettings.glow} />
+        <AnimatedCanvas theme={bgSettings.theme} opacity={bgSettings.opacity} glow={bgSettings.glow} />
         <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/20 to-background/60" />
       </div>
       <NeutronBackgroundSettings value={bgSettings} onChange={setBgSettings} />
