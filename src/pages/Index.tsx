@@ -63,6 +63,7 @@ import {
   listFiles,
   searchFiles,
 } from "@/lib/jackie-files";
+import AnimatedCanvas from "@/components/backgrounds/AnimatedCanvas";
 
 interface DisplayMessage {
   id: string;
@@ -1079,7 +1080,13 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
   };
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="flex h-screen bg-background overflow-hidden relative">
+      {/* Epic neutron-star ambient backdrop — sits behind everything, low opacity for readability */}
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <AnimatedCanvas theme="neutron_star" className="opacity-40" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/20 to-background/60" />
+      </div>
+      <div className="relative z-10 flex h-full w-full overflow-hidden">
       <Sidebar
         conversations={conversations}
         activeId={activeConvId}
@@ -1299,6 +1306,7 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
         .prose h1, .prose h2, .prose h3 { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em; color: hsl(var(--foreground)); }
         .prose ul, .prose ol { color: hsl(var(--foreground) / 0.8); }
       `}</style>
+      </div>
     </div>
   );
 };

@@ -8,7 +8,7 @@ export type BackgroundTheme =
   | 'matrix' | 'galaxy' | 'jade_zen' | 'fire_magma' | 'aurora'
   | 'neural_mesh' | 'code_stream' | 'black_hole' | 'crystal_vault'
   | 'sacred_geometry' | 'ocean_glow' | 'lightning' | 'ember_field'
-  | 'starscape' | 'forest_wind' | 'snow' | 'none';
+  | 'starscape' | 'forest_wind' | 'snow' | 'neutron_star' | 'none';
 
 export const BACKGROUND_THEMES: { id: BackgroundTheme; label: string; icon: string; category: string }[] = [
   { id: 'none', label: 'None', icon: '🚫', category: 'basic' },
@@ -18,6 +18,7 @@ export const BACKGROUND_THEMES: { id: BackgroundTheme; label: string; icon: stri
   { id: 'galaxy', label: 'Galaxy', icon: '🌌', category: 'cosmic' },
   { id: 'starscape', label: 'Starscape', icon: '⭐', category: 'cosmic' },
   { id: 'black_hole', label: 'Black Hole', icon: '🕳️', category: 'cosmic' },
+  { id: 'neutron_star', label: 'Neutron Star', icon: '💫', category: 'cosmic' },
   { id: 'aurora', label: 'Aurora Skies', icon: '🌈', category: 'nature' },
   { id: 'fire_magma', label: 'Fire & Magma', icon: '🔥', category: 'nature' },
   { id: 'ember_field', label: 'Ember Field', icon: '✨', category: 'nature' },
@@ -282,6 +283,166 @@ function renderForestWind(ctx: CanvasRenderingContext2D, particles: Particle[], 
   }
 }
 
+// ── Neutron Star ── epic pulsar: rotating beams, accretion disk, magnetosphere, distorted starfield
+interface NSStar { x: number; y: number; r: number; tw: number; hue: number; }
+let nsStars: NSStar[] | null = null;
+function ensureNSStars(w: number, h: number) {
+  if (nsStars && nsStars.length) return nsStars;
+  const arr: NSStar[] = [];
+  const count = 220;
+  for (let i = 0; i < count; i++) {
+    arr.push({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      r: Math.random() * 1.2 + 0.3,
+      tw: Math.random() * Math.PI * 2,
+      hue: 200 + Math.random() * 60,
+    });
+  }
+  nsStars = arr;
+  return arr;
+}
+
+function renderNeutronStar(ctx: CanvasRenderingContext2D, w: number, h: number, t: number) {
+  // Deep space wash with subtle blue bias
+  ctx.fillStyle = 'rgba(2, 4, 14, 0.18)';
+  ctx.fillRect(0, 0, w, h);
+
+  const cx = w / 2;
+  const cy = h / 2;
+  const minDim = Math.min(w, h);
+  const time = t * 0.001;
+
+  // Distorted starfield (gravitational lensing pull toward center)
+  const stars = ensureNSStars(w, h);
+  for (let i = 0; i < stars.length; i++) {
+    const s = stars[i];
+    const dx = s.x - cx;
+    const dy = s.y - cy;
+    const dist = Math.sqrt(dx * dx + dy * dy) + 0.0001;
+    const lensPull = Math.min(1, 80 / dist);
+    const lx = s.x - (dx / dist) * lensPull * 6;
+    const ly = s.y - (dy / dist) * lensPull * 6;
+    const tw = 0.55 + Math.sin(time * 2 + s.tw) * 0.4;
+    ctx.fillStyle = `hsla(${s.hue}, 80%, 80%, ${tw})`;
+    ctx.beginPath();
+    ctx.arc(lx, ly, s.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Accretion disk (tilted ellipse, multi-band)
+  const diskR = minDim * 0.34;
+  const tilt = 0.32; // y squash
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(time * 0.08);
+  for (let band = 0; band < 5; band++) {
+    const r = diskR * (0.55 + band * 0.11);
+    const grad = ctx.createRadialGradient(0, 0, r * 0.6, 0, 0, r);
+    const hueShift = 18 + band * 6 + Math.sin(time + band) * 4;
+    grad.addColorStop(0, `hsla(${hueShift}, 100%, 65%, 0)`);
+    grad.addColorStop(0.55, `hsla(${hueShift + 10}, 100%, 60%, ${0.10 - band * 0.014})`);
+    grad.addColorStop(0.85, `hsla(${280 + band * 10}, 90%, 60%, ${0.16 - band * 0.022})`);
+    grad.addColorStop(1, `hsla(${300}, 90%, 50%, 0)`);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r, r * tilt, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Bright inner ring
+  ctx.strokeStyle = `hsla(35, 100%, 75%, ${0.45 + Math.sin(time * 4) * 0.1})`;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, diskR * 0.55, diskR * 0.55 * tilt, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  // Pulsar rotation + spin (fast)
+  const spin = time * 1.6;
+  // Two opposing relativistic jets
+  for (let s = 0; s < 2; s++) {
+    const ang = spin + s * Math.PI;
+    const len = minDim * 0.95;
+    const beamWidth = 0.08 + Math.sin(time * 6 + s) * 0.012;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(ang);
+    // Soft outer cone
+    const beamGrad = ctx.createLinearGradient(0, 0, len, 0);
+    beamGrad.addColorStop(0, 'hsla(190, 100%, 80%, 0.55)');
+    beamGrad.addColorStop(0.25, 'hsla(210, 100%, 70%, 0.22)');
+    beamGrad.addColorStop(0.7, 'hsla(260, 90%, 65%, 0.08)');
+    beamGrad.addColorStop(1, 'hsla(280, 90%, 60%, 0)');
+    ctx.fillStyle = beamGrad;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(len, -len * beamWidth);
+    ctx.lineTo(len, len * beamWidth);
+    ctx.closePath();
+    ctx.fill();
+    // Hot core line
+    const coreGrad = ctx.createLinearGradient(0, 0, len, 0);
+    coreGrad.addColorStop(0, 'hsla(0, 0%, 100%, 0.9)');
+    coreGrad.addColorStop(0.4, 'hsla(190, 100%, 85%, 0.5)');
+    coreGrad.addColorStop(1, 'hsla(260, 100%, 70%, 0)');
+    ctx.strokeStyle = coreGrad;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(len, 0);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Magnetosphere field lines (subtle rotating loops)
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(spin * 0.5);
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2;
+    ctx.strokeStyle = `hsla(${200 + i * 8}, 90%, 70%, 0.08)`;
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    ctx.ellipse(
+      Math.cos(a) * minDim * 0.04,
+      Math.sin(a) * minDim * 0.04,
+      minDim * 0.18,
+      minDim * 0.06,
+      a,
+      0, Math.PI * 2
+    );
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // Pulsar pulse (rhythmic flash)
+  const pulse = 0.5 + 0.5 * Math.sin(time * 5);
+  const pulseR = minDim * (0.18 + pulse * 0.08);
+  const pulseGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, pulseR);
+  pulseGrad.addColorStop(0, `hsla(200, 100%, 90%, ${0.35 + pulse * 0.35})`);
+  pulseGrad.addColorStop(0.4, `hsla(220, 100%, 75%, ${0.18 + pulse * 0.18})`);
+  pulseGrad.addColorStop(1, 'hsla(260, 100%, 60%, 0)');
+  ctx.fillStyle = pulseGrad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, pulseR, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Neutron star core (tiny, blinding)
+  const coreR = 4 + pulse * 1.5;
+  const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR * 4);
+  core.addColorStop(0, 'rgba(255, 255, 255, 1)');
+  core.addColorStop(0.3, 'hsla(190, 100%, 90%, 0.9)');
+  core.addColorStop(1, 'hsla(220, 100%, 70%, 0)');
+  ctx.fillStyle = core;
+  ctx.beginPath();
+  ctx.arc(cx, cy, coreR * 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255, 255, 255, 1)';
+  ctx.beginPath();
+  ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
+  ctx.fill();
+}
+
 // ── Main render dispatcher ──
 export function createRenderer(theme: BackgroundTheme, canvas: HTMLCanvasElement) {
   const ctx = canvas.getContext('2d', { alpha: false });
@@ -326,6 +487,9 @@ export function createRenderer(theme: BackgroundTheme, canvas: HTMLCanvasElement
       case 'lightning':
         renderLightning(ctx!, w, h, t);
         break;
+      case 'neutron_star':
+        renderNeutronStar(ctx!, w, h, t);
+        break;
       case 'forest_wind':
         renderForestWind(ctx!, particles, w, h, t);
         break;
@@ -349,6 +513,7 @@ export function createRenderer(theme: BackgroundTheme, canvas: HTMLCanvasElement
   const onResize = () => {
     w = canvas.width = canvas.offsetWidth;
     h = canvas.height = canvas.offsetHeight;
+    nsStars = null; // regenerate distorted starfield for new dims
   };
   window.addEventListener('resize', onResize);
 
