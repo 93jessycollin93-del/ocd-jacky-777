@@ -315,7 +315,8 @@ function renderNeutronStar(ctx: CanvasRenderingContext2D, w: number, h: number, 
   const time = t * 0.001;
 
   // Distorted starfield (gravitational lensing pull toward center)
-  const stars = ensureNSStars(w, h);
+  const starCount = Math.max(40, Math.round(220 * quality));
+  const stars = ensureNSStars(w, h, starCount);
   for (let i = 0; i < stars.length; i++) {
     const s = stars[i];
     const dx = s.x - cx;
@@ -334,10 +335,11 @@ function renderNeutronStar(ctx: CanvasRenderingContext2D, w: number, h: number, 
   // Accretion disk (tilted ellipse, multi-band)
   const diskR = minDim * 0.34;
   const tilt = 0.32; // y squash
+  const bandCount = Math.max(2, Math.round(5 * quality));
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(time * 0.08);
-  for (let band = 0; band < 5; band++) {
+  for (let band = 0; band < bandCount; band++) {
     const r = diskR * (0.55 + band * 0.11);
     const grad = ctx.createRadialGradient(0, 0, r * 0.6, 0, 0, r);
     const hueShift = 18 + band * 6 + Math.sin(time + band) * 4;
