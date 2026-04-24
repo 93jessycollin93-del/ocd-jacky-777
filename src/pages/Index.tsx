@@ -498,6 +498,7 @@ const Index = () => {
   const [input, setInput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [bgSettings, setBgSettings] = useState<NSSettings>(() => loadNeutronSettings());
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [selectedModel, setSelectedModel] = useState<JackieModelId>("google/gemini-2.5-pro");
   const [tags, setTags] = useState<TagType[]>([]);
