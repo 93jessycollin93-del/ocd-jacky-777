@@ -401,7 +401,8 @@ function renderNeutronStar(ctx: CanvasRenderingContext2D, w: number, h: number, 
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(spin * 0.5);
-  for (let i = 0; i < 6; i++) {
+  const loopCount = Math.max(0, Math.round(6 * quality));
+  for (let i = 0; i < loopCount; i++) {
     const a = (i / 6) * Math.PI * 2;
     ctx.strokeStyle = `hsla(${200 + i * 8}, 90%, 70%, 0.08)`;
     ctx.lineWidth = 0.6;
