@@ -63,6 +63,7 @@ import {
   listFiles,
   searchFiles,
 } from "@/lib/jackie-files";
+import AnimatedCanvas from "@/components/backgrounds/AnimatedCanvas";
 
 interface DisplayMessage {
   id: string;
@@ -1305,6 +1306,7 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
         .prose h1, .prose h2, .prose h3 { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em; color: hsl(var(--foreground)); }
         .prose ul, .prose ol { color: hsl(var(--foreground) / 0.8); }
       `}</style>
+      </div>
     </div>
   );
 };
