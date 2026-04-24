@@ -286,10 +286,10 @@ function renderForestWind(ctx: CanvasRenderingContext2D, particles: Particle[], 
 // ── Neutron Star ── epic pulsar: rotating beams, accretion disk, magnetosphere, distorted starfield
 interface NSStar { x: number; y: number; r: number; tw: number; hue: number; }
 let nsStars: NSStar[] | null = null;
-function ensureNSStars(w: number, h: number) {
-  if (nsStars && nsStars.length) return nsStars;
+let nsStarCount = 0;
+function ensureNSStars(w: number, h: number, count: number) {
+  if (nsStars && nsStars.length === count) return nsStars;
   const arr: NSStar[] = [];
-  const count = 220;
   for (let i = 0; i < count; i++) {
     arr.push({
       x: Math.random() * w,
@@ -300,10 +300,11 @@ function ensureNSStars(w: number, h: number) {
     });
   }
   nsStars = arr;
+  nsStarCount = count;
   return arr;
 }
 
-function renderNeutronStar(ctx: CanvasRenderingContext2D, w: number, h: number, t: number) {
+function renderNeutronStar(ctx: CanvasRenderingContext2D, w: number, h: number, t: number, quality: number = 1) {
   // Deep space wash with subtle blue bias
   ctx.fillStyle = 'rgba(2, 4, 14, 0.18)';
   ctx.fillRect(0, 0, w, h);
@@ -314,7 +315,8 @@ function renderNeutronStar(ctx: CanvasRenderingContext2D, w: number, h: number, 
   const time = t * 0.001;
 
   // Distorted starfield (gravitational lensing pull toward center)
-  const stars = ensureNSStars(w, h);
+  const starCount = Math.max(40, Math.round(220 * quality));
+  const stars = ensureNSStars(w, h, starCount);
   for (let i = 0; i < stars.length; i++) {
     const s = stars[i];
     const dx = s.x - cx;
@@ -333,10 +335,11 @@ function renderNeutronStar(ctx: CanvasRenderingContext2D, w: number, h: number, 
   // Accretion disk (tilted ellipse, multi-band)
   const diskR = minDim * 0.34;
   const tilt = 0.32; // y squash
+  const bandCount = Math.max(2, Math.round(5 * quality));
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(time * 0.08);
-  for (let band = 0; band < 5; band++) {
+  for (let band = 0; band < bandCount; band++) {
     const r = diskR * (0.55 + band * 0.11);
     const grad = ctx.createRadialGradient(0, 0, r * 0.6, 0, 0, r);
     const hueShift = 18 + band * 6 + Math.sin(time + band) * 4;
@@ -398,7 +401,8 @@ function renderNeutronStar(ctx: CanvasRenderingContext2D, w: number, h: number, 
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(spin * 0.5);
-  for (let i = 0; i < 6; i++) {
+  const loopCount = Math.max(0, Math.round(6 * quality));
+  for (let i = 0; i < loopCount; i++) {
     const a = (i / 6) * Math.PI * 2;
     ctx.strokeStyle = `hsla(${200 + i * 8}, 90%, 70%, 0.08)`;
     ctx.lineWidth = 0.6;
@@ -453,6 +457,15 @@ export function createRenderer(theme: BackgroundTheme, canvas: HTMLCanvasElement
   let animId = 0;
   let t = 0;
 
+  // ── Adaptive FPS / CPU throttling ──
+  // Tracks rolling frame time; lowers `quality` (1.0 → 0.3) when FPS drops,
+  // and skips frames entirely when severely overloaded.
+  let lastFrameTs = performance.now();
+  let emaFrameMs = 16.67; // start assuming 60fps
+  let quality = 1;
+  let skipPhase = 0;
+  let skipEvery = 0; // 0 = render every frame; N = skip N of every N+1 frames
+
   const particleCount = theme === 'snow' ? 100 : theme === 'forest_wind' ? 60 : 120;
   const particles = ['fire_magma', 'aurora', 'ocean_glow', 'jade_zen', 'snow', 'ember_field', 'starscape', 'forest_wind']
     .includes(theme) ? createParticles(particleCount, w, h, theme) : [];
@@ -462,7 +475,36 @@ export function createRenderer(theme: BackgroundTheme, canvas: HTMLCanvasElement
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, w, h);
 
+  function adapt(now: number) {
+    const dt = now - lastFrameTs;
+    lastFrameTs = now;
+    // Ignore huge gaps (tab was backgrounded)
+    if (dt > 0 && dt < 500) {
+      emaFrameMs = emaFrameMs * 0.9 + dt * 0.1;
+    }
+    const fps = 1000 / emaFrameMs;
+    // Map FPS → quality with hysteresis
+    if (fps < 30 && quality > 0.35) quality = Math.max(0.3, quality - 0.04);
+    else if (fps < 45 && quality > 0.6) quality = Math.max(0.55, quality - 0.02);
+    else if (fps > 55 && quality < 1) quality = Math.min(1, quality + 0.01);
+    // Frame-skip only if extremely slow
+    if (fps < 20) skipEvery = 2;
+    else if (fps < 28) skipEvery = 1;
+    else if (fps > 40) skipEvery = 0;
+  }
+
   function render() {
+    const now = performance.now();
+    adapt(now);
+
+    if (skipEvery > 0) {
+      skipPhase = (skipPhase + 1) % (skipEvery + 1);
+      if (skipPhase !== 0) {
+        animId = requestAnimationFrame(render);
+        return;
+      }
+    }
+
     t++;
     switch (theme) {
       case 'matrix':
@@ -488,7 +530,7 @@ export function createRenderer(theme: BackgroundTheme, canvas: HTMLCanvasElement
         renderLightning(ctx!, w, h, t);
         break;
       case 'neutron_star':
-        renderNeutronStar(ctx!, w, h, t);
+        renderNeutronStar(ctx!, w, h, t, quality);
         break;
       case 'forest_wind':
         renderForestWind(ctx!, particles, w, h, t);
