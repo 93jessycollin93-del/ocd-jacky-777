@@ -319,6 +319,14 @@ function renderNeutronStar(ctx: CanvasRenderingContext2D, w: number, h: number, 
   const minDim = Math.min(w, h);
   const time = t * 0.001;
 
+  // Apply glow multiplier to all luminous elements (background wash above is unaffected).
+  ctx.save();
+  if (glow <= 1) {
+    ctx.globalAlpha = glow;
+  } else {
+    ctx.globalCompositeOperation = 'lighter';
+  }
+
   // Distorted starfield (gravitational lensing pull toward center)
   const starCount = Math.max(40, Math.round(220 * quality));
   const stars = ensureNSStars(w, h, starCount);
