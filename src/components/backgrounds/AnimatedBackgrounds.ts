@@ -458,6 +458,7 @@ function renderNeutronStar(ctx: CanvasRenderingContext2D, w: number, h: number, 
   ctx.beginPath();
   ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
   ctx.fill();
+  ctx.restore();
 }
 
 // ── Main render dispatcher ──
