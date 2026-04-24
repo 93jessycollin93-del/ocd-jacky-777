@@ -300,10 +300,11 @@ function ensureNSStars(w: number, h: number, count: number) {
     });
   }
   nsStars = arr;
+  nsStarCount = count;
   return arr;
 }
 
-function renderNeutronStar(ctx: CanvasRenderingContext2D, w: number, h: number, t: number) {
+function renderNeutronStar(ctx: CanvasRenderingContext2D, w: number, h: number, t: number, quality: number = 1) {
   // Deep space wash with subtle blue bias
   ctx.fillStyle = 'rgba(2, 4, 14, 0.18)';
   ctx.fillRect(0, 0, w, h);
