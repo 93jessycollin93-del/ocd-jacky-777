@@ -64,6 +64,7 @@ import {
   searchFiles,
 } from "@/lib/jackie-files";
 import AnimatedCanvas from "@/components/backgrounds/AnimatedCanvas";
+import NeutronBackgroundSettings, { loadNeutronSettings, type NeutronBackgroundSettings as NSSettings } from "@/components/backgrounds/NeutronBackgroundSettings";
 
 interface DisplayMessage {
   id: string;
@@ -497,6 +498,7 @@ const Index = () => {
   const [input, setInput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [bgSettings, setBgSettings] = useState<NSSettings>(() => loadNeutronSettings());
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [selectedModel, setSelectedModel] = useState<JackieModelId>("google/gemini-2.5-pro");
   const [tags, setTags] = useState<TagType[]>([]);
@@ -1083,9 +1085,10 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
     <div className="flex h-screen bg-background overflow-hidden relative">
       {/* Epic neutron-star ambient backdrop — sits behind everything, low opacity for readability */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-        <AnimatedCanvas theme="neutron_star" className="opacity-40" />
+        <AnimatedCanvas theme="neutron_star" opacity={bgSettings.opacity} glow={bgSettings.glow} />
         <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/20 to-background/60" />
       </div>
+      <NeutronBackgroundSettings value={bgSettings} onChange={setBgSettings} />
       <div className="relative z-10 flex h-full w-full overflow-hidden">
       <Sidebar
         conversations={conversations}

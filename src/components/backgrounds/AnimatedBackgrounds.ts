@@ -304,7 +304,12 @@ function ensureNSStars(w: number, h: number, count: number) {
   return arr;
 }
 
+// Glow intensity (0–2) — multiplies pulse, jet, disk, magnetosphere alpha for the neutron star.
+let nsGlow = 1;
+export function setNeutronStarGlow(g: number) { nsGlow = Math.max(0, Math.min(2, g)); }
+
 function renderNeutronStar(ctx: CanvasRenderingContext2D, w: number, h: number, t: number, quality: number = 1) {
+  const glow = nsGlow;
   // Deep space wash with subtle blue bias
   ctx.fillStyle = 'rgba(2, 4, 14, 0.18)';
   ctx.fillRect(0, 0, w, h);
@@ -313,6 +318,14 @@ function renderNeutronStar(ctx: CanvasRenderingContext2D, w: number, h: number, 
   const cy = h / 2;
   const minDim = Math.min(w, h);
   const time = t * 0.001;
+
+  // Apply glow multiplier to all luminous elements (background wash above is unaffected).
+  ctx.save();
+  if (glow <= 1) {
+    ctx.globalAlpha = glow;
+  } else {
+    ctx.globalCompositeOperation = 'lighter';
+  }
 
   // Distorted starfield (gravitational lensing pull toward center)
   const starCount = Math.max(40, Math.round(220 * quality));
@@ -445,6 +458,7 @@ function renderNeutronStar(ctx: CanvasRenderingContext2D, w: number, h: number, 
   ctx.beginPath();
   ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
   ctx.fill();
+  ctx.restore();
 }
 
 // ── Main render dispatcher ──
