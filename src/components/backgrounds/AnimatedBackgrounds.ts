@@ -8,7 +8,7 @@ export type BackgroundTheme =
   | 'matrix' | 'galaxy' | 'jade_zen' | 'fire_magma' | 'aurora'
   | 'neural_mesh' | 'code_stream' | 'black_hole' | 'crystal_vault'
   | 'sacred_geometry' | 'ocean_glow' | 'lightning' | 'ember_field'
-  | 'starscape' | 'forest_wind' | 'snow' | 'none';
+  | 'starscape' | 'forest_wind' | 'snow' | 'neutron_star' | 'none';
 
 export const BACKGROUND_THEMES: { id: BackgroundTheme; label: string; icon: string; category: string }[] = [
   { id: 'none', label: 'None', icon: '🚫', category: 'basic' },
@@ -18,6 +18,7 @@ export const BACKGROUND_THEMES: { id: BackgroundTheme; label: string; icon: stri
   { id: 'galaxy', label: 'Galaxy', icon: '🌌', category: 'cosmic' },
   { id: 'starscape', label: 'Starscape', icon: '⭐', category: 'cosmic' },
   { id: 'black_hole', label: 'Black Hole', icon: '🕳️', category: 'cosmic' },
+  { id: 'neutron_star', label: 'Neutron Star', icon: '💫', category: 'cosmic' },
   { id: 'aurora', label: 'Aurora Skies', icon: '🌈', category: 'nature' },
   { id: 'fire_magma', label: 'Fire & Magma', icon: '🔥', category: 'nature' },
   { id: 'ember_field', label: 'Ember Field', icon: '✨', category: 'nature' },
