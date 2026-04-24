@@ -457,6 +457,15 @@ export function createRenderer(theme: BackgroundTheme, canvas: HTMLCanvasElement
   let animId = 0;
   let t = 0;
 
+  // ── Adaptive FPS / CPU throttling ──
+  // Tracks rolling frame time; lowers `quality` (1.0 → 0.3) when FPS drops,
+  // and skips frames entirely when severely overloaded.
+  let lastFrameTs = performance.now();
+  let emaFrameMs = 16.67; // start assuming 60fps
+  let quality = 1;
+  let skipPhase = 0;
+  let skipEvery = 0; // 0 = render every frame; N = skip N of every N+1 frames
+
   const particleCount = theme === 'snow' ? 100 : theme === 'forest_wind' ? 60 : 120;
   const particles = ['fire_magma', 'aurora', 'ocean_glow', 'jade_zen', 'snow', 'ember_field', 'starscape', 'forest_wind']
     .includes(theme) ? createParticles(particleCount, w, h, theme) : [];
@@ -466,7 +475,36 @@ export function createRenderer(theme: BackgroundTheme, canvas: HTMLCanvasElement
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, w, h);
 
+  function adapt(now: number) {
+    const dt = now - lastFrameTs;
+    lastFrameTs = now;
+    // Ignore huge gaps (tab was backgrounded)
+    if (dt > 0 && dt < 500) {
+      emaFrameMs = emaFrameMs * 0.9 + dt * 0.1;
+    }
+    const fps = 1000 / emaFrameMs;
+    // Map FPS → quality with hysteresis
+    if (fps < 30 && quality > 0.35) quality = Math.max(0.3, quality - 0.04);
+    else if (fps < 45 && quality > 0.6) quality = Math.max(0.55, quality - 0.02);
+    else if (fps > 55 && quality < 1) quality = Math.min(1, quality + 0.01);
+    // Frame-skip only if extremely slow
+    if (fps < 20) skipEvery = 2;
+    else if (fps < 28) skipEvery = 1;
+    else if (fps > 40) skipEvery = 0;
+  }
+
   function render() {
+    const now = performance.now();
+    adapt(now);
+
+    if (skipEvery > 0) {
+      skipPhase = (skipPhase + 1) % (skipEvery + 1);
+      if (skipPhase !== 0) {
+        animId = requestAnimationFrame(render);
+        return;
+      }
+    }
+
     t++;
     switch (theme) {
       case 'matrix':
@@ -492,7 +530,7 @@ export function createRenderer(theme: BackgroundTheme, canvas: HTMLCanvasElement
         renderLightning(ctx!, w, h, t);
         break;
       case 'neutron_star':
-        renderNeutronStar(ctx!, w, h, t);
+        renderNeutronStar(ctx!, w, h, t, quality);
         break;
       case 'forest_wind':
         renderForestWind(ctx!, particles, w, h, t);
