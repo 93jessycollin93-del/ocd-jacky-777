@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
+import LanguageSwitcher from "@/components/game/LanguageSwitcher";
 
 type AuthView = "login" | "signup" | "forgot" | "reset";
 
@@ -90,11 +91,14 @@ const Auth = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-sm space-y-8">
-        <div className="space-y-2">
-          <span className="font-mono text-5xl font-bold text-primary">J</span>
-          <div className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-            {headingMap[view]}
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-2">
+            <span className="font-mono text-5xl font-bold text-primary">J</span>
+            <div className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+              {headingMap[view]}
+            </div>
           </div>
+          <LanguageSwitcher variant="compact" />
         </div>
 
         {/* Reset password form */}
