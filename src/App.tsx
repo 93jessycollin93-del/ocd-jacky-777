@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
+import { I18nProvider } from "@/game/i18n";
 import { useEffect } from "react";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -61,9 +62,10 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
+        <I18nProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
           <BrowserRouter>
             <SandboxBanner />
             <SandboxCatcher>
@@ -140,7 +142,8 @@ const App = () => (
             </Routes>
             </SandboxCatcher>
           </BrowserRouter>
-        </TooltipProvider>
+          </TooltipProvider>
+        </I18nProvider>
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
