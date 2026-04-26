@@ -115,34 +115,55 @@ export default function BotSwarm() {
     if (activeSwarmId === id) setActiveSwarmId(null);
   }, [activeSwarmId]);
 
-  // Simulated swarm execution loop
+  // Real swarm orchestration: dispatch goal to each bot via edge function, stream progress
+  const dispatchedRef = useMemo(() => new Set<string>(), []);
+
+  const appendEvent = useCallback((swarmId: string, ev: SwarmEvent) => {
+    updateSwarm(swarmId, s => ({ ...s, log: [ev, ...s.log].slice(0, 300) }));
+  }, [updateSwarm]);
+
+  const runBotInSwarm = useCallback(async (swarm: Swarm, bot: UserBot) => {
+    const stamp = (message: string, kind: SwarmEvent["kind"] = "info") =>
+      appendEvent(swarm.id, { ts: Date.now(), botId: bot.id, botName: bot.name, message, kind });
+
+    stamp(`Dispatching goal → ${bot.platform}/${bot.language}`, "info");
+    try {
+      const goalForBot = `[Bot role: ${bot.name} — ${bot.purpose || "general assistant"}]\nShared swarm goal: ${swarm.goal}`;
+      const { data, error } = await supabase.functions.invoke("gunit-agent-cycle", {
+        body: { goal: goalForBot },
+      });
+      if (error) throw error;
+      if (data?.plan) stamp(`Plan ready (${String(data.plan).length} chars)`, "info");
+      if (data?.execution) stamp(`Execution complete`, "success");
+      if (data?.analysis) stamp(`Analysis posted`, "info");
+      if (typeof data?.score === "number") {
+        stamp(`Final score: ${data.score}/10`, data.score >= 7 ? "success" : "warn");
+      }
+    } catch (e: any) {
+      const msg = e?.message || "Bot run failed";
+      stamp(msg.includes("429") ? "Rate limited — backing off" : `Error: ${msg}`, "warn");
+    }
+  }, [appendEvent]);
+
   useEffect(() => {
     const running = swarms.filter(s => s.status === "running");
-    if (running.length === 0) return;
-    const timer = setInterval(() => {
-      running.forEach(swarm => {
-        const swarmBots = swarm.botIds.map(id => bots.find(b => b.id === id)).filter(Boolean) as UserBot[];
-        if (swarmBots.length === 0) return;
-        const bot = swarmBots[Math.floor(Math.random() * swarmBots.length)];
-        const phrases = [
-          `Processing chunk for goal: ${swarm.goal.slice(0, 40)}`,
-          `Routing task to ${bot.platform} runtime`,
-          `Reporting partial result back to coordinator`,
-          `Waiting on dependency from peer bot`,
-          `Completed sub-task in ${(Math.random() * 800 + 200).toFixed(0)}ms`,
-        ];
-        const event: SwarmEvent = {
-          ts: Date.now(),
-          botId: bot.id,
-          botName: bot.name,
-          message: phrases[Math.floor(Math.random() * phrases.length)],
-          kind: Math.random() > 0.85 ? "warn" : Math.random() > 0.5 ? "success" : "info",
-        };
-        updateSwarm(swarm.id, s => ({ ...s, log: [event, ...s.log].slice(0, 200) }));
+    running.forEach(swarm => {
+      const swarmBots = swarm.botIds.map(id => bots.find(b => b.id === id)).filter(Boolean) as UserBot[];
+      swarmBots.forEach(bot => {
+        const key = `${swarm.id}:${bot.id}`;
+        if (dispatchedRef.has(key)) return;
+        dispatchedRef.add(key);
+        appendEvent(swarm.id, {
+          ts: Date.now(), botId: bot.id, botName: bot.name,
+          message: "Joining swarm coordinator", kind: "info",
+        });
+        runBotInSwarm(swarm, bot).finally(() => {
+          // allow re-dispatch on next Start
+          setTimeout(() => dispatchedRef.delete(key), 500);
+        });
       });
-    }, 1200);
-    return () => clearInterval(timer);
-  }, [swarms, bots, updateSwarm]);
+    });
+  }, [swarms, bots, runBotInSwarm, appendEvent, dispatchedRef]);
 
   const setStatus = (id: string, status: Swarm["status"]) => {
     updateSwarm(id, { status });
