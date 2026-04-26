@@ -214,7 +214,7 @@ export default function BotFoundry() {
                 </div>
                 <div className="flex items-center gap-1.5 text-[10px] font-mono">
                   {savedId ? (
-                    <span className="flex items-center gap-1 px-2 py-1 rounded-sm bg-green-500/15 text-green-500">
+                    <span className="flex items-center gap-1 px-2 py-1 rounded-sm bg-primary/15 text-primary">
                       <Check size={10} /> Saved
                     </span>
                   ) : saving ? (
