@@ -674,7 +674,6 @@ export type Database = {
       }
       user_bots: {
         Row: {
-          api_keys: Json
           behavior_style: string
           created_at: string
           generated_code: string | null
@@ -689,7 +688,6 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          api_keys?: Json
           behavior_style?: string
           created_at?: string
           generated_code?: string | null
@@ -704,7 +702,6 @@ export type Database = {
           user_id: string
         }
         Update: {
-          api_keys?: Json
           behavior_style?: string
           created_at?: string
           generated_code?: string | null
