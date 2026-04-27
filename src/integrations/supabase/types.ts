@@ -589,6 +589,96 @@ export type Database = {
         }
         Relationships: []
       }
+      jackie_control_audit: {
+        Row: {
+          action_id: string | null
+          actor: string
+          args: Json | null
+          command: string
+          id: string
+          message: string
+          result: string
+          ts: string
+          user_id: string
+        }
+        Insert: {
+          action_id?: string | null
+          actor?: string
+          args?: Json | null
+          command: string
+          id?: string
+          message?: string
+          result: string
+          ts?: string
+          user_id: string
+        }
+        Update: {
+          action_id?: string | null
+          actor?: string
+          args?: Json | null
+          command?: string
+          id?: string
+          message?: string
+          result?: string
+          ts?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      jackie_control_prefs: {
+        Row: {
+          model_override: string | null
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          model_override?: string | null
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          model_override?: string | null
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      jackie_control_swarms: {
+        Row: {
+          goal: string
+          id: string
+          models: Json
+          results: Json
+          started_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          goal: string
+          id?: string
+          models?: Json
+          results?: Json
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          goal?: string
+          id?: string
+          models?: Json
+          results?: Json
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       jackie_memory: {
         Row: {
           category: string
