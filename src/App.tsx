@@ -27,6 +27,7 @@ import GunitAgents from "./pages/gunit/GunitAgents";
 import GunitUsers from "./pages/gunit/GunitUsers";
 import GunitApiKeys from "./pages/gunit/GunitApiKeys";
 import SphereCommand from "./pages/SphereCommand";
+import JackieControl from "./pages/JackieControl";
 
 const queryClient = new QueryClient();
 
@@ -144,6 +145,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <SphereCommand />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/control"
+                element={
+                  <ProtectedRoute>
+                    <JackieControl />
                   </ProtectedRoute>
                 }
               />
