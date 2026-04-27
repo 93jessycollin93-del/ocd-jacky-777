@@ -13,6 +13,8 @@ import {
   canRun,
   getModelOverride,
   getRole,
+  hydrateAudit,
+  hydrateControlPrefs,
   listActions,
   loadAudit,
   runAction,
@@ -24,6 +26,11 @@ import {
   type ControlAction,
   type Role,
 } from "@/lib/jackie-control";
+import {
+  createSwarmRemote,
+  fetchSwarmsRemote,
+  updateSwarmRemote,
+} from "@/lib/jackie-control-sync";
 import { toast } from "sonner";
 import {
   ArrowLeft, Cpu, Shield, Activity, Terminal, Send, Trash2, Zap,
