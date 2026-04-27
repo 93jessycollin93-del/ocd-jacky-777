@@ -153,11 +153,13 @@ export default function JackieControl() {
         id, goal, models: [...swarmModels], status: "running", results: [], startedAt: Date.now(),
       };
       setSwarms((prev) => [task, ...prev]);
+      void createSwarmRemote(task);
       try {
         const results = await orchestrateParallel({ prompt: goal, models: swarmModels });
         setSwarms((prev) =>
           prev.map((s) => (s.id === id ? { ...s, status: "done", results } : s))
         );
+        void updateSwarmRemote(id, { status: "done", results });
         appendAudit({
           ts: Date.now(), actor: getRole(), command: `/swarm`,
           result: "ok", message: `Swarm completed across ${results.length} models`,
@@ -165,6 +167,7 @@ export default function JackieControl() {
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Swarm failed";
         setSwarms((prev) => prev.map((s) => (s.id === id ? { ...s, status: "error" } : s)));
+        void updateSwarmRemote(id, { status: "error" });
         toast.error(msg);
         appendAudit({ ts: Date.now(), actor: getRole(), command: `/swarm`, result: "error", message: msg });
       }
