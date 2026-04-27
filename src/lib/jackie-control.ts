@@ -51,6 +51,7 @@ export function getRole(): Role {
 }
 export function setRole(r: Role) {
   try { localStorage.setItem(ROLE_KEY, r); } catch { /* ignore */ }
+  void savePrefsRemote({ role: r, modelOverride: getModelOverride() });
   notify();
 }
 
@@ -60,6 +61,19 @@ export function getModelOverride(): string | null {
 export function setModelOverride(modelId: string | null) {
   try {
     if (modelId) localStorage.setItem(MODEL_OVERRIDE_KEY, modelId);
+    else localStorage.removeItem(MODEL_OVERRIDE_KEY);
+  } catch { /* ignore */ }
+  void savePrefsRemote({ role: getRole(), modelOverride: modelId });
+  notify();
+}
+
+// Hydrate role + model override from DB on startup (if signed in)
+export async function hydrateControlPrefs(): Promise<void> {
+  const remote = await fetchPrefsRemote();
+  if (!remote) return;
+  try {
+    localStorage.setItem(ROLE_KEY, remote.role);
+    if (remote.modelOverride) localStorage.setItem(MODEL_OVERRIDE_KEY, remote.modelOverride);
     else localStorage.removeItem(MODEL_OVERRIDE_KEY);
   } catch { /* ignore */ }
   notify();
