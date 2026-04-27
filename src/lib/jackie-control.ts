@@ -2,7 +2,15 @@
 // - Action registry (modules register controllable actions)
 // - Command bus (/control /execute /build /analyze /swarm)
 // - Role-based safety (user / admin / owner)
-// - Audit log (in-memory + localStorage, capped)
+// - Audit log (localStorage cache + DB persistence when authenticated)
+
+import {
+  pushAuditRemote,
+  clearAuditRemote,
+  savePrefsRemote,
+  fetchPrefsRemote,
+  fetchAuditRemote,
+} from "./jackie-control-sync";
 
 export type Role = "user" | "admin" | "owner";
 
