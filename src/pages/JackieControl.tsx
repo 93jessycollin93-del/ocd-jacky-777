@@ -464,15 +464,47 @@ export default function JackieControl() {
             <div className="flex items-center gap-2 mb-3">
               <Activity className="h-4 w-4 text-primary" />
               <h2 className="font-mono text-sm font-semibold">Audit Log</h2>
-              <button
-                onClick={async () => {
-                  try { await runAction("system.audit.clear"); }
-                  catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
-                }}
-                className="ml-auto text-[10px] font-mono text-muted-foreground hover:text-destructive inline-flex items-center gap-1"
-              >
-                <Trash2 className="h-3 w-3" /> clear
-              </button>
+              <div className="ml-auto flex items-center gap-2">
+                <button
+                  disabled={audit.length === 0}
+                  onClick={() => {
+                    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+                    downloadBlob(
+                      `jackie-audit-${stamp}.json`,
+                      "application/json",
+                      JSON.stringify(audit, null, 2),
+                    );
+                    toast.success(`Exported ${audit.length} entries (JSON)`);
+                  }}
+                  className="text-[10px] font-mono text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1"
+                >
+                  <Download className="h-3 w-3" /> json
+                </button>
+                <button
+                  disabled={audit.length === 0}
+                  onClick={() => {
+                    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+                    downloadBlob(
+                      `jackie-audit-${stamp}.csv`,
+                      "text/csv;charset=utf-8",
+                      auditToCsv(audit),
+                    );
+                    toast.success(`Exported ${audit.length} entries (CSV)`);
+                  }}
+                  className="text-[10px] font-mono text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1"
+                >
+                  <Download className="h-3 w-3" /> csv
+                </button>
+                <button
+                  onClick={async () => {
+                    try { await runAction("system.audit.clear"); }
+                    catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
+                  }}
+                  className="text-[10px] font-mono text-muted-foreground hover:text-destructive inline-flex items-center gap-1"
+                >
+                  <Trash2 className="h-3 w-3" /> clear
+                </button>
+              </div>
             </div>
             <div className="space-y-1 max-h-72 overflow-auto">
               {audit.length === 0 && (
