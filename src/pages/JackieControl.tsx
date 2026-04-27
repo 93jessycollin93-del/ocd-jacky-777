@@ -13,6 +13,8 @@ import {
   canRun,
   getModelOverride,
   getRole,
+  hydrateAudit,
+  hydrateControlPrefs,
   listActions,
   loadAudit,
   runAction,
@@ -24,6 +26,11 @@ import {
   type ControlAction,
   type Role,
 } from "@/lib/jackie-control";
+import {
+  createSwarmRemote,
+  fetchSwarmsRemote,
+  updateSwarmRemote,
+} from "@/lib/jackie-control-sync";
 import { toast } from "sonner";
 import {
   ArrowLeft, Cpu, Shield, Activity, Terminal, Send, Trash2, Zap,
@@ -68,6 +75,12 @@ export default function JackieControl() {
       setOverrideState(getModelOverride());
       setActions(listActions());
       setAudit(loadAudit());
+    });
+    // Hydrate from DB (no-op if signed out)
+    void hydrateControlPrefs();
+    void hydrateAudit();
+    void fetchSwarmsRemote(50).then((rows) => {
+      if (rows.length > 0) setSwarms(rows);
     });
     return () => { unsub(); };
   }, []);
@@ -140,11 +153,13 @@ export default function JackieControl() {
         id, goal, models: [...swarmModels], status: "running", results: [], startedAt: Date.now(),
       };
       setSwarms((prev) => [task, ...prev]);
+      void createSwarmRemote(task);
       try {
         const results = await orchestrateParallel({ prompt: goal, models: swarmModels });
         setSwarms((prev) =>
           prev.map((s) => (s.id === id ? { ...s, status: "done", results } : s))
         );
+        void updateSwarmRemote(id, { status: "done", results });
         appendAudit({
           ts: Date.now(), actor: getRole(), command: `/swarm`,
           result: "ok", message: `Swarm completed across ${results.length} models`,
@@ -152,6 +167,7 @@ export default function JackieControl() {
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Swarm failed";
         setSwarms((prev) => prev.map((s) => (s.id === id ? { ...s, status: "error" } : s)));
+        void updateSwarmRemote(id, { status: "error" });
         toast.error(msg);
         appendAudit({ ts: Date.now(), actor: getRole(), command: `/swarm`, result: "error", message: msg });
       }
