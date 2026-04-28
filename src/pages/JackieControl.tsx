@@ -31,10 +31,12 @@ import {
   fetchSwarmsRemote,
   updateSwarmRemote,
 } from "@/lib/jackie-control-sync";
+import { verifyLanguages, type LangCheckResult } from "@/lib/jackie-langcheck";
 import { toast } from "sonner";
 import {
   ArrowLeft, Cpu, Shield, Activity, Terminal, Send, Trash2, Zap,
   Network, Loader2, Play, RefreshCw, ChevronRight, Download, Search, X,
+  CheckCircle2, XCircle, HelpCircle, ShieldCheck,
 } from "lucide-react";
 
 function downloadBlob(filename: string, mime: string, content: string) {
