@@ -183,6 +183,8 @@ export default function JackieControl() {
       } else if (res.ok && data?.kind === "swarm" && data.payload) {
         setSwarmGoal(data.payload);
         await runSwarm(data.payload);
+      } else if (res.ok && data?.kind === "verify" && Array.isArray((data as { payload?: unknown }).payload)) {
+        await runVerify((data as { payload: string[] }).payload);
       }
       setCommand("");
     } finally {
