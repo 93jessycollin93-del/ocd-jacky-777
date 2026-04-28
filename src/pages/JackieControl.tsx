@@ -278,7 +278,7 @@ export default function JackieControl() {
               <Terminal className="h-4 w-4 text-primary" />
               <h2 className="font-mono text-sm font-semibold">Command</h2>
               <span className="ml-auto text-[10px] font-mono text-muted-foreground">
-                /control · /execute · /build · /analyze · /swarm
+                /control · /execute · /build · /analyze · /swarm · /verify
               </span>
             </div>
             <div className="flex gap-2">
