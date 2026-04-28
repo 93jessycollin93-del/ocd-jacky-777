@@ -175,16 +175,16 @@ export default function JackieControl() {
       else toast.error(res.message);
 
       // Intent commands map to orchestrator/swarm actions
-      const data = res.data as { kind?: string; payload?: string } | undefined;
-      if (res.ok && data?.kind === "build" && data.payload) {
+      const data = res.data as { kind?: string; payload?: string | string[] } | undefined;
+      if (res.ok && data?.kind === "build" && typeof data.payload === "string") {
         await runOrchestrator(`Build a concrete plan and implementation outline for: ${data.payload}`, "coding");
-      } else if (res.ok && data?.kind === "analyze" && data.payload) {
+      } else if (res.ok && data?.kind === "analyze" && typeof data.payload === "string") {
         await runOrchestrator(`Analyze in depth: ${data.payload}`, "reasoning");
-      } else if (res.ok && data?.kind === "swarm" && data.payload) {
+      } else if (res.ok && data?.kind === "swarm" && typeof data.payload === "string") {
         setSwarmGoal(data.payload);
         await runSwarm(data.payload);
-      } else if (res.ok && data?.kind === "verify" && Array.isArray((data as { payload?: unknown }).payload)) {
-        await runVerify((data as { payload: string[] }).payload);
+      } else if (res.ok && data?.kind === "verify" && Array.isArray(data.payload)) {
+        await runVerify(data.payload);
       }
       setCommand("");
     } finally {
