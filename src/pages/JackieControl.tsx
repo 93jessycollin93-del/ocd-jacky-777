@@ -517,11 +517,36 @@ export default function JackieControl() {
                 </button>
               </div>
             </div>
-            <div className="space-y-1 max-h-72 overflow-auto">
-              {audit.length === 0 && (
-                <p className="text-[11px] font-mono text-muted-foreground">No events recorded.</p>
+            <div className="relative mb-2">
+              <Search className="h-3 w-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              <input
+                value={auditQuery}
+                onChange={(e) => setAuditQuery(e.target.value)}
+                placeholder="Search by action_id, message, command…"
+                className="w-full bg-background border border-input rounded pl-7 pr-7 py-1.5 text-[11px] font-mono outline-none focus:ring-1 focus:ring-ring"
+              />
+              {auditQuery && (
+                <button
+                  onClick={() => setAuditQuery("")}
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label="Clear search"
+                >
+                  <X className="h-3 w-3" />
+                </button>
               )}
-              {audit.map((e, i) => (
+            </div>
+            {auditQuery && (
+              <p className="mb-1 text-[10px] font-mono text-muted-foreground">
+                {filteredAudit.length} of {audit.length} match
+              </p>
+            )}
+            <div className="space-y-1 max-h-72 overflow-auto">
+              {filteredAudit.length === 0 && (
+                <p className="text-[11px] font-mono text-muted-foreground">
+                  {audit.length === 0 ? "No events recorded." : "No matches."}
+                </p>
+              )}
+              {filteredAudit.map((e, i) => (
                 <div key={i} className="text-[11px] font-mono leading-tight border-l-2 pl-2 py-0.5"
                   style={{
                     borderColor:
