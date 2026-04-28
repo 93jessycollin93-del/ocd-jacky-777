@@ -438,6 +438,82 @@ export default function JackieControl() {
               ))}
             </div>
           </div>
+
+          {/* Language Self-Check */}
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <ShieldCheck className="h-4 w-4 text-primary" />
+              <h2 className="font-mono text-sm font-semibold">Language Self-Check</h2>
+              <span className="ml-auto text-[10px] font-mono text-muted-foreground">
+                canonical-snippet verification before answering
+              </span>
+            </div>
+            <div className="flex gap-2 mb-2">
+              <input
+                value={verifyInput}
+                onChange={(e) => setVerifyInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const langs = verifyInput.split(/\s*[,|]\s*/).map((s) => s.trim()).filter(Boolean);
+                    if (langs.length) { void runVerify(langs); setVerifyInput(""); }
+                  }
+                }}
+                placeholder="python 3.12, rust 2024, postgres 16, wgsl…"
+                className="flex-1 bg-background border border-input rounded px-3 py-2 text-sm font-mono outline-none focus:ring-1 focus:ring-ring"
+              />
+              <button
+                onClick={() => {
+                  const langs = verifyInput.split(/\s*[,|]\s*/).map((s) => s.trim()).filter(Boolean);
+                  if (langs.length) { void runVerify(langs); setVerifyInput(""); }
+                }}
+                disabled={verifying || !verifyInput.trim()}
+                className="px-3 py-2 rounded bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-50 inline-flex items-center gap-1.5"
+              >
+                {verifying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+                Verify
+              </button>
+            </div>
+            <p className="text-[10px] font-mono text-muted-foreground mb-3">
+              Comma- or pipe-separated. Each dialect must produce a runnable snippet that prints
+              <code className="mx-1 px-1 rounded bg-muted text-foreground">jackie-ok</code>
+              and matches idiomatic structure before full code is delivered.
+            </p>
+
+            <div className="space-y-2 max-h-80 overflow-auto">
+              {verifyResults.length === 0 && (
+                <p className="text-xs text-muted-foreground font-mono">No self-checks run yet.</p>
+              )}
+              {verifyResults.map((r, i) => {
+                const Icon = r.verdict === "pass" ? CheckCircle2 : r.verdict === "fail" ? XCircle : HelpCircle;
+                const tone =
+                  r.verdict === "pass" ? "text-emerald-500"
+                  : r.verdict === "fail" ? "text-destructive"
+                  : "text-muted-foreground";
+                return (
+                  <details key={i} className="rounded border border-border/60 bg-background/50">
+                    <summary className="cursor-pointer px-3 py-2 flex items-center gap-2 text-xs font-mono">
+                      <Icon className={`h-3.5 w-3.5 ${tone}`} />
+                      <span className="text-foreground">{r.language}</span>
+                      {r.dialect && <span className="text-muted-foreground">/ {r.dialect}</span>}
+                      <span className="ml-auto text-[10px] text-muted-foreground">
+                        {r.modelUsed} · {r.durationMs}ms
+                      </span>
+                    </summary>
+                    <div className="px-3 pb-3 space-y-2">
+                      {r.reasons.length > 0 && (
+                        <ul className="text-[11px] font-mono text-muted-foreground list-disc pl-4">
+                          {r.reasons.map((reason, j) => <li key={j}>{reason}</li>)}
+                        </ul>
+                      )}
+                      <pre className="rounded bg-muted/40 p-2 text-[11px] whitespace-pre-wrap leading-relaxed max-h-48 overflow-auto">
+                        {r.snippet || "(no snippet returned)"}
+                      </pre>
+                    </div>
+                  </details>
+                );
+              })}
+            </div>
+          </div>
         </section>
 
         {/* RIGHT: Permissions, actions, audit */}
