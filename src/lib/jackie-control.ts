@@ -209,6 +209,12 @@ export async function runCommand(line: string): Promise<CommandResult> {
       appendAudit({ ts: Date.now(), actor: role, command: trimmed, result: "ok", message: `Dispatched ${cmd}` });
       return { ok: true, message: `Dispatched ${cmd}`, data: { kind: cmd.slice(1), payload: argline } };
     }
+    case "/verify": {
+      if (!argline) return { ok: false, message: "Usage: /verify <language>[, <language>...]" };
+      const langs = argline.split(/\s*[,|]\s*/).map((s) => s.trim()).filter(Boolean);
+      appendAudit({ ts: Date.now(), actor: role, command: trimmed, result: "ok", message: `Dispatched verify (${langs.length})` });
+      return { ok: true, message: `Verifying ${langs.length} language(s)`, data: { kind: "verify", payload: langs } };
+    }
     default:
       return { ok: false, message: `Unknown command: ${cmd}` };
   }
