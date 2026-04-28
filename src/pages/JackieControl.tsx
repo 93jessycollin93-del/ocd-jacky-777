@@ -34,7 +34,7 @@ import {
 import { toast } from "sonner";
 import {
   ArrowLeft, Cpu, Shield, Activity, Terminal, Send, Trash2, Zap,
-  Network, Loader2, Play, RefreshCw, ChevronRight, Download,
+  Network, Loader2, Play, RefreshCw, ChevronRight, Download, Search, X,
 } from "lucide-react";
 
 function downloadBlob(filename: string, mime: string, content: string) {
