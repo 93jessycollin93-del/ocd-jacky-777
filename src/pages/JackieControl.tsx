@@ -114,6 +114,37 @@ export default function JackieControl() {
   ]);
   const [swarms, setSwarms] = useState<SwarmTask[]>([]);
 
+  // Language self-check
+  const [verifyInput, setVerifyInput] = useState("");
+  const [verifyResults, setVerifyResults] = useState<LangCheckResult[]>([]);
+  const [verifying, setVerifying] = useState(false);
+
+  const runVerify = useCallback(async (langs: string[]) => {
+    if (langs.length === 0) return;
+    setVerifying(true);
+    try {
+      const results = await verifyLanguages(langs);
+      setVerifyResults((prev) => [...results, ...prev].slice(0, 50));
+      const passed = results.filter((r) => r.verdict === "pass").length;
+      const failed = results.filter((r) => r.verdict === "fail").length;
+      const uncertain = results.length - passed - failed;
+      appendAudit({
+        ts: Date.now(), actor: getRole(), command: `/verify`,
+        result: failed === 0 ? "ok" : "error",
+        message: `${passed} pass · ${failed} fail · ${uncertain} uncertain`,
+        args: { languages: langs },
+      });
+      if (failed === 0) toast.success(`Verified ${passed}/${results.length} language(s)`);
+      else toast.error(`${failed} of ${results.length} failed self-check`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Verify failed";
+      toast.error(msg);
+      appendAudit({ ts: Date.now(), actor: getRole(), command: `/verify`, result: "error", message: msg });
+    } finally {
+      setVerifying(false);
+    }
+  }, []);
+
   useEffect(() => {
     const unsub = subscribe(() => {
       setRoleState(getRole());
