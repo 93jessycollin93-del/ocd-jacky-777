@@ -390,6 +390,15 @@ const Sidebar = ({
           >
             🌐 Horizon Network ↗
           </a>
+          <a
+            href="https://chaos-dragon-emperor.lovable.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
+            title="Emperors of the Last Kingdom — fantasy strategy"
+          >
+            👑 Emperors of the Last Kingdom ↗
+          </a>
           <div className="px-2 py-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
             Core
           </div>
