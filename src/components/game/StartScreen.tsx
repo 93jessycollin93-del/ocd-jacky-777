@@ -40,10 +40,6 @@ export default function StartScreen() {
           </button>
         </div>
 
-        <div className="pt-2 border-t border-border">
-          <LanguageSwitcher />
-        </div>
-
         <div className="text-xs text-muted-foreground space-y-1">
           <p>{t('ui.tip1')}</p>
           <p>{t('ui.tip2')}</p>
