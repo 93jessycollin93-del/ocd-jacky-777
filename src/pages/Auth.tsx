@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
-import LanguageSwitcher from "@/components/game/LanguageSwitcher";
+
 
 type AuthView = "login" | "signup" | "forgot" | "reset";
 
@@ -98,7 +98,7 @@ const Auth = () => {
               {headingMap[view]}
             </div>
           </div>
-          <LanguageSwitcher variant="compact" />
+          
         </div>
 
         {/* Reset password form */}

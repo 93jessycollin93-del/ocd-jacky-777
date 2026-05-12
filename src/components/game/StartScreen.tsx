@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useGame } from '@/game/GameContext';
 import { useI18n } from '@/game/i18n';
-import LanguageSwitcher from './LanguageSwitcher';
+
 
 export default function StartScreen() {
   const { startGame } = useGame();
