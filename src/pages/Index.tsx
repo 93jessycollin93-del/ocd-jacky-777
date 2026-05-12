@@ -65,7 +65,7 @@ import {
 } from "@/lib/jackie-files";
 import AnimatedCanvas from "@/components/backgrounds/AnimatedCanvas";
 import NeutronBackgroundSettings, { loadNeutronSettings, type NeutronBackgroundSettings as NSSettings } from "@/components/backgrounds/NeutronBackgroundSettings";
-import LanguageSwitcher from "@/components/game/LanguageSwitcher";
+
 
 interface DisplayMessage {
   id: string;
@@ -1173,7 +1173,7 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
           </button>
           <span className="font-mono text-sm font-bold text-primary tracking-wider">J</span>
           <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Jackie</span>
-          <LanguageSwitcher variant="compact" />
+          
           <div className="flex-1" />
           {messages.length > 0 && (
             <button

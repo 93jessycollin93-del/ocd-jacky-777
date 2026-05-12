@@ -18,7 +18,7 @@ import JukeboxPage from '@/components/game/JukeboxPage';
 import AIPage from '@/components/game/AIPage';
 import EventLogPage from '@/components/game/EventLogPage';
 import QuestsPage from '@/components/game/QuestsPage';
-import LanguageSwitcher from '@/components/game/LanguageSwitcher';
+
 import TradingPage from '@/components/game/TradingPage';
 import GachaPage from '@/components/game/GachaPage';
 import BattlePassPage from '@/components/game/BattlePassPage';
@@ -130,7 +130,7 @@ export default function GameLayout() {
               <span className="text-xs text-muted-foreground">{currentTab?.icon} {currentTab?.label}</span>
             </div>
             <div className="flex items-center gap-2">
-              <LanguageSwitcher variant="compact" />
+              
               <AudioControls />
               <Link to="/" className="text-xs text-muted-foreground hover:text-primary transition-colors">💬 Jackie</Link>
               <button onClick={resetGame} className="text-xs text-muted-foreground hover:text-accent transition-colors">{t('ui.resetRealm')}</button>

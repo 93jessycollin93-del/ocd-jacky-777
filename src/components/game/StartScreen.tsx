@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useGame } from '@/game/GameContext';
 import { useI18n } from '@/game/i18n';
-import LanguageSwitcher from './LanguageSwitcher';
+
 
 export default function StartScreen() {
   const { startGame } = useGame();
@@ -38,10 +38,6 @@ export default function StartScreen() {
           >
             {t('ui.foundRealm')}
           </button>
-        </div>
-
-        <div className="pt-2 border-t border-border">
-          <LanguageSwitcher />
         </div>
 
         <div className="text-xs text-muted-foreground space-y-1">
