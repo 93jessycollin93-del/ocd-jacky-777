@@ -372,6 +372,24 @@ const Sidebar = ({
           <a href="/keys" className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors">
             🔑 API Key Vault
           </a>
+          <a
+            href="https://dragon-chaos-wars.lovable.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
+            title="Realm Accord — strategy game"
+          >
+            🐉 Realm Accord ↗
+          </a>
+          <a
+            href="https://jadelounge.lovable.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
+            title="Horizon Network — social network"
+          >
+            🌐 Horizon Network ↗
+          </a>
           <div className="px-2 py-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
             Core
           </div>
