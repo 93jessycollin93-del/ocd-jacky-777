@@ -1,63 +1,68 @@
+# Jackie → Claude Code Handoff Bundle
 
+Goal: hand Claude Code everything it needs to reconstruct Jackie on Replit, keeping the existing Supabase backend.
 
-# Plan: Build All 15 Incomplete Game Pages
+## Deliverables (written to `/mnt/documents/jackie-handoff/`)
 
-## Summary
-15 game pages are empty one-line stubs despite GameContext already having the backend methods wired (exchangeResources, giftFaction, pullGacha, unlockSongTier, etc.). Each page needs a functional UI connecting to existing game logic.
+1. **`JACKIE_BRIEF.md`** — single-file spec Claude reads first.
+2. **`jackie-source.zip`** — full source archive (code + edge functions + memory + Jackie/ docs + schema).
+3. **`SUPABASE_SCHEMA.sql`** — pg_dump-style schema export so Claude can recreate tables if needed.
+4. **`CLAUDE_PROMPT.md`** — copy-paste kickoff prompt for Claude Code on Replit.
 
-## What Gets Built
+## What goes in `JACKIE_BRIEF.md`
 
-### Group 1 — Economy Core (4 pages)
-**ShopPage** — Grid of purchasable items (speedups, shields, resource packs, teleports) bought with gold/resources. Category tabs, quantity selector, purchase confirmation. Items go to `state.bag`.
+- Identity & persona (from `Jackie/prompts/system_prompt.md`, `CORE_IDENTITY.md`, `BEHAVIOR_RULES.md`).
+- Architecture overview (modules, room system, memory tiers).
+- Stack: React 18 + Vite + Tailwind + shadcn, Supabase (Auth/DB/RLS/Storage), Lovable AI Gateway, Edge Functions.
+- Memory model (`mem://` index + core rules, Jessy's discernment).
+- Key features list with file pointers (chat, orchestrator, langcheck, vault, sphere, telegram shell, etc.).
+- Supabase config: tables, RLS philosophy, storage buckets (`chat-attachments`), required secrets list.
+- Replit-specific setup notes: env vars to set, `bun install`, `bun run dev`, Supabase URL/anon key reuse.
+- Known external links (sister projects) and what to keep vs strip.
 
-**BagPage** — Inventory grid of all owned items from `state.bag` + `state.gachaInventory`. Category tabs (All, Speedups, Boosts, Shields, Equipment, Notes). "Use" button for consumables via `useGachaItem`. Battle Plan notes section using `state.battlePlans`.
+## What goes in `jackie-source.zip`
 
-**CraftingPage** — Uses existing `craftGear()` and `canAffordMaterials()` from GameContext. Shows `GEAR_CRAFT_RECIPES` with material costs, crafting materials inventory display, and craft button. Also shows `GEAR_UPGRADE_RECIPES` for upgrading existing gear.
+- `src/` (all components, pages, lib, game, sphere, vault, telegram, hooks, integrations).
+- `supabase/` (config.toml + all `functions/`).
+- `Jackie/` (full identity/architecture/security/memory docs).
+- `mem://` snapshot exported as `memory/` folder (index + every referenced memory file).
+- Root configs: `package.json`, `vite.config.ts`, `tailwind.config.ts`, `tsconfig*.json`, `index.html`, `components.json`, `postcss.config.js`, `eslint.config.js`.
+- `.env.example` (placeholders only — no real keys).
+- `README_REPLIT.md` (install/run on Replit).
 
-**MarketplacePage / TradingPage** — Merge into one: resource exchange using existing `exchangeResources()`. Slider for amount, dynamic exchange rate display, confirm button. Add simulated NPC trader deals with fluctuating rates.
+Excluded: `node_modules`, `.git`, build artifacts, real secrets, `src/integrations/supabase/types.ts` (auto-generated note instead).
 
-### Group 2 — Social & Competitive (3 pages)
-**DiplomacyPage** — Faction relations panel for edain/eldari/khazari. Shows standing bars, alliance levels, gift resources button via `giftFaction()`, trade route activation via `activateTradeRoute()`. Already fully wired in GameContext.
+## What goes in `SUPABASE_SCHEMA.sql`
 
-**GuildBankPage** — Uses `state.guildBank` type already defined. Treasury display, deposit/withdraw resources, guild boost activation, member roles, stability beacon progress.
+- All `public.*` table DDL (CREATE TABLE + GRANTs + RLS policies + indexes).
+- Functions/triggers (`update_updated_at_column`, `has_role` if present).
+- Storage bucket definitions (`chat-attachments`).
+- Pulled via `supabase--read_query` against `information_schema` + `pg_policies`.
 
-**LeaderboardPage** — Mock leaderboard with player ranking by Power, Kills, Resources, Arena Wins. Current player highlighted. Top 3 with medal icons.
+## What goes in `CLAUDE_PROMPT.md`
 
-### Group 3 — Engagement (4 pages)
-**GachaPage** — Lootcrate pull interface using existing `pullGacha()`, `generateActiveBanners()`, `forgeFragments()`. Banner carousel, single/10-pull buttons, pity counter, pull animation, inventory view.
+A ready-to-paste prompt telling Claude Code:
+- Read `JACKIE_BRIEF.md` first.
+- Unzip `jackie-source.zip`.
+- Install with `bun install` (or `npm install` on Replit).
+- Wire `.env` to the existing Supabase project (URL + anon key from user).
+- Note that `LOVABLE_API_KEY` is Lovable-only; on Replit replace with direct OpenAI/Google keys or an OpenRouter key, and rewrite the `ai.gateway.lovable.dev` calls accordingly.
+- Preserve persona rules ("Jackie here—", discernment, memory tiers).
 
-**ShardsPage** — Light/Dark/Balance shard display from `state.shards`. Shard fusion thresholds, elemental bonuses, visual glow effects.
+## Technical steps the build phase will execute
 
-**EventLogPage** — Scrollable timeline from `state.aiEventLog`. Filter by event type, timestamp display, resource change indicators.
+1. `mkdir -p /mnt/documents/jackie-handoff`.
+2. Snapshot `mem://index.md` + every referenced `mem://...` file into `/tmp/jackie-export/memory/`.
+3. Copy `src/`, `supabase/`, `Jackie/`, root configs into `/tmp/jackie-export/`.
+4. Write `.env.example`, `README_REPLIT.md`.
+5. Query Supabase for schema + RLS, write `SUPABASE_SCHEMA.sql`.
+6. Generate `JACKIE_BRIEF.md` by stitching identity docs + architecture summary + file map.
+7. Generate `CLAUDE_PROMPT.md`.
+8. Zip `/tmp/jackie-export` → `/mnt/documents/jackie-handoff/jackie-source.zip` (nix run nixpkgs#zip).
+9. Emit `<presentation-artifact>` tags for the zip, brief, schema, and prompt so you can download all four.
 
-**PremiumStorePage** — Diamond-only cosmetics, profile badges, exclusive skins. Distinct from Jade Store. All purchases use diamond currency with transactionGuard.
+## Out of scope
 
-### Group 4 — Utility (4 pages)
-**AIPage (Oracle)** — Strategic advisor generated from game state analysis. Recommended next builds, threat assessment, resource optimization tips. No AI API calls — pure client-side game state analysis.
-
-**JukeboxPage** — Music collection with 10 languages from `musicData.ts`. Uses existing `unlockSongTier()` and `getUnlockedTier()`. Tier progression (bronze→mythic), unlock cost display, visual tier cards.
-
-**QuestsPage** — Daily (5) + weekly (3) quest system. Quests track real game actions (build, train, research, battle). Progress bars, claim buttons, auto-refresh timers.
-
-**DiagnosticsPanel** — Dev panel: resource production rates, active timers, state integrity check via `verifyStateIntegrity()`, transaction log viewer, localStorage size display.
-
-## Technical Approach
-- Each page uses `useGame()` hook for state access
-- All diamond transactions use `transactionGuard.ts` (rate limiting, atomic updates, dedup)
-- All gold/resource transactions use `canAfford()` + `spendResources()` pattern
-- Mobile-first with 44px touch targets, consistent with BattlePassPage/DiamondExchangePage patterns
-- Quest system adds a `quests` field to GameState (requires small GameContext addition)
-- Shop items add to `state.bag` (type already defined)
-- No new database tables needed — all client-side with cloud sync
-
-## Files Changed
-- 15 page files replaced (each ~150-350 lines)
-- `src/game/GameContext.tsx` — add quest tracking, shop purchase, bag item use methods
-- `src/game/types.ts` — add QuestState interface
-- `src/game/data.ts` — add SHOP_ITEMS, QUEST_DEFINITIONS constants
-
-## Order of Implementation
-1. Types + data definitions
-2. GameContext method additions (quests, shop)
-3. All 15 pages in parallel groups
-
+- Eru (you'll export from base44 separately).
+- Rewriting code for non-Lovable runtimes — Claude Code handles that on Replit using the brief's guidance.
+- Migrating data rows (only schema is exported, not user data).
