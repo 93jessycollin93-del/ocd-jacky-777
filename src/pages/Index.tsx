@@ -399,6 +399,13 @@ const Sidebar = ({
           >
             👑 Emperors of the Last Kingdom ↗
           </a>
+          <a
+            href="/veilops"
+            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
+            title="VeilOps — factual threat intelligence reference (MITRE ATT&CK, CISA KEV, APT profiles)"
+          >
+            🛡️ VeilOps Threat Intel
+          </a>
           <div className="px-2 py-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
             Core
           </div>
