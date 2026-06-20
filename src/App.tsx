@@ -28,6 +28,7 @@ import GunitUsers from "./pages/gunit/GunitUsers";
 import GunitApiKeys from "./pages/gunit/GunitApiKeys";
 import SphereCommand from "./pages/SphereCommand";
 import JackieControl from "./pages/JackieControl";
+import VeilOps from "./pages/VeilOps";
 
 const queryClient = new QueryClient();
 
