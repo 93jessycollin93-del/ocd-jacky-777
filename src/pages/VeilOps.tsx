@@ -2403,7 +2403,7 @@ export default function VeilOpsPage(){
   return (
     <div style={{ position:"relative", minHeight:"100vh", background:"#0A0F1E" }}>
       <div style={{ position:"fixed", inset:0, zIndex:0, opacity:0.18, pointerEvents:"none" }}>
-        <AnimatedCanvas backgroundId="neutron" />
+        <AnimatedCanvas theme="neural_mesh" opacity={0.35} />
       </div>
       <div style={{ position:"relative", zIndex:1 }}>
         <div style={{
