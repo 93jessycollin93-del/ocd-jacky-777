@@ -157,6 +157,14 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/veilops"
+                element={
+                  <ProtectedRoute>
+                    <VeilOps />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="*" element={<NotFound />} />
             </Routes>
             </SandboxCatcher>
