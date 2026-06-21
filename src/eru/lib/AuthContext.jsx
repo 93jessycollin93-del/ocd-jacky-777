@@ -1,214 +1,78 @@
-import React, { createContext, useState, useContext, useEffect, useRef, useCallback } from 'react';
-import { base44 } from '@/eru/api/base44Client';
-import { syncCollectorRewardProfile } from '@/eru/lib/collectorRewards';
-import { appParams } from '@/eru/lib/app-params';
-import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
+// Shim: Eru's AuthContext, backed by Jackie's Supabase session.
+// Pages that called `useAuth()` (Eru) get the same shape they expect, but the
+// session, login/logout, and identity come from Jackie. No Base44 round-trips.
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
+
+function mapUser(u) {
+  if (!u) return null;
+  return {
+    id: u.id,
+    email: u.email,
+    full_name: u.user_metadata?.full_name || u.email?.split('@')[0] || 'Operator',
+    role: u.user_metadata?.role || 'user',
+    isAdmin: u.user_metadata?.role === 'admin',
+    avatar_url: u.user_metadata?.avatar_url,
+    created_date: u.created_at,
+  };
+}
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
-  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(true);
-  const [authError, setAuthError] = useState(null);
-  const [appPublicSettings, setAppPublicSettings] = useState(null); // Contains only { id, public_settings }
 
   useEffect(() => {
-    checkAppState();
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      setUser(mapUser(data.session?.user));
+      setIsLoadingAuth(false);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      setUser(mapUser(session?.user));
+    });
+    return () => { mounted = false; sub.subscription.unsubscribe(); };
   }, []);
 
-  const checkAppState = async () => {
-    try {
-      setIsLoadingPublicSettings(true);
-      setAuthError(null);
-      
-      // First, check app public settings (with token if available)
-      // This will tell us if auth is required, user not registered, etc.
-      const appClient = createAxiosClient({
-        baseURL: `/api/apps/public`,
-        headers: {
-          'X-App-Id': appParams.appId
-        },
-        token: appParams.token, // Include token if available
-        interceptResponses: true
-      });
-      
-      try {
-        const publicSettings = await appClient.get(`/prod/public-settings/by-id/${appParams.appId}`);
-        setAppPublicSettings(publicSettings);
-        
-        // If we got the app public settings successfully, check if user is authenticated
-        if (appParams.token) {
-          await checkUserAuth();
-        } else {
-          setIsLoadingAuth(false);
-          setIsAuthenticated(false);
-        }
-        setIsLoadingPublicSettings(false);
-      } catch (appError) {
-        const status = appError?.status;
-        const reason = appError?.data?.extra_data?.reason;
-        const message = appError?.message || 'Failed to load app';
+  const login = useCallback(() => { window.location.href = '/auth'; }, []);
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
+    window.location.href = '/auth';
+  }, []);
+  const refreshUser = useCallback(async () => {
+    const { data } = await supabase.auth.getUser();
+    setUser(mapUser(data.user));
+  }, []);
 
-        console.error('App state check failed:', {
-          status,
-          reason,
-          message,
-        });
-        
-        // Handle app-level errors
-        if (status === 403 && reason) {
-          if (reason === 'auth_required') {
-            setAuthError({
-              type: 'auth_required',
-              message: 'Authentication required'
-            });
-          } else if (reason === 'user_not_registered') {
-            setAuthError({
-              type: 'user_not_registered',
-              message: 'User not registered for this app'
-            });
-          } else {
-            setAuthError({
-              type: reason,
-              message
-            });
-          }
-        } else {
-          setAuthError({
-            type: 'unknown',
-            message
-          });
-        }
-        setIsLoadingPublicSettings(false);
-        setIsLoadingAuth(false);
-      }
-    } catch (error) {
-      const message = error?.message || 'An unexpected error occurred';
-      console.error('Unexpected error:', { message });
-      setAuthError({
-        type: 'unknown',
-        message
-      });
-      setIsLoadingPublicSettings(false);
-      setIsLoadingAuth(false);
-    }
+  const value = {
+    user,
+    isAuthenticated: !!user,
+    isLoadingAuth,
+    isLoadingPublicSettings: false,
+    authError: null,
+    appPublicSettings: { id: 'jackie', public_settings: {} },
+    login,
+    logout,
+    refreshUser,
+    checkUserAuth: refreshUser,
   };
 
-  const checkUserAuth = async () => {
-    try {
-      // Now check if the user is authenticated
-      setIsLoadingAuth(true);
-      const currentUser = await base44.auth.me();
-      setUser(currentUser);
-      setIsAuthenticated(true);
-      if (currentUser?.email) {
-        syncCollectorRewardProfile(currentUser.email).catch(() => null);
-      }
-      setIsLoadingAuth(false);
-    } catch (error) {
-      const status = error?.status;
-      const message = error?.message || 'Authentication check failed';
-
-      console.error('User auth check failed:', {
-        status,
-        message,
-      });
-      setIsLoadingAuth(false);
-      setIsAuthenticated(false);
-      
-      // If user auth fails, it might be an expired token
-      if (status === 401 || status === 403) {
-        setAuthError({
-          type: 'auth_required',
-          message: 'Authentication required'
-        });
-      }
-    }
-  };
-
-  const logout = (shouldRedirect = true) => {
-    setUser(null);
-    setIsAuthenticated(false);
-    
-    if (shouldRedirect) {
-      // Use the SDK's logout method which handles token cleanup and redirect
-      base44.auth.logout(window.location.href);
-    } else {
-      // Just remove the token without redirect
-      base44.auth.logout();
-    }
-  };
-
-  const navigateToLogin = () => {
-    // Use the SDK's redirectToLogin method
-    base44.auth.redirectToLogin(window.location.href);
-  };
-
-  // Session timeout: 30 minutes of inactivity
-  const sessionTimeoutRef = useRef(null);
-  const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
-
-  const resetSessionTimeout = useCallback(() => {
-    if (sessionTimeoutRef.current) {
-      clearTimeout(sessionTimeoutRef.current);
-    }
-
-    if (!isAuthenticated) return;
-
-    sessionTimeoutRef.current = setTimeout(() => {
-      logout(false);
-      console.log('Session expired due to inactivity');
-    }, SESSION_TIMEOUT);
-  }, [isAuthenticated]);
-
-  // Reset timeout on user activity
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const handleActivity = () => {
-      resetSessionTimeout();
-    };
-
-    window.addEventListener('click', handleActivity);
-    window.addEventListener('keydown', handleActivity);
-    window.addEventListener('scroll', handleActivity);
-
-    resetSessionTimeout();
-
-    return () => {
-      window.removeEventListener('click', handleActivity);
-      window.removeEventListener('keydown', handleActivity);
-      window.removeEventListener('scroll', handleActivity);
-      if (sessionTimeoutRef.current) {
-        clearTimeout(sessionTimeoutRef.current);
-      }
-    };
-  }, [isAuthenticated, resetSessionTimeout]);
-
-  return (
-    <AuthContext.Provider value={{ 
-      user, 
-      isAuthenticated, 
-      isLoadingAuth,
-      isLoadingPublicSettings,
-      authError,
-      appPublicSettings,
-      logout,
-      navigateToLogin,
-      checkAppState,
-      currentUser: user
-    }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    // Standalone fallback so Eru components used outside the provider don't crash
+    return {
+      user: null, isAuthenticated: false, isLoadingAuth: false,
+      isLoadingPublicSettings: false, authError: null, appPublicSettings: null,
+      login: () => {}, logout: async () => {}, refreshUser: async () => {}, checkUserAuth: async () => {},
+    };
   }
-  return context;
+  return ctx;
 };
+
+export default AuthContext;
