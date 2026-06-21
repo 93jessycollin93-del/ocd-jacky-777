@@ -168,8 +168,25 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/eru/visualizers"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={null}><VisualizerLab /></Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/eru/*"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={null}><EruRouter /></Suspense>
+                  </ProtectedRoute>
+                }
+              />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <Suspense fallback={null}><FloatingEditorNav /></Suspense>
             </SandboxCatcher>
           </BrowserRouter>
           </TooltipProvider>
