@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, useSearchParams } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useSearchParams, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -35,22 +35,21 @@ const VisualizerLab = lazy(() => import("./eru/VisualizerLab"));
 
 const queryClient = new QueryClient();
 
-const isSandbox = () => sessionStorage.getItem("sandbox") === "true";
-
 const SandboxCatcher = ({ children }: { children: React.ReactNode }) => {
   const [params] = useSearchParams();
+  const location = useLocation();
   useEffect(() => {
-    if (params.get("sandbox") === "true") {
+    // Sandbox flag is only honoured on the dedicated /sandbox route — it never
+    // grants access to other protected routes or AI edge functions.
+    if (params.get("sandbox") === "true" && location.pathname.startsWith("/sandbox")) {
       sessionStorage.setItem("sandbox", "true");
     }
-  }, [params]);
+  }, [params, location.pathname]);
   return <>{children}</>;
 };
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
-
-  if (isSandbox()) return <>{children}</>;
 
   if (loading) {
     return (
