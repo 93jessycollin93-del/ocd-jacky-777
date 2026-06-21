@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import BotFarmHeader from '../components/bot-farm/BotFarmHeader';
 import BotFarmMetricGrid from '../components/bot-farm/BotFarmMetricGrid';
 import BotFarmBotCard from '../components/bot-farm/BotFarmBotCard';

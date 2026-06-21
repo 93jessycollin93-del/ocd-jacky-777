@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FileJson, FileText, Loader2 } from 'lucide-react';
-import { generateAppWidePDF } from '@/lib/pdfExporter';
+import { generateAppWidePDF } from '@/eru/lib/pdfExporter';
 import { toast } from 'sonner';
 
 export default function ExportButton({ appData }) {

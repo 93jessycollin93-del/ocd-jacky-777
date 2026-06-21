@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Settings2, Check, X, ShieldAlert } from 'lucide-react';
-import { isSafeEmbedUrl } from '@/lib/safeUrl';
-import { canManageExternalPortals } from '@/lib/permissions';
-import { logAuditEvent } from '@/lib/auditEvents';
+import { isSafeEmbedUrl } from '@/eru/lib/safeUrl';
+import { canManageExternalPortals } from '@/eru/lib/permissions';
+import { logAuditEvent } from '@/eru/lib/auditEvents';
 
 /**
  * ExternalEmbedConfigurator

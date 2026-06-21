@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
+import { base44 } from '@/eru/api/base44Client';
+import { useAuth } from '@/eru/lib/AuthContext';
 import { TrendingUp, Gem, Package, Zap, Clock, AlertCircle, Loader2 } from 'lucide-react';
 import AdminMetricCard from '../components/AdminMetricCard';
 import AdminEconomyCharts from '../components/AdminEconomyCharts';

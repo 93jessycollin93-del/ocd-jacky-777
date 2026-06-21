@@ -20,14 +20,14 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { listTracks, listTags, listAllTrackTags } from '@/lib/mediaLibrary';
-import { useMediaPlayer } from '@/context/MediaPlayerContext';
-import { useAuth } from '@/lib/AuthContext';
-import { useSelection } from '@/hooks/useSelection';
-import TrackTagEditor from '@/components/media/TrackTagEditor';
-import AddToPlaylistSheet from '@/components/media/AddToPlaylistSheet';
-import SelectionBar from '@/components/media/SelectionBar';
-import YouTubeImportSheet from '@/components/media/YouTubeImportSheet';
+import { listTracks, listTags, listAllTrackTags } from '@/eru/lib/mediaLibrary';
+import { useMediaPlayer } from '@/eru/context/MediaPlayerContext';
+import { useAuth } from '@/eru/lib/AuthContext';
+import { useSelection } from '@/eru/hooks/useSelection';
+import TrackTagEditor from '@/eru/components/media/TrackTagEditor';
+import AddToPlaylistSheet from '@/eru/components/media/AddToPlaylistSheet';
+import SelectionBar from '@/eru/components/media/SelectionBar';
+import YouTubeImportSheet from '@/eru/components/media/YouTubeImportSheet';
 
 /** Seconds -> m:ss */
 function fmt(s) {

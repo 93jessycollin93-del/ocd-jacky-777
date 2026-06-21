@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { Clock3, HandCoins, PlusCircle, ShieldAlert, Wallet } from 'lucide-react';
-import EscrowStatusTimeline from '@/components/escrow/EscrowStatusTimeline';
-import { getEscrowStatusMeta, getNextEscrowPatch } from '@/lib/escrowStateMachine';
-import MaskedEmail from '@/components/privacy/MaskedEmail';
+import EscrowStatusTimeline from '@/eru/components/escrow/EscrowStatusTimeline';
+import { getEscrowStatusMeta, getNextEscrowPatch } from '@/eru/lib/escrowStateMachine';
+import MaskedEmail from '@/eru/components/privacy/MaskedEmail';
 
 const DEFAULT_FORM = {
   listing_id: '',

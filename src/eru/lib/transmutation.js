@@ -15,9 +15,9 @@
 //    consistent with every other card source. The burned cards are deleted
 //    (or quantity-decremented if quantity > 1 in the future — kept simple now).
 // ----------------------------------------------------------------------------
-import { base44 } from '@/api/base44Client';
-import { STARTER_CARDS, RARITY_STYLES } from '@/components/cards/StarterCards';
-import { createCardWithLore } from '@/lib/cardLore';
+import { base44 } from '@/eru/api/base44Client';
+import { STARTER_CARDS, RARITY_STYLES } from '@/eru/components/cards/StarterCards';
+import { createCardWithLore } from '@/eru/lib/cardLore';
 
 export const TRANSMUTE_COUNT = 7;
 

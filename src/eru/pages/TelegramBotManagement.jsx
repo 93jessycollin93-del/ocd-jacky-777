@@ -1,4 +1,4 @@
-import TelegramBotDashboard from '@/components/telegram/TelegramBotDashboard';
+import TelegramBotDashboard from '@/eru/components/telegram/TelegramBotDashboard';
 import { Bot } from 'lucide-react';
 
 export default function TelegramBotManagement() {

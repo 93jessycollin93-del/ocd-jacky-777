@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Layers3, Search, Download, Gauge, Sparkles } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 export default function TieredMemoryPanel({ bots }) {
   const [memories, setMemories] = useState([]);

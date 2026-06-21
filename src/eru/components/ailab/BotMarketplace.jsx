@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Star, Download, MessageSquare, Search, Send, X, Filter, Tag, Bot, Sparkles, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
+import { base44 } from '@/eru/api/base44Client';
+import { useAuth } from '@/eru/lib/AuthContext';
 
 const ROLE_EMOJI = { assistant: '🤖', trader: '📈', game_helper: '🎮', social: '💬', custom: '⚙️' };
 const CATEGORY_LABELS = ['All', 'Assistant', 'Trading', 'Gaming', 'Social', 'Custom'];

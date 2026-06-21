@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BookOpen, TrendingUp, AlertCircle, ChevronRight, Loader2, Star } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 /**
  * StudyRecommendations

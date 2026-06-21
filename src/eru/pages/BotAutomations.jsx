@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Clock, Plus, Play, Pause, Trash2, Zap, Bot, Edit3, Link as LinkIcon, MessageCircle, BellRing } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
+import { base44 } from '@/eru/api/base44Client';
+import { useAuth } from '@/eru/lib/AuthContext';
 
 const INTERVALS = [
   { label: 'Every hour', hours: 1 },

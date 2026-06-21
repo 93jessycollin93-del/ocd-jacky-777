@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
+import { base44 } from '@/eru/api/base44Client';
+import { useAuth } from '@/eru/lib/AuthContext';
 import { ImagePlus, Send, Swords, Trophy, Wallet } from 'lucide-react';
-import { useRealtimeEntityList } from '@/hooks/useLiveSync';
+import { useRealtimeEntityList } from '@/eru/hooks/useLiveSync';
 
 function formatDeckSnapshot(deck = []) {
   return deck.slice(0, 6).map((card) => card.name).join(', ');

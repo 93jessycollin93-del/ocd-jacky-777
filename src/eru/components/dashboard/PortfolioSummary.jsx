@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRealPriceMap } from '../../hooks/useRealPrices';
 import { useWallet } from '../../hooks/useWallet';
 import { Wallet, WifiOff, Loader2, ExternalLink, TrendingUp } from 'lucide-react';
-import { useDashboardEvents } from '@/context/DashboardEventsContext';
+import { useDashboardEvents } from '@/eru/context/DashboardEventsContext';
 
 export default function PortfolioSummary() {
   const { map, status, lastUpdated } = useRealPriceMap();

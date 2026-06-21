@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ShieldAlert, Settings2, Globe, Plus, Trash2, AlertTriangle, History, RefreshCw, Check } from 'lucide-react';
-import PermissionGate from '@/components/PermissionGate';
-import ConfirmDialog from '@/components/ConfirmDialog';
-import { useAuth } from '@/lib/AuthContext';
-import { isAdmin } from '@/lib/permissions';
-import { isSafeEmbedUrl } from '@/lib/safeUrl';
-import { logAuditEvent, readLocalAuditRing } from '@/lib/auditEvents';
+import PermissionGate from '@/eru/components/PermissionGate';
+import ConfirmDialog from '@/eru/components/ConfirmDialog';
+import { useAuth } from '@/eru/lib/AuthContext';
+import { isAdmin } from '@/eru/lib/permissions';
+import { isSafeEmbedUrl } from '@/eru/lib/safeUrl';
+import { logAuditEvent, readLocalAuditRing } from '@/eru/lib/auditEvents';
 import {
   EXTERNAL_PORTALS,
   getCustomPortals,
@@ -13,8 +13,8 @@ import {
   deleteCustomPortal,
   getPortalUrl,
   setPortalUrlOverride,
-} from '@/lib/externalPortals';
-import { base44 } from '@/api/base44Client';
+} from '@/eru/lib/externalPortals';
+import { base44 } from '@/eru/api/base44Client';
 
 /**
  * Admin Review Center

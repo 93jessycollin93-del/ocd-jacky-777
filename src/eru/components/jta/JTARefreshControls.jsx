@@ -7,7 +7,7 @@ import {
   formatCountdown,
   logRefresh,
   PAID_REFRESH_USD,
-} from '@/lib/jadeRefresh';
+} from '@/eru/lib/jadeRefresh';
 
 /**
  * JTARefreshControls

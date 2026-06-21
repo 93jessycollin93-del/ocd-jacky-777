@@ -1,5 +1,5 @@
 import { CheckCircle2, AlertTriangle, XOctagon, PauseCircle } from 'lucide-react';
-import { STATUS } from '@/lib/integrationRegistry';
+import { STATUS } from '@/eru/lib/integrationRegistry';
 
 const NEEDS_SETUP = new Set([
   STATUS.NOT_CONNECTED,

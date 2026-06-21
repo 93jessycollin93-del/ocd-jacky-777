@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useRealPrices } from '../../hooks/useRealPrices';
 import { WifiOff, Loader2 } from 'lucide-react';
-import { useDashboardEvents } from '@/context/DashboardEventsContext';
+import { useDashboardEvents } from '@/eru/context/DashboardEventsContext';
 
 export default function TickerBar() {
   const { prices, status } = useRealPrices();

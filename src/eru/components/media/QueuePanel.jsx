@@ -1,5 +1,5 @@
 import { X, Trash2, Play, Music2, GripVertical } from 'lucide-react';
-import { useMediaPlayer } from '@/context/MediaPlayerContext';
+import { useMediaPlayer } from '@/eru/context/MediaPlayerContext';
 
 /**
  * QueuePanel — the temporary "up next" queue, shown as a bottom sheet.

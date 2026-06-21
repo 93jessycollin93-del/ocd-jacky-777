@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/lib/AuthContext';
-import { fetchTransactionHistory } from '@/lib/economyApi';
+import { useAuth } from '@/eru/lib/AuthContext';
+import { fetchTransactionHistory } from '@/eru/lib/economyApi';
 import { TrendingUp, TrendingDown, Clock, CheckCircle2, AlertCircle, X } from 'lucide-react';
 
 const STATUS_CONFIG = {

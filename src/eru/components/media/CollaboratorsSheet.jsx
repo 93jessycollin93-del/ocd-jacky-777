@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { X, Users, UserPlus, Loader2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { listCollaborators, addCollaborator, removeCollaborator } from '@/lib/mediaLibrary';
+import { listCollaborators, addCollaborator, removeCollaborator } from '@/eru/lib/mediaLibrary';
 
 /**
  * CollaboratorsSheet — owner-only management of a playlist's collaborators.

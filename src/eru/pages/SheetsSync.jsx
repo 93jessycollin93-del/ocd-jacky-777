@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { FileSpreadsheet, Link2, Unlink, RefreshCw, Eye, Download, CheckCircle2, AlertTriangle } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 const CONNECTOR_ID = '69d3600598df7cb56812ae75';
 

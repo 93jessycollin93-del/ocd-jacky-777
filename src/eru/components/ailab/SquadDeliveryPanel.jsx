@@ -1,4 +1,4 @@
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { BellRing, Slack, NotebookPen } from 'lucide-react';
 
 const SLACK_CONNECTOR_ID = '69db73abc7ef44b228d18b2b';

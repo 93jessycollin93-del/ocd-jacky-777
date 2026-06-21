@@ -1,4 +1,4 @@
-import { PRICING_PROVIDERS, getPricingProviderStatus, setPricingProviderStatus } from '@/lib/zeroFakeData';
+import { PRICING_PROVIDERS, getPricingProviderStatus, setPricingProviderStatus } from '@/eru/lib/zeroFakeData';
 import { WifiOff, CheckCircle2 } from 'lucide-react';
 
 /**

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Gem, Package, Loader2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { useLivePriceMap } from '@/hooks/useLiveSync';
+import { base44 } from '@/eru/api/base44Client';
+import { useLivePriceMap } from '@/eru/hooks/useLiveSync';
 import JTAPriceConverter from './JTAPriceConverter';
 import JTARefreshControls from './JTARefreshControls';
 

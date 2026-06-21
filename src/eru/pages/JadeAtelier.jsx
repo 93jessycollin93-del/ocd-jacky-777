@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Gem, Plus, ChevronRight, Hammer, Zap, Bot, FileText, Loader2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import JTAMonolith from '../components/jta/JTAMonolith';
 import JTAWorkstation from '../components/jta/JTAWorkstation';
 import JTAFractureEngine from '../components/jta/JTAFractureEngine';

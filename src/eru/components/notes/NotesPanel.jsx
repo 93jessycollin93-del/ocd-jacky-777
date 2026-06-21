@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { StickyNote, Plus, Pin, PinOff, Trash2, Share2, X, Search, Save, Users, Check, Globe } from 'lucide-react';
-import { useAuth } from '@/lib/AuthContext';
+import { useAuth } from '@/eru/lib/AuthContext';
 
 const COLOR_STYLES = {
   default: 'bg-card border-border',

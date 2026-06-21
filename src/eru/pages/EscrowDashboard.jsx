@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { AlertTriangle, CheckCircle2, Gavel, ShieldCheck, Wallet } from 'lucide-react';
-import EscrowStatusTimeline from '@/components/escrow/EscrowStatusTimeline';
-import { getEscrowStatusMeta, getNextEscrowPatch } from '@/lib/escrowStateMachine';
+import EscrowStatusTimeline from '@/eru/components/escrow/EscrowStatusTimeline';
+import { getEscrowStatusMeta, getNextEscrowPatch } from '@/eru/lib/escrowStateMachine';
 
 function StatCard({ label, value, tone }) {
   return (

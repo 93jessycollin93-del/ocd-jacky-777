@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { Loader2, Save, Trash2 } from 'lucide-react';
 import TelegramKnowledgeLinkPanel from './TelegramKnowledgeLinkPanel';
 import TelegramSwarmConfigPanel from './TelegramSwarmConfigPanel';

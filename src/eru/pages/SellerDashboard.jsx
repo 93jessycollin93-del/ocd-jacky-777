@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { Store } from 'lucide-react';
-import SellerDashboardSummary from '@/components/storefront/SellerDashboardSummary';
-import SellerOrderTable from '@/components/storefront/SellerOrderTable';
-import SellerInventoryPanel from '@/components/storefront/SellerInventoryPanel';
-import SellerSalesAnalytics from '@/components/storefront/SellerSalesAnalytics';
-import SellerEscrowPanel from '@/components/storefront/SellerEscrowPanel';
+import SellerDashboardSummary from '@/eru/components/storefront/SellerDashboardSummary';
+import SellerOrderTable from '@/eru/components/storefront/SellerOrderTable';
+import SellerInventoryPanel from '@/eru/components/storefront/SellerInventoryPanel';
+import SellerSalesAnalytics from '@/eru/components/storefront/SellerSalesAnalytics';
+import SellerEscrowPanel from '@/eru/components/storefront/SellerEscrowPanel';
 
 export default function SellerDashboard() {
   const [listings, setListings] = useState([]);

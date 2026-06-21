@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Coins, ArrowDownToLine, ArrowUpFromLine, Loader2, AlertTriangle } from 'lucide-react';
-import { donateToGuildBank, withdrawFromGuildBank } from '@/lib/guildSystem';
+import { donateToGuildBank, withdrawFromGuildBank } from '@/eru/lib/guildSystem';
 
 /**
  * Shared Guild Bank — donations from any active member, withdrawals from the

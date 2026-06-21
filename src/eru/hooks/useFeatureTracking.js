@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 export function useFeatureTracking(featureName) {
   const startTimeRef = useRef(Date.now());

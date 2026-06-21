@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/lib/AuthContext';
-import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/eru/lib/AuthContext';
+import { base44 } from '@/eru/api/base44Client';
 import { ArrowUpRight, ArrowDownLeft, Copy, ExternalLink, Calendar } from 'lucide-react';
 
 // Mock transaction data

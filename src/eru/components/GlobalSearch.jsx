@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, X, Loader2, FileText, CheckSquare, User, ExternalLink } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 const TYPE_ICONS = {
   file: FileText,

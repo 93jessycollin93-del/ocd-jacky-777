@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Download, Gauge, Smile, Timer, Trophy } from 'lucide-react';
 import BotResourceManagementPanel from './BotResourceManagementPanel';
 import AdaptiveLearningPanel from './AdaptiveLearningPanel';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { BarChart, Bar, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 const METRIC_META = {

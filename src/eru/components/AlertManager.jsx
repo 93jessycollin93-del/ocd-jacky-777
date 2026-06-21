@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Bell, Plus, Trash2, Check, Loader2, Smartphone, Send, Link as LinkIcon } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { toast } from 'sonner';
-import { useDashboardEvents } from '@/context/DashboardEventsContext';
-import { getTelegramAccount } from '@/lib/telegramConnector';
-import MobileSelect from '@/components/mobile/MobileSelect';
+import { useDashboardEvents } from '@/eru/context/DashboardEventsContext';
+import { getTelegramAccount } from '@/eru/lib/telegramConnector';
+import MobileSelect from '@/eru/components/mobile/MobileSelect';
 
 export default function AlertManager() {
   const [alerts, setAlerts] = useState([]);

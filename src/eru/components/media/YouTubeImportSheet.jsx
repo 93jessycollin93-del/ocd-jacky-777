@@ -8,9 +8,9 @@ import { toast } from 'sonner';
 import {
   isYouTubeUrl, isPlaylistUrl, isConverterConfigured,
   fetchMediaMetadata, convertMedia, friendlyConverterError, ACK_TERMS,
-} from '@/lib/mediaConverter';
-import { importConvertedTrack, listTracks } from '@/lib/mediaLibrary';
-import { useMediaPlayer } from '@/context/MediaPlayerContext';
+} from '@/eru/lib/mediaConverter';
+import { importConvertedTrack, listTracks } from '@/eru/lib/mediaLibrary';
+import { useMediaPlayer } from '@/eru/context/MediaPlayerContext';
 
 /** Hash a string to a consistent integer for colour selection. */
 function hashStr(str) {

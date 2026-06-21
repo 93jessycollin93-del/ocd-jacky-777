@@ -1,16 +1,16 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
-import { fetchUserGold, awardGold } from '@/lib/economyApi';
+import { base44 } from '@/eru/api/base44Client';
+import { fetchUserGold, awardGold } from '@/eru/lib/economyApi';
 import { STARTER_CARDS, ELEMENT_COLORS } from '../components/cards/StarterCards';
 import { DECK_MODE_OPTIONS, DEFAULT_DECK_MODE, buildDeckModeSummary, calculateDeckStrength, getFairMatchScore, getMinimumDeckForMode, normalizeDeckMode } from '../components/cards/deckModes';
 import CardDisplay from '../components/cards/CardDisplay';
 import BattleView from '../components/cards/BattleView';
 import ChallengePanel from '../components/cards/ChallengePanel';
 import { Sword, Trophy, Package, Layers, Coins, X, ShoppingCart, History, Radar, Bot, GraduationCap, Dumbbell, Shield, Copy, Wand2, ArrowLeftRight, BookOpen, Target } from 'lucide-react';
-import { reportQuestEvent } from '@/lib/dailyQuests';
+import { reportQuestEvent } from '@/eru/lib/dailyQuests';
 import DailyQuestPanel from '../components/quests/DailyQuestPanel';
-import { recordGuildBattleResult } from '@/lib/guildSystem';
+import { recordGuildBattleResult } from '@/eru/lib/guildSystem';
 import Marketplace from '../components/cards/Marketplace';
 import BattleHistoryPanel from '../components/cards/BattleHistoryPanel';
 import CardLorePanel from '../components/cards/CardLorePanel';
@@ -20,7 +20,7 @@ import TransmutationPanel from '../components/cards/TransmutationPanel';
 import ForgeRecipesPanel from '../components/cards/ForgeRecipesPanel';
 import TradingPanel from '../components/cards/TradingPanel';
 import LevelUpDialog from '../components/cards/LevelUpDialog';
-import { ensureLoreProfile, appendLogEntry, bumpPressure, isHighPowerCard, createCardWithLore } from '@/lib/cardLore';
+import { ensureLoreProfile, appendLogEntry, bumpPressure, isHighPowerCard, createCardWithLore } from '@/eru/lib/cardLore';
 
 const TOURNAMENT_ROUNDS = [
   { id: 1, name: 'Novice Challenger', difficulty: 1, faction: 'Ember Clan',    prize: { gold: 50,  discover: true } },

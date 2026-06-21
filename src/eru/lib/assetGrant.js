@@ -1,5 +1,5 @@
-import { base44 } from '@/api/base44Client';
-import { enforcePaymentGate } from '@/lib/paymentGuards';
+import { base44 } from '@/eru/api/base44Client';
+import { enforcePaymentGate } from '@/eru/lib/paymentGuards';
 
 /**
  * ASSET GRANT SYSTEM

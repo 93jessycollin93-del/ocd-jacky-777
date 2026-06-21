@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { base44 } from '@/api/base44Client';
-import { applyRootVariables, mergeThemeSettings } from '@/lib/themeEngine';
+import { base44 } from '@/eru/api/base44Client';
+import { applyRootVariables, mergeThemeSettings } from '@/eru/lib/themeEngine';
 
 // ─── BACKGROUND ENVIRONMENTS ─────────────────────────────────────────────────
 export const BG_ENVS = {

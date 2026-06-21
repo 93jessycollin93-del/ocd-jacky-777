@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pencil } from 'lucide-react';
 import PricingTrustBadge from '../PricingTrustBadge';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 /**
  * ManualPriceEntry — let owner enter a price, always labeled "Owner Manual

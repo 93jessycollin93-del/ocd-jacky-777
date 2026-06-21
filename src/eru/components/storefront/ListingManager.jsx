@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { Edit2, Pause, Play, Trash2 } from 'lucide-react';
 import ListingEditor from './ListingEditor';
 import ConditionBadge from './ConditionBadge';

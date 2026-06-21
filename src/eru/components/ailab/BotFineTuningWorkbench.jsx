@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { BrainCircuit, Database, FlaskConical, RefreshCcw, Tag, Upload } from 'lucide-react';
 
 const EMPTY_LABELS = {

@@ -5,7 +5,7 @@
 // Each level grants +1 power and +1 guard on top of the card's base stats.
 // All math is pure — `runLevelUp` orchestrates the I/O against base44.
 // ----------------------------------------------------------------------------
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 export const MAX_LEVEL = 10;
 export const POWER_PER_LEVEL = 1;

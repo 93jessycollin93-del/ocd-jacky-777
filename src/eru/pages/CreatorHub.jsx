@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Lightbulb, Megaphone, Star, Lock, CheckCircle, Clock } from 'lucide-react';
 import CreatorAnalytics from '../components/CreatorAnalytics';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import ListingEditor from '../components/storefront/ListingEditor';
 import ListingManager from '../components/storefront/ListingManager';
 

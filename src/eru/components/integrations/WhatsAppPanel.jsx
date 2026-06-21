@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
 import { MessageCircle, ShieldAlert, Inbox, Send, FileText, Copy, CheckCircle2, X } from 'lucide-react';
 import IntegrationStatusBadge from './IntegrationStatusBadge';
-import { STATUS } from '@/lib/integrationRegistry';
-import { useRealtimeEntityList } from '@/hooks/useLiveSync';
-import { base44 } from '@/api/base44Client';
+import { STATUS } from '@/eru/lib/integrationRegistry';
+import { useRealtimeEntityList } from '@/eru/hooks/useLiveSync';
+import { base44 } from '@/eru/api/base44Client';
 
 /**
  * WhatsAppPanel — flagship integration setup. Two paths:

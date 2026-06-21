@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { LogIn, LogOut, User } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 /**
  * HomeAuthButton — top-right sign in / sign out control, like most apps.

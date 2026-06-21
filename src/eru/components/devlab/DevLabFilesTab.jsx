@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FileCode, Plus, Trash2, AlertTriangle } from 'lucide-react';
-import ConfirmDialog from '@/components/ConfirmDialog';
+import ConfirmDialog from '@/eru/components/ConfirmDialog';
 
 const FILE_TYPES = ['page', 'component', 'entity', 'function', 'lib', 'style', 'config', 'other'];
 const RISK_LEVELS = ['safe', 'medium', 'high', 'critical'];

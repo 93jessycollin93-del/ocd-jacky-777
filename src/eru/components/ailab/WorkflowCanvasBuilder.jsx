@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { Bot, Database, Mail, MessageCircle, Play, Save, Trash2, Workflow } from 'lucide-react';
 
 const NODE_LIBRARY = [

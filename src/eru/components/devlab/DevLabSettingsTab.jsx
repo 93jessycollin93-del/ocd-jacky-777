@@ -1,5 +1,5 @@
 import { ShieldAlert, Settings, ExternalLink } from 'lucide-react';
-import { PROVIDER_KEYS } from '@/lib/devLab';
+import { PROVIDER_KEYS } from '@/eru/lib/devLab';
 
 const PROVIDER_META = {
   openai:     { label: 'OpenAI',     desc: 'Plan & code generation via GPT models.' },

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Coins, Copy, ExternalLink, Loader2, ShieldCheck, CheckCircle2, AlertTriangle } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { TON_RECEIVING_ADDRESS } from '@/lib/tonConfig';
-import { buildTonTransferUrl, buildTonkeeperUniversalUrl, copyToClipboard } from '@/lib/tonPayment';
+import { base44 } from '@/eru/api/base44Client';
+import { TON_RECEIVING_ADDRESS } from '@/eru/lib/tonConfig';
+import { buildTonTransferUrl, buildTonkeeperUniversalUrl, copyToClipboard } from '@/eru/lib/tonPayment';
 
 /**
  * TonPaymentPanel

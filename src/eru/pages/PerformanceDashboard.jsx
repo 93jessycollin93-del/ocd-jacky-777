@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Activity, AlertCircle, CheckCircle, TrendingUp, RefreshCw } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 const SERVICES = [

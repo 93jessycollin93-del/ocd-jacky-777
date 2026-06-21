@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Lock, Check } from 'lucide-react';
-import CardDisplay from '@/components/cards/CardDisplay';
-import { RARITY_STYLES, ELEMENT_COLORS } from '@/components/cards/StarterCards';
+import CardDisplay from '@/eru/components/cards/CardDisplay';
+import { RARITY_STYLES, ELEMENT_COLORS } from '@/eru/components/cards/StarterCards';
 
 /**
  * LibraryCardTile

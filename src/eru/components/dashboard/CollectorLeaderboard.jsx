@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Crown, Gem, Activity, Sparkles, Trophy } from 'lucide-react';
-import { useRealtimeEntityList } from '@/hooks/useLiveSync';
-import { maskEmail } from '@/lib/privacy';
+import { useRealtimeEntityList } from '@/eru/hooks/useLiveSync';
+import { maskEmail } from '@/eru/lib/privacy';
 
 function getOwnerEmail(record, fallbackField) {
   return record?.[fallbackField] || record?.created_by || 'unknown';

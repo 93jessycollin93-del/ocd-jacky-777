@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Zap, AlertTriangle, Loader2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 // Fracture Rules:
 // - Min volume to fracture: > 0.5 kg

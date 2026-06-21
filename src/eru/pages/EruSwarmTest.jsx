@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { runSwarm, HAPPY_PATH_MISSION, CONTROLLED_FAILURE_MISSION } from '@/lib/eruSwarm';
+import { Button } from '@/eru/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/eru/components/ui/card';
+import { Badge } from '@/eru/components/ui/badge';
+import { runSwarm, HAPPY_PATH_MISSION, CONTROLLED_FAILURE_MISSION } from '@/eru/lib/eruSwarm';
 import {
   validateEvents,
   HAPPY_PATH_SPEC,
   CONTROLLED_FAILURE_SPEC,
-} from '@/lib/eruSwarmValidator';
+} from '@/eru/lib/eruSwarmValidator';
 
 const STAGE_ORDER = ['join_sequence', 'worker_execution', 'commander_aggregation', 'leader_synthesis'];
 const STAGE_LABELS = {

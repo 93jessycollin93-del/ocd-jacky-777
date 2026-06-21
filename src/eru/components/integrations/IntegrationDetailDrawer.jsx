@@ -1,6 +1,6 @@
 import { X, ShieldAlert, ExternalLink, BookOpen, ScrollText } from 'lucide-react';
 import IntegrationStatusBadge from './IntegrationStatusBadge';
-import { getCategoryLabel, STATUS } from '@/lib/integrationRegistry';
+import { getCategoryLabel, STATUS } from '@/eru/lib/integrationRegistry';
 
 /**
  * IntegrationDetailDrawer — focused mobile-first sheet showing the honest

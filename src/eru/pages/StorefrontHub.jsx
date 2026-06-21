@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
+import { base44 } from '@/eru/api/base44Client';
+import { useAuth } from '@/eru/lib/AuthContext';
 import {
   Store, Plus, Plug, AlertCircle, CheckCircle2,
   Clock, XCircle, Search, Gem, Image, Bot, Sword, Package,
@@ -13,10 +13,10 @@ import { Link } from 'react-router-dom';
 import ListingEditor from '../components/storefront/ListingEditor';
 import ConditionBadge from '../components/storefront/ConditionBadge';
 import { Flame, ChevronRight as ChevronRightIcon } from 'lucide-react';
-import { canManageMarketplaceConfig } from '@/lib/permissions';
-import { validateListingDraft, validateListingEdit } from '@/lib/marketplaceValidation';
-import { logAuditEvent } from '@/lib/auditEvents';
-import PermissionGate from '@/components/PermissionGate';
+import { canManageMarketplaceConfig } from '@/eru/lib/permissions';
+import { validateListingDraft, validateListingEdit } from '@/eru/lib/marketplaceValidation';
+import { logAuditEvent } from '@/eru/lib/auditEvents';
+import PermissionGate from '@/eru/components/PermissionGate';
 
 // ─── CONNECTOR PRESETS (templates for adding new connectors) ──────────────────
 const CONNECTOR_TEMPLATES = [

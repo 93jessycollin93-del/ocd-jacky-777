@@ -1,5 +1,5 @@
 import { Monitor, Moon, Sun, Type, Eye } from 'lucide-react';
-import { useTheme, TYPOGRAPHY_PACKS } from '@/context/ThemeContext';
+import { useTheme, TYPOGRAPHY_PACKS } from '@/eru/context/ThemeContext';
 
 /**
  * DisplayPreferencesSection

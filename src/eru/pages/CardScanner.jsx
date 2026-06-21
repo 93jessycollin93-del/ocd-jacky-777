@@ -1,25 +1,25 @@
 import { useState, useMemo } from 'react';
 import { ScanLine, History, Settings, ShieldCheck } from 'lucide-react';
-import { useAuth } from '@/lib/AuthContext';
-import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/eru/lib/AuthContext';
+import { base44 } from '@/eru/api/base44Client';
 import {
   getZeroFakeDataMode,
   getPricingProviderStatus,
   TRUST_LABELS,
   logPricingAudit,
   summarizePricingResults,
-} from '@/lib/zeroFakeData';
-import { useRealtimeEntityList } from '@/hooks/useLiveSync';
+} from '@/eru/lib/zeroFakeData';
+import { useRealtimeEntityList } from '@/eru/hooks/useLiveSync';
 
-import ZeroFakeDataPolicyCard from '@/components/pricing/ZeroFakeDataPolicyCard';
-import ZeroFakeDataModeToggle from '@/components/pricing/ZeroFakeDataModeToggle';
-import VerifiedPriceDisplay from '@/components/pricing/VerifiedPriceDisplay';
-import PricingTrustBadge from '@/components/pricing/PricingTrustBadge';
-import ScanCapture from '@/components/pricing/scanner/ScanCapture';
-import IdentityResults from '@/components/pricing/scanner/IdentityResults';
-import ConditionPicker from '@/components/pricing/scanner/ConditionPicker';
-import ManualPriceEntry from '@/components/pricing/scanner/ManualPriceEntry';
-import PricingProviderStatus from '@/components/pricing/scanner/PricingProviderStatus';
+import ZeroFakeDataPolicyCard from '@/eru/components/pricing/ZeroFakeDataPolicyCard';
+import ZeroFakeDataModeToggle from '@/eru/components/pricing/ZeroFakeDataModeToggle';
+import VerifiedPriceDisplay from '@/eru/components/pricing/VerifiedPriceDisplay';
+import PricingTrustBadge from '@/eru/components/pricing/PricingTrustBadge';
+import ScanCapture from '@/eru/components/pricing/scanner/ScanCapture';
+import IdentityResults from '@/eru/components/pricing/scanner/IdentityResults';
+import ConditionPicker from '@/eru/components/pricing/scanner/ConditionPicker';
+import ManualPriceEntry from '@/eru/components/pricing/scanner/ManualPriceEntry';
+import PricingProviderStatus from '@/eru/components/pricing/scanner/PricingProviderStatus';
 
 const TABS = [
   { id: 'scan',     label: 'Scanner',  icon: ScanLine },

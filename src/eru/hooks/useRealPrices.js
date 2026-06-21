@@ -1,1 +1,1 @@
-export { useLiveMarketPrices as useRealPrices, useLivePriceMap as useRealPriceMap } from '@/hooks/useLiveSync';
+export { useLiveMarketPrices as useRealPrices, useLivePriceMap as useRealPriceMap } from '@/eru/hooks/useLiveSync';

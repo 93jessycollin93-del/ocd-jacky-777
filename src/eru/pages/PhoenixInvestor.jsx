@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Flame, ShieldCheck, Settings2, ExternalLink } from 'lucide-react';
-import LovableEmbed from '@/components/storefront/LovableEmbed';
-import ExternalEmbedConfigurator from '@/components/storefront/ExternalEmbedConfigurator';
-import { EXTERNAL_PORTALS, getPortalUrl, setPortalUrlOverride } from '@/lib/externalPortals';
-import { useAuth } from '@/lib/AuthContext';
-import { canManageExternalPortals } from '@/lib/permissions';
+import LovableEmbed from '@/eru/components/storefront/LovableEmbed';
+import ExternalEmbedConfigurator from '@/eru/components/storefront/ExternalEmbedConfigurator';
+import { EXTERNAL_PORTALS, getPortalUrl, setPortalUrlOverride } from '@/eru/lib/externalPortals';
+import { useAuth } from '@/eru/lib/AuthContext';
+import { canManageExternalPortals } from '@/eru/lib/permissions';
 
 /**
  * Phoenix Investor Portal

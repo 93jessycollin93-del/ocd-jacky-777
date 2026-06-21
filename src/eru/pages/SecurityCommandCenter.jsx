@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, RefreshCw, ChevronRight, CheckCircle2, AlertTriangle, AlertCircle, Lock, FlaskConical } from 'lucide-react';
-import PermissionGate from '@/components/PermissionGate';
-import TruthState from '@/components/TruthState';
-import { isAdmin, isOwner } from '@/lib/permissions';
-import { useAuth } from '@/lib/AuthContext';
-import { runAllChecks, summarize } from '@/lib/securityChecks';
+import PermissionGate from '@/eru/components/PermissionGate';
+import TruthState from '@/eru/components/TruthState';
+import { isAdmin, isOwner } from '@/eru/lib/permissions';
+import { useAuth } from '@/eru/lib/AuthContext';
+import { runAllChecks, summarize } from '@/eru/lib/securityChecks';
 
 /**
  * Owner Security Command Center

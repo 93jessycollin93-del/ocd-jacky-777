@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/lib/AuthContext';
-import { base44 } from '@/api/base44Client';
-import WalletConnector from '@/components/WalletConnector';
-import MFAVerification from '@/components/MFAVerification';
+import { useAuth } from '@/eru/lib/AuthContext';
+import { base44 } from '@/eru/api/base44Client';
+import WalletConnector from '@/eru/components/WalletConnector';
+import MFAVerification from '@/eru/components/MFAVerification';
 import { Wallet, Trash2, RefreshCw, TrendingUp, AlertCircle } from 'lucide-react';
 
 export default function WalletManager() {

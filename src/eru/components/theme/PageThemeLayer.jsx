@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom';
-import { useTheme } from '@/context/ThemeContext';
+import { useTheme } from '@/eru/context/ThemeContext';
 
 export default function PageThemeLayer({ children }) {
   const location = useLocation();

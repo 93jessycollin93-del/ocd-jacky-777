@@ -18,7 +18,7 @@ export const APP_STORE_MODULES = [
     icon: '📰',
     accent: 'from-blue-500/20 to-cyan-500/10',
     preview: ['Top headlines refreshed continuously', 'Tap to open full source', 'Quiet, scannable layout'],
-    component: lazy(() => import('@/components/dashboard/NewsFeedWidget')),
+    component: lazy(() => import('@/eru/components/dashboard/NewsFeedWidget')),
   },
   {
     id: 'ai-insights',
@@ -29,7 +29,7 @@ export const APP_STORE_MODULES = [
     icon: '🧠',
     accent: 'from-purple-500/20 to-pink-500/10',
     preview: ['Personalized daily summary', 'Risk + opportunity highlights', 'Source-aware reasoning'],
-    component: lazy(() => import('@/components/dashboard/AIInsightsWidget')),
+    component: lazy(() => import('@/eru/components/dashboard/AIInsightsWidget')),
   },
   {
     id: 'gas-fee',
@@ -40,7 +40,7 @@ export const APP_STORE_MODULES = [
     icon: '⛽',
     accent: 'from-yellow-500/20 to-orange-500/10',
     preview: ['Multi-chain fees', 'Auto-refresh', 'Compact mobile-friendly view'],
-    component: lazy(() => import('@/components/dashboard/GasFeeWidget')),
+    component: lazy(() => import('@/eru/components/dashboard/GasFeeWidget')),
   },
   {
     id: 'portfolio-health',
@@ -51,7 +51,7 @@ export const APP_STORE_MODULES = [
     icon: '💚',
     accent: 'from-green-500/20 to-emerald-500/10',
     preview: ['Diversification score', 'Concentration warnings', 'Improvement tips'],
-    component: lazy(() => import('@/components/dashboard/PortfolioHealthScore')),
+    component: lazy(() => import('@/eru/components/dashboard/PortfolioHealthScore')),
   },
   {
     id: 'risk-assessment',
@@ -62,7 +62,7 @@ export const APP_STORE_MODULES = [
     icon: '🛡️',
     accent: 'from-red-500/20 to-rose-500/10',
     preview: ['Volatility metrics', 'Drawdown estimates', 'Asset-level risk'],
-    component: lazy(() => import('@/components/dashboard/RiskAssessment')),
+    component: lazy(() => import('@/eru/components/dashboard/RiskAssessment')),
   },
   {
     id: 'predictive-analytics',
@@ -73,7 +73,7 @@ export const APP_STORE_MODULES = [
     icon: '📈',
     accent: 'from-indigo-500/20 to-blue-500/10',
     preview: ['Forecast bands', 'Confidence levels', 'Driver explanations'],
-    component: lazy(() => import('@/components/dashboard/PredictiveAnalytics')),
+    component: lazy(() => import('@/eru/components/dashboard/PredictiveAnalytics')),
   },
   {
     id: 'yield-performance',
@@ -84,7 +84,7 @@ export const APP_STORE_MODULES = [
     icon: '🌾',
     accent: 'from-amber-500/20 to-yellow-500/10',
     preview: ['Aggregate APY', 'Per-position breakdown', 'Historical trend'],
-    component: lazy(() => import('@/components/dashboard/YieldPerformance')),
+    component: lazy(() => import('@/eru/components/dashboard/YieldPerformance')),
   },
   {
     id: 'strategy-recommendations',
@@ -95,7 +95,7 @@ export const APP_STORE_MODULES = [
     icon: '🎯',
     accent: 'from-teal-500/20 to-cyan-500/10',
     preview: ['Allocation suggestions', 'Tactical rebalances', 'Goal-aware'],
-    component: lazy(() => import('@/components/dashboard/StrategyRecommendations')),
+    component: lazy(() => import('@/eru/components/dashboard/StrategyRecommendations')),
   },
   {
     id: 'motherboard-map',
@@ -106,7 +106,7 @@ export const APP_STORE_MODULES = [
     icon: '🔌',
     accent: 'from-violet-500/20 to-fuchsia-500/10',
     preview: ['Live node graph', 'Signal pulses', 'Status-aware coloring'],
-    component: lazy(() => import('@/components/dashboard/MotherboardMap')),
+    component: lazy(() => import('@/eru/components/dashboard/MotherboardMap')),
   },
 ];
 

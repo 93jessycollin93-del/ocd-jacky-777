@@ -12,8 +12,8 @@
 //   reportQuestEvent('card_acquired',  { rarity })                // new card obtained
 //   reportQuestEvent('level_up',       {})                        // card leveled up
 // ----------------------------------------------------------------------------
-import { base44 } from '@/api/base44Client';
-import { awardGold } from '@/lib/economyApi';
+import { base44 } from '@/eru/api/base44Client';
+import { awardGold } from '@/eru/lib/economyApi';
 
 // ─── Templates ───────────────────────────────────────────────────────────────
 // Each template is independently selectable. `match` is a pure function that

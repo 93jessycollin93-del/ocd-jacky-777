@@ -1,4 +1,4 @@
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 export async function createDecisionPlan({ goal, bots, userGuidance = [] }) {
   const response = await base44.integrations.Core.InvokeLLM({

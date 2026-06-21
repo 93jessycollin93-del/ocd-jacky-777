@@ -27,8 +27,8 @@
 //     source:     'starter' | 'collection' | 'master' (extensible)
 //   }
 // ----------------------------------------------------------------------------
-import { base44 } from '@/api/base44Client';
-import { STARTER_CARDS } from '@/components/cards/StarterCards';
+import { base44 } from '@/eru/api/base44Client';
+import { STARTER_CARDS } from '@/eru/components/cards/StarterCards';
 
 const norm = (v) => (v ?? '').toString().trim().toLowerCase();
 

@@ -4,7 +4,7 @@ import { Home, BarChart2, ArrowUpDown, ImageIcon, Wallet, ShoppingBag, Mail, Lig
 import NavWalkthrough from './nav/NavWalkthrough';
 import QuickActionsPopover from './nav/QuickActionsPopover';
 import { playSound, VIBRATE } from '../lib/soundEngine';
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage } from '@/eru/context/LanguageContext';
 
 // Labels are derived from translations via t('nav.<key>') in the component.
 // `labelKey` lets us swap copy when the user changes language without touching

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Store, Coins, Gem, Sparkles } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import BazarBalanceCard from '@/components/bazar/BazarBalanceCard';
-import BazarProductCard from '@/components/bazar/BazarProductCard';
-import BazarCheckoutDialog, { priceInGold } from '@/components/bazar/BazarCheckoutDialog';
-import { createPendingTransaction, markPendingVerification, verifyTransaction, failTransaction } from '@/lib/paymentGuards';
-import { generateTonPaymentRef } from '@/lib/tonPayment';
-import { FALLBACK_TON_USD } from '@/lib/tonConfig';
+import { base44 } from '@/eru/api/base44Client';
+import BazarBalanceCard from '@/eru/components/bazar/BazarBalanceCard';
+import BazarProductCard from '@/eru/components/bazar/BazarProductCard';
+import BazarCheckoutDialog, { priceInGold } from '@/eru/components/bazar/BazarCheckoutDialog';
+import { createPendingTransaction, markPendingVerification, verifyTransaction, failTransaction } from '@/eru/lib/paymentGuards';
+import { generateTonPaymentRef } from '@/eru/lib/tonPayment';
+import { FALLBACK_TON_USD } from '@/eru/lib/tonConfig';
 
 const DEFAULT_PRODUCTS = [
   {

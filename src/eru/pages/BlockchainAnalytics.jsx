@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/lib/AuthContext';
-import { base44 } from '@/api/base44Client';
-import RoleGate from '@/components/RoleGate';
-import BlockchainMetrics from '@/components/BlockchainMetrics';
+import { useAuth } from '@/eru/lib/AuthContext';
+import { base44 } from '@/eru/api/base44Client';
+import RoleGate from '@/eru/components/RoleGate';
+import BlockchainMetrics from '@/eru/components/BlockchainMetrics';
 import { BarChart3, Target, AlertCircle, Plus } from 'lucide-react';
 
 export default function BlockchainAnalytics() {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
+import { base44 } from '@/eru/api/base44Client';
+import { useAuth } from '@/eru/lib/AuthContext';
 import { Hammer, Rocket, Star, Globe, Zap, ArrowRight, Circle } from 'lucide-react';
 
 const STAGES = [

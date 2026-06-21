@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { Bot, RefreshCw, Sparkles, TrendingUp, Trophy, Lightbulb } from 'lucide-react';
 
 function MetricCard({ icon: Icon, label, value, hint, tone }) {

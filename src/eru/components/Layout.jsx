@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import AnimatedBackground from './AnimatedBackground';
-import PageThemeLayer from '@/components/theme/PageThemeLayer';
+import PageThemeLayer from '@/eru/components/theme/PageThemeLayer';
 import { useTheme } from '../context/ThemeContext';
 import CenteredBottomNav from './CenteredBottomNav';
 import MobileTabBar from './mobile/MobileTabBar';

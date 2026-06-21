@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Loader2, AlertTriangle, ShieldPlus } from 'lucide-react';
-import { createGuild, validateGuildName, validateGuildTag } from '@/lib/guildSystem';
+import { createGuild, validateGuildName, validateGuildTag } from '@/eru/lib/guildSystem';
 
 const FACTIONS = ['Neutral', 'Ember Clan', 'Tide Order', 'Stone Legion', 'Gale Court', 'Void Syndicate', 'Dawn Conclave'];
 const POLICIES = [

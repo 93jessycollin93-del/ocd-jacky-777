@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layers, Plus, Trash2, Save, Edit3, X, Sword, Loader2, AlertTriangle, CheckCircle2, Bot } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { STARTER_CARDS, ELEMENT_COLORS } from '@/components/cards/StarterCards';
-import CardDisplay from '@/components/cards/CardDisplay';
-import BattleView from '@/components/cards/BattleView';
+import { base44 } from '@/eru/api/base44Client';
+import { STARTER_CARDS, ELEMENT_COLORS } from '@/eru/components/cards/StarterCards';
+import CardDisplay from '@/eru/components/cards/CardDisplay';
+import BattleView from '@/eru/components/cards/BattleView';
 
 const DECK_SIZE = 10;
 const JACKIE_OPPONENT = {

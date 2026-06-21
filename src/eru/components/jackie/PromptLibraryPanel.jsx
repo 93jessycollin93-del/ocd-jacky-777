@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { BookText, Plus, Search, Star, Trash2, ArrowRight, Save } from 'lucide-react';
 
 const BLANK = {

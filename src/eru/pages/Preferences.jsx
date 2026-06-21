@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Save, CheckCircle2, SlidersHorizontal } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
-import DisplayPreferencesSection from '@/components/preferences/DisplayPreferencesSection';
-import SavedContentSection from '@/components/preferences/SavedContentSection';
-import PaymentDefaultsSection from '@/components/preferences/PaymentDefaultsSection';
-import IntegrationQuotaSection from '@/components/preferences/IntegrationQuotaSection';
-import TelegramConnectSection from '@/components/preferences/TelegramConnectSection';
+import { base44 } from '@/eru/api/base44Client';
+import { useAuth } from '@/eru/lib/AuthContext';
+import DisplayPreferencesSection from '@/eru/components/preferences/DisplayPreferencesSection';
+import SavedContentSection from '@/eru/components/preferences/SavedContentSection';
+import PaymentDefaultsSection from '@/eru/components/preferences/PaymentDefaultsSection';
+import IntegrationQuotaSection from '@/eru/components/preferences/IntegrationQuotaSection';
+import TelegramConnectSection from '@/eru/components/preferences/TelegramConnectSection';
 
 /**
  * Preferences

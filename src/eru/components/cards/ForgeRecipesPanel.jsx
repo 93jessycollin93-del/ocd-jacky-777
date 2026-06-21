@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, Hammer, CheckCircle2, AlertTriangle, Loader2, X, Sparkles, ChevronDown } from 'lucide-react';
 import CardDisplay from './CardDisplay';
 import { RARITY_STYLES } from './StarterCards';
-import { FORGE_RECIPES, evaluateRecipe, runRecipeCraft } from '@/lib/forgeRecipes';
-import { reportQuestEvent } from '@/lib/dailyQuests';
+import { FORGE_RECIPES, evaluateRecipe, runRecipeCraft } from '@/eru/lib/forgeRecipes';
+import { reportQuestEvent } from '@/eru/lib/dailyQuests';
 
 /**
  * ForgeRecipesPanel

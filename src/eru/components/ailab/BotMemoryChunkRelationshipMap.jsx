@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Brain, Network, Search } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 const NODE_STYLES = [
   'border-primary/20 bg-primary/10 text-primary',

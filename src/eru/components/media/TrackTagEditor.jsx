@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { X, Tag as TagIcon, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { assignTag, unassignTag } from '@/lib/mediaLibrary';
+import { assignTag, unassignTag } from '@/eru/lib/mediaLibrary';
 
 /**
  * TrackTagEditor — bottom sheet for adding/removing tags on a single track.

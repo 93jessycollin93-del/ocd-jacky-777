@@ -8,7 +8,7 @@ import {
   Music2,
   SlidersHorizontal,
 } from 'lucide-react';
-import { useMediaPlayer } from '@/context/MediaPlayerContext';
+import { useMediaPlayer } from '@/eru/context/MediaPlayerContext';
 import QueuePanel from './QueuePanel';
 import PlaybackSettingsSheet from './PlaybackSettingsSheet';
 

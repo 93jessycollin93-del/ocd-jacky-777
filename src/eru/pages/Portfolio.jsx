@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Trophy, Flame, TrendingUp, Star, Heart, Download } from 'lucide-react';
-import { useAuth } from '@/lib/AuthContext';
-import { useLanguage } from '@/context/LanguageContext';
-import { useRealtimeEntityList } from '@/hooks/useLiveSync';
+import { useAuth } from '@/eru/lib/AuthContext';
+import { useLanguage } from '@/eru/context/LanguageContext';
+import { useRealtimeEntityList } from '@/eru/hooks/useLiveSync';
 import ScenarioAnalysisPanel from '../components/portfolio/ScenarioAnalysisPanel';
 import DiversificationToolsPanel from '../components/portfolio/DiversificationToolsPanel';
 import PerformanceBenchmarkPanel from '../components/portfolio/PerformanceBenchmarkPanel';

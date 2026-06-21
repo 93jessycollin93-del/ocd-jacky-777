@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { PencilLine, UsersRound } from 'lucide-react';
 
 const DASHBOARD_KEY = 'main-dashboard';

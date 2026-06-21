@@ -33,16 +33,16 @@ import {
   removeTrackFromPlaylist,
   reorderPlaylistTracks,
   listCollaborators,
-} from '@/lib/mediaLibrary';
-import { useMediaPlayer } from '@/context/MediaPlayerContext';
-import { useAuth } from '@/lib/AuthContext';
-import { useSelection } from '@/hooks/useSelection';
-import AddTracksToPlaylistSheet from '@/components/media/AddTracksToPlaylistSheet';
-import AddToPlaylistSheet from '@/components/media/AddToPlaylistSheet';
-import SelectionBar from '@/components/media/SelectionBar';
-import ShareSheet from '@/components/media/ShareSheet';
-import PlaylistExportSheet from '@/components/media/PlaylistExportSheet';
-import CollaboratorsSheet from '@/components/media/CollaboratorsSheet';
+} from '@/eru/lib/mediaLibrary';
+import { useMediaPlayer } from '@/eru/context/MediaPlayerContext';
+import { useAuth } from '@/eru/lib/AuthContext';
+import { useSelection } from '@/eru/hooks/useSelection';
+import AddTracksToPlaylistSheet from '@/eru/components/media/AddTracksToPlaylistSheet';
+import AddToPlaylistSheet from '@/eru/components/media/AddToPlaylistSheet';
+import SelectionBar from '@/eru/components/media/SelectionBar';
+import ShareSheet from '@/eru/components/media/ShareSheet';
+import PlaylistExportSheet from '@/eru/components/media/PlaylistExportSheet';
+import CollaboratorsSheet from '@/eru/components/media/CollaboratorsSheet';
 
 const VISIBILITY_BADGE = {
   private: { icon: Lock, label: 'Private' },

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { Network, Save, Trash2, Plus, Play, Users, Crown, Sparkles, Wand2, Bot, Zap, Route, BarChart3, ExternalLink, CopyPlus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import SquadAnalyticsPanel from './SquadAnalyticsPanel.jsx';

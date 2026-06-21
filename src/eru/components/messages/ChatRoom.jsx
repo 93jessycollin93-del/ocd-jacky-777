@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Lock, Globe2, Mic, MicOff, Send, UserPlus, Package, BadgeDollarSign } from 'lucide-react';
-import { useRealtimeEntityList } from '@/hooks/useLiveSync';
+import { useRealtimeEntityList } from '@/eru/hooks/useLiveSync';
 
 export default function ChatRoom({ chat, onSendMessage, onInvite }) {
   const [draft, setDraft] = useState('');

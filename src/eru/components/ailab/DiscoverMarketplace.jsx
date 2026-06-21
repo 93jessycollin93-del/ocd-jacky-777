@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Star, Download, MessageSquare, Search, Send, X, Sparkles, Briefcase, Blocks, Bot, ArrowUpDown, TrendingUp, Globe, Lock, Upload, ShoppingCart, RefreshCcw } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
+import { base44 } from '@/eru/api/base44Client';
+import { useAuth } from '@/eru/lib/AuthContext';
 import BotMarketplaceTradeSheet from './BotMarketplaceTradeSheet';
 import { ALL_MARKET_CURRENCIES, DEFAULT_PRICE_OPTIONS } from './botMarketplaceCurrencies';
 

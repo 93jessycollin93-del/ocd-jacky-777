@@ -12,9 +12,9 @@
 // Recipes consume cards (best-effort delete) and create the reward via
 // createCardWithLore so provenance + history stay consistent.
 // ----------------------------------------------------------------------------
-import { base44 } from '@/api/base44Client';
-import { STARTER_CARDS } from '@/components/cards/StarterCards';
-import { createCardWithLore } from '@/lib/cardLore';
+import { base44 } from '@/eru/api/base44Client';
+import { STARTER_CARDS } from '@/eru/components/cards/StarterCards';
+import { createCardWithLore } from '@/eru/lib/cardLore';
 
 const findSeed = (predicate) => STARTER_CARDS.find(predicate);
 

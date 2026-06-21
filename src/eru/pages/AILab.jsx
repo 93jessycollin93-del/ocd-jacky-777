@@ -35,7 +35,7 @@ import BotDataSourcesPanel from '../components/ailab/BotDataSourcesPanel';
 import KnowledgeBaseManager from '../components/ailab/KnowledgeBaseManager';
 import { invokeSelectedModel, renderPromptTemplate } from '../components/ailab/modelRouting';
 import { runRegressionSuite } from '../components/ailab/regressionTesting';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import MobileSelect from '../components/mobile/MobileSelect';
 
 const ROLES = [

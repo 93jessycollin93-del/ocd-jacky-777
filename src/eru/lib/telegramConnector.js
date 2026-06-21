@@ -11,7 +11,7 @@
  * - Entity: TelegramAccount (stores mapping + verification state)
  */
 
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 /**
  * Check if user has Telegram account linked

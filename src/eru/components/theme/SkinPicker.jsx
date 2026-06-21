@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Check, Layers, Sparkles, X, Globe2, FileText, Component } from 'lucide-react';
-import { useTheme, BG_ENVS } from '@/context/ThemeContext';
-import { base44 } from '@/api/base44Client';
+import { useTheme, BG_ENVS } from '@/eru/context/ThemeContext';
+import { base44 } from '@/eru/api/base44Client';
 
 /**
  * SkinPicker

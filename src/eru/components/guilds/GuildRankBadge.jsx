@@ -1,5 +1,5 @@
 import { Shield } from 'lucide-react';
-import { GUILD_RANKS, nextRank } from '@/lib/guildSystem';
+import { GUILD_RANKS, nextRank } from '@/eru/lib/guildSystem';
 
 const RANK_STYLES = {
   bronze:   { ring: 'border-amber-700/50',   text: 'text-amber-300',   bar: 'from-amber-700 to-orange-600' },

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { invokeSelectedModel } from './modelRouting';
 import { BarChart3, CheckCircle2, FlaskConical, Save, Sparkles, Upload, BrainCircuit, Eye } from 'lucide-react';
 import BotDeploymentPipelinePanel from './BotDeploymentPipelinePanel';

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ShieldCheck, ShieldOff, Lock } from 'lucide-react';
-import ConfirmDialog from '@/components/ConfirmDialog';
-import { getZeroFakeDataMode, setZeroFakeDataMode, TRUST_LABELS } from '@/lib/zeroFakeData';
+import ConfirmDialog from '@/eru/components/ConfirmDialog';
+import { getZeroFakeDataMode, setZeroFakeDataMode, TRUST_LABELS } from '@/eru/lib/zeroFakeData';
 
 /**
  * ZeroFakeDataModeToggle — admin-only control. ON by default. Disabling

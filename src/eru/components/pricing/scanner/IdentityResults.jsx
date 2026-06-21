@@ -1,5 +1,5 @@
 import { CheckCircle2, HelpCircle } from 'lucide-react';
-import { isHighConfidence } from '@/lib/zeroFakeData';
+import { isHighConfidence } from '@/eru/lib/zeroFakeData';
 
 /**
  * IdentityResults — renders identification candidates separately from price.

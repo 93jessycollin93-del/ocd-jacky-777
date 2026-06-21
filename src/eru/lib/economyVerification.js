@@ -1,5 +1,5 @@
-import { base44 } from '@/api/base44Client';
-import { enforceOrderStateGate, canGrantAsset } from '@/lib/orderStateMachine';
+import { base44 } from '@/eru/api/base44Client';
+import { enforceOrderStateGate, canGrantAsset } from '@/eru/lib/orderStateMachine';
 import crypto from 'crypto';
 
 /**

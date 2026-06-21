@@ -1,4 +1,4 @@
-import { TRUST_LABELS, formatPriceHonest, summarizePricingResults } from '@/lib/zeroFakeData';
+import { TRUST_LABELS, formatPriceHonest, summarizePricingResults } from '@/eru/lib/zeroFakeData';
 import PricingTrustBadge from './PricingTrustBadge';
 
 /**

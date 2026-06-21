@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { BookCopy, RotateCcw, Save, Sparkles, Trash2, Wand2, Loader2 } from 'lucide-react';
 import { invokeSelectedModel } from './modelRouting';
 

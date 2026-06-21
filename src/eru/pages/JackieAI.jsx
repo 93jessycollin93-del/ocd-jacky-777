@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Bot, FlaskConical, Key, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import JackieHeader from '../components/jackie/JackieHeader';
 import ConversationSidebar from '../components/jackie/ConversationSidebar.jsx';
 import MessageBubble from '../components/jackie/MessageBubble';
@@ -18,8 +18,8 @@ import TelegramBotSetupPanel from '../components/jackie/TelegramBotSetupPanel';
 import CodeWorkspace from '../components/jackie/CodeWorkspace';
 import PromptLibraryPanel from '../components/jackie/PromptLibraryPanel.jsx';
 import { VOICES } from '../components/jackie/VoiceSelector.jsx';
-import { selectRelevantMemoryFacts } from '@/lib/jackieMemoryRetrieval';
-import { getCachedOrFetch, invalidateCachedValue, writeCachedValue } from '@/lib/metadataCache';
+import { selectRelevantMemoryFacts } from '@/eru/lib/jackieMemoryRetrieval';
+import { getCachedOrFetch, invalidateCachedValue, writeCachedValue } from '@/eru/lib/metadataCache';
 
 const PAGE_NAV_MAP = [
   { keywords: ['ai lab', 'ailab', 'lab', 'bots', 'bot lab'], path: '/ailab' },

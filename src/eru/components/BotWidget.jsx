@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Send, ChevronDown, Zap, Globe, GripVertical } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { getCachedOrFetch } from '@/lib/metadataCache';
+import { base44 } from '@/eru/api/base44Client';
+import { getCachedOrFetch } from '@/eru/lib/metadataCache';
 
 const ROLE_ICONS = { assistant: '🤖', trader: '📈', game_helper: '🎮', social: '💬', security: '🛡️', custom: '⚡' };
 

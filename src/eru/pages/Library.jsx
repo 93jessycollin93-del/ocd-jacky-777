@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Library as LibraryIcon, Loader2, Search, BookOpen, Filter, BarChart3 } from 'lucide-react';
-import { loadCardCatalog, summarizeCatalog, uniqueOrigins } from '@/lib/cardCatalog';
-import LibraryCardTile from '@/components/library/LibraryCardTile';
-import CardAnalyticsPanel from '@/components/library/CardAnalyticsPanel';
+import { loadCardCatalog, summarizeCatalog, uniqueOrigins } from '@/eru/lib/cardCatalog';
+import LibraryCardTile from '@/eru/components/library/LibraryCardTile';
+import CardAnalyticsPanel from '@/eru/components/library/CardAnalyticsPanel';
 
 const ELEMENT_OPTIONS = ['all', 'fire', 'water', 'earth', 'wind', 'shadow', 'light'];
 const RARITY_OPTIONS = ['all', 'common', 'rare', 'epic', 'legendary', 'mythic'];

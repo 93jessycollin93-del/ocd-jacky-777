@@ -1,25 +1,25 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plug, ArrowLeft, MessageCircle, ShieldCheck } from 'lucide-react';
-import { useAuth } from '@/lib/AuthContext';
-import { base44 } from '@/api/base44Client';
-import { useRealtimeEntityList } from '@/hooks/useLiveSync';
+import { useAuth } from '@/eru/lib/AuthContext';
+import { base44 } from '@/eru/api/base44Client';
+import { useRealtimeEntityList } from '@/eru/hooks/useLiveSync';
 
 import {
   INTEGRATION_REGISTRY,
   computeStatus,
   STATUS,
   getCategoryLabel,
-} from '@/lib/integrationRegistry';
-import { getKnownSecretNames, getAuthorizedConnectors } from '@/lib/integrationEnv';
+} from '@/eru/lib/integrationRegistry';
+import { getKnownSecretNames, getAuthorizedConnectors } from '@/eru/lib/integrationEnv';
 
-import IntegrationSummary from '@/components/integrations/IntegrationSummary';
-import IntegrationFilters from '@/components/integrations/IntegrationFilters';
-import IntegrationCard from '@/components/integrations/IntegrationCard';
-import IntegrationDetailDrawer from '@/components/integrations/IntegrationDetailDrawer';
-import WhatsAppPanel from '@/components/integrations/WhatsAppPanel';
-import ZeroFakeDataPolicyCard from '@/components/pricing/ZeroFakeDataPolicyCard';
-import { getZeroFakeDataMode } from '@/lib/zeroFakeData';
+import IntegrationSummary from '@/eru/components/integrations/IntegrationSummary';
+import IntegrationFilters from '@/eru/components/integrations/IntegrationFilters';
+import IntegrationCard from '@/eru/components/integrations/IntegrationCard';
+import IntegrationDetailDrawer from '@/eru/components/integrations/IntegrationDetailDrawer';
+import WhatsAppPanel from '@/eru/components/integrations/WhatsAppPanel';
+import ZeroFakeDataPolicyCard from '@/eru/components/pricing/ZeroFakeDataPolicyCard';
+import { getZeroFakeDataMode } from '@/eru/lib/zeroFakeData';
 
 /**
  * IntegrationHub — Connections Hub / Integration Command Center.

@@ -1,5 +1,5 @@
 import { CheckCircle2, ShieldCheck, AlertTriangle, Pencil, HelpCircle, MinusCircle, WifiOff, FlaskConical } from 'lucide-react';
-import { TRUST_BADGES } from '@/lib/zeroFakeData';
+import { TRUST_BADGES } from '@/eru/lib/zeroFakeData';
 
 const ICON = {
   verified_source:   CheckCircle2,

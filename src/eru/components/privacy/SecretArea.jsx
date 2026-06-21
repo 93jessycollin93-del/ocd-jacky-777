@@ -8,7 +8,7 @@ import {
   isUnlocked,
   markUnlocked,
   lockNow,
-} from '@/lib/secretAreaPin';
+} from '@/eru/lib/secretAreaPin';
 
 /**
  * SecretArea

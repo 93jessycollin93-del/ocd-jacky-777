@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Play, Square, Clock, Plus, ArrowRight } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { useRealtimeAgentStatus } from '@/hooks/useLiveSync';
+import { base44 } from '@/eru/api/base44Client';
+import { useRealtimeAgentStatus } from '@/eru/hooks/useLiveSync';
 import { runCustomAgentTask } from './agentTaskUtils';
 
 const PRESET_TASKS = [

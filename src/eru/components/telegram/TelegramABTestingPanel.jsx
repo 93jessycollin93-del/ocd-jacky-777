@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { FlaskConical, Play, PauseCircle, Trophy, BarChart3 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { getVariantMetrics, getWinningVariant } from './telegramExperimentUtils';
 
 const DEFAULT_FORM = {

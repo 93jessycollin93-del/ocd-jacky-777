@@ -4,14 +4,14 @@ import {
   ArrowLeft, Play, Filter, Download, Copy, ShieldCheck, CheckCircle2,
   XCircle, AlertTriangle, Database, Wrench, Eye,
 } from 'lucide-react';
-import PermissionGate from '@/components/PermissionGate';
-import TruthState from '@/components/TruthState';
-import { isOwner, isAdmin } from '@/lib/permissions';
+import PermissionGate from '@/eru/components/PermissionGate';
+import TruthState from '@/eru/components/TruthState';
+import { isOwner, isAdmin } from '@/eru/lib/permissions';
 import {
   CATEGORIES, STATUS,
   runAllTests, summarize, summarizeByCategory, backendConfidence,
-} from '@/lib/securityTestRunner';
-import { useAuth } from '@/lib/AuthContext';
+} from '@/eru/lib/securityTestRunner';
+import { useAuth } from '@/eru/lib/AuthContext';
 
 /**
  * Owner-only Security Test Runner / Permission Attack Simulator

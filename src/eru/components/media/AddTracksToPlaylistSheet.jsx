@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { X, Plus, Check, Loader2, Search, Music2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { listTracks, addTrackToPlaylist } from '@/lib/mediaLibrary';
+import { listTracks, addTrackToPlaylist } from '@/eru/lib/mediaLibrary';
 
 /**
  * AddTracksToPlaylistSheet — pick tracks from the library to add into a

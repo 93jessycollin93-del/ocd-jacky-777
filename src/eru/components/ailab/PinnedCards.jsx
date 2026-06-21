@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Pin, Plus, Bot, X, Sparkles } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
+import { base44 } from '@/eru/api/base44Client';
+import { useAuth } from '@/eru/lib/AuthContext';
 
 const COLOR_MAP = {
   green:  'border-green-400/30 bg-green-400/5',

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { BookOpenText, MessageSquare, Users, Database, Plus, Save } from 'lucide-react';
 
 const EMPTY_WORKSPACE = { name: '', description: '', member_emails: [], linked_bot_ids: [], linked_prompt_template_ids: [] };

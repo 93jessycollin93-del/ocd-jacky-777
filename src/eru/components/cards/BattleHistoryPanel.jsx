@@ -1,4 +1,4 @@
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea } from '@/eru/components/ui/scroll-area';
 import { History, Swords, Shield, Crown } from 'lucide-react';
 import BattleReplayViewer from './BattleReplayViewer';
 

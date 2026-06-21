@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Pickaxe, Radio, Sparkles, Lock, X, Coins } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { awardGold, fetchUserGold } from '@/lib/economyApi';
-import { EXCAVATION_PACKS, bumpPressure, isHighPowerCard, createCardWithLore } from '@/lib/cardLore';
+import { base44 } from '@/eru/api/base44Client';
+import { awardGold, fetchUserGold } from '@/eru/lib/economyApi';
+import { EXCAVATION_PACKS, bumpPressure, isHighPowerCard, createCardWithLore } from '@/eru/lib/cardLore';
 import { STARTER_CARDS, RARITY_STYLES } from './StarterCards';
 import CardDisplay from './CardDisplay';
 import CardLorePanel from './CardLorePanel';

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { Bot, Pin, Zap, Plus, Check, Activity, RefreshCw, Pause, Play, Square } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import NewsFeedWidget from './NewsFeedWidget';

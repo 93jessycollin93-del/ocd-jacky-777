@@ -11,7 +11,7 @@ import {
   X,
 } from 'lucide-react';
 
-import { listPublicPlaylists } from '@/lib/mediaLibrary';
+import { listPublicPlaylists } from '@/eru/lib/mediaLibrary';
 
 /**
  * Discover — community browse of public playlists (Phase 6).

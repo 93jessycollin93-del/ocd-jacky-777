@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { X, Lock, Link2, Globe, Check, Loader2, Copy, CheckCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { setPlaylistVisibility, shareUrlForPlaylist, VISIBILITY } from '@/lib/mediaLibrary';
-import { ACK_TERMS } from '@/lib/mediaConverter';
+import { setPlaylistVisibility, shareUrlForPlaylist, VISIBILITY } from '@/eru/lib/mediaLibrary';
+import { ACK_TERMS } from '@/eru/lib/mediaConverter';
 
 const OPTIONS = [
   {

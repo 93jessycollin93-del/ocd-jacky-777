@@ -13,7 +13,7 @@
  *   - Excavation Events (packs)         → ExcavationEvent entity
  */
 
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 // ---------------------------------------------------------------------------
 // Signal origins / lore tags — narrative palette for excavation events.

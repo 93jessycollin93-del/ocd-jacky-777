@@ -1,6 +1,6 @@
 import { ShieldAlert, LogIn } from 'lucide-react';
-import { useAuth } from '@/lib/AuthContext';
-import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/eru/lib/AuthContext';
+import { base44 } from '@/eru/api/base44Client';
 
 /**
  * <PermissionGate allow={(user) => isAdmin(user)}>...</PermissionGate>

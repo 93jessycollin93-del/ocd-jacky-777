@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { LineChart, Sparkles } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
-import CardWinsChart from '@/components/progress/CardWinsChart';
-import StabilityTrendChart from '@/components/progress/StabilityTrendChart';
-import MarketActivityChart from '@/components/progress/MarketActivityChart';
-import StudyRecommendations from '@/components/progress/StudyRecommendations';
+import { base44 } from '@/eru/api/base44Client';
+import { useAuth } from '@/eru/lib/AuthContext';
+import CardWinsChart from '@/eru/components/progress/CardWinsChart';
+import StabilityTrendChart from '@/eru/components/progress/StabilityTrendChart';
+import MarketActivityChart from '@/eru/components/progress/MarketActivityChart';
+import StudyRecommendations from '@/eru/components/progress/StudyRecommendations';
 
 /**
  * PlayerProgress

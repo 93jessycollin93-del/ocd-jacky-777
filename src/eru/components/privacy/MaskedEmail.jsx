@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
-import { maskEmail } from '@/lib/privacy';
+import { maskEmail } from '@/eru/lib/privacy';
 
 /**
  * MaskedEmail

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { Layers3, Save, RefreshCcw } from 'lucide-react';
-import { useTheme } from '@/context/ThemeContext';
-import { applyRootVariables } from '@/lib/themeEngine';
+import { useTheme } from '@/eru/context/ThemeContext';
+import { applyRootVariables } from '@/eru/lib/themeEngine';
 import LayerStyleForm from './LayerStyleForm';
 import ThemePresetLibrary from './ThemePresetLibrary';
 import ThemeScopePreview from './ThemeScopePreview';

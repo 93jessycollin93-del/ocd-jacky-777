@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/lib/AuthContext';
+import { useAuth } from '@/eru/lib/AuthContext';
 import { Award, Zap, MessageCircle, ShoppingBag, Shield, Lightbulb } from 'lucide-react';
 import ReputationBadge, { BADGES, LEVELS, getLevelInfo } from '../components/ReputationBadge';
-import CollectorReputationPill from '@/components/reputation/CollectorReputationPill';
-import CollectorBadgeStrip from '@/components/reputation/CollectorBadgeStrip';
-import { COLLECTOR_REWARD_BADGES, syncCollectorRewardProfile } from '@/lib/collectorRewards';
+import CollectorReputationPill from '@/eru/components/reputation/CollectorReputationPill';
+import CollectorBadgeStrip from '@/eru/components/reputation/CollectorBadgeStrip';
+import { COLLECTOR_REWARD_BADGES, syncCollectorRewardProfile } from '@/eru/lib/collectorRewards';
 
 // Demo stats for first-time users
 const DEMO_STATS = { xp: 340, thinkers_actions: 12, marketplace_sales: 1, reviews_submitted: 2, ideas_listed: 3 };

@@ -1,5 +1,5 @@
 import { Sparkles, Lock } from 'lucide-react';
-import { COSMETIC_CATALOG, GUILD_RANKS } from '@/lib/guildSystem';
+import { COSMETIC_CATALOG, GUILD_RANKS } from '@/eru/lib/guildSystem';
 
 /**
  * Visual catalog of cosmetic rewards — banners and card backings — with

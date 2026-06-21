@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import MiniAppHeader from '../components/bot-mini-app/MiniAppHeader';
 import MiniAppWalletPanel from '../components/bot-mini-app/MiniAppWalletPanel';
 import MiniAppNftPanel from '../components/bot-mini-app/MiniAppNftPanel';

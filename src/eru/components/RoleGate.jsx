@@ -1,5 +1,5 @@
-import { useAuth } from '@/lib/AuthContext';
-import { hasPermission } from '@/lib/rbac';
+import { useAuth } from '@/eru/lib/AuthContext';
+import { hasPermission } from '@/eru/lib/rbac';
 import { AlertTriangle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 

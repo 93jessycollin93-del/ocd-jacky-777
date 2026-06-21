@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, CheckCircle2, FlaskConical, Play, Plus, Paperclip, X } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { invokeSelectedModel } from './modelRouting';
 
 const EMPTY_CASE = {

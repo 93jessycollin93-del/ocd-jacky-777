@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Brain, Cpu, Gauge, Zap } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 function estimateResource(bot) {
   return Math.min(100, 20 + ((bot.usage_count || 0) * 2) + ((bot.connected_bot_ids || []).length * 8));

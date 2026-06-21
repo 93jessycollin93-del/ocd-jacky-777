@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/eru/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/eru/components/ui/card';
+import { Badge } from '@/eru/components/ui/badge';
 import {
   runRedteam,
   REDTEAM_CATEGORIES,
   DEFAULT_SCENARIOS,
-} from '@/lib/eruRedteam';
-import { validateRedteam } from '@/lib/eruRedteamValidator';
+} from '@/eru/lib/eruRedteam';
+import { validateRedteam } from '@/eru/lib/eruRedteamValidator';
 
 const STAGE_LABELS = {
   coverage: 'Coverage',

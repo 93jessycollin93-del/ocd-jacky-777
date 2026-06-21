@@ -1,5 +1,5 @@
 import { CheckCircle2, Circle } from 'lucide-react';
-import { getEscrowStepState } from '@/lib/escrowStateMachine';
+import { getEscrowStepState } from '@/eru/lib/escrowStateMachine';
 
 const STEPS = [
   { key: 'fundsHeld', label: 'Funds held' },

@@ -1,4 +1,4 @@
-import { STATUS_LABELS, STATUS_TONES } from '@/lib/integrationRegistry';
+import { STATUS_LABELS, STATUS_TONES } from '@/eru/lib/integrationRegistry';
 
 const TONE_CLASSES = {
   ok:     'border-primary/30 bg-primary/10 text-primary',

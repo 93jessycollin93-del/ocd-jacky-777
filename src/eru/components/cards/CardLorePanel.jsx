@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Radio, Activity, BookOpen, Sparkles } from 'lucide-react';
-import { ensureLoreProfile, stabilityBand, distortionClassFor } from '@/lib/cardLore';
+import { ensureLoreProfile, stabilityBand, distortionClassFor } from '@/eru/lib/cardLore';
 
 /**
  * CardLorePanel

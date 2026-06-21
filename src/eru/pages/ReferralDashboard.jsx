@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { Copy, Gift, Link2, Trophy, Users } from 'lucide-react';
-import ReferralLeaderboard from '@/components/referrals/ReferralLeaderboard';
+import ReferralLeaderboard from '@/eru/components/referrals/ReferralLeaderboard';
 
 const DEFAULT_REWARD = 25;
 

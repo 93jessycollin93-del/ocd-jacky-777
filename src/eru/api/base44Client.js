@@ -1,5 +1,5 @@
 import { createClient } from '@base44/sdk';
-import { appParams } from '@/lib/app-params';
+import { appParams } from '@/eru/lib/app-params';
 
 const { appId, token, functionsVersion, appBaseUrl } = appParams;
 

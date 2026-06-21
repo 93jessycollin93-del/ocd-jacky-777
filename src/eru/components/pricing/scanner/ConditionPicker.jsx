@@ -1,4 +1,4 @@
-import MobileSelect from '@/components/mobile/MobileSelect';
+import MobileSelect from '@/eru/components/mobile/MobileSelect';
 
 const CONDITIONS = [
   { value: 'unknown',  label: 'Unknown Condition (default — needs review)' },

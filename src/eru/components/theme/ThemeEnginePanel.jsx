@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Paintbrush, Save, Layers, MonitorSmartphone } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { useTheme } from '@/context/ThemeContext';
+import { base44 } from '@/eru/api/base44Client';
+import { useTheme } from '@/eru/context/ThemeContext';
 
 const EMPTY_FORM = {
   name: '',

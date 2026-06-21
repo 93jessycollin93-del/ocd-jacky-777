@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { BookmarkPlus, LayoutTemplate, Monitor, Save } from 'lucide-react';
-import { useTheme, BG_ENVS } from '@/context/ThemeContext';
+import { useTheme, BG_ENVS } from '@/eru/context/ThemeContext';
 
 const STORAGE_KEY = 'visual_page_templates_v1';
 

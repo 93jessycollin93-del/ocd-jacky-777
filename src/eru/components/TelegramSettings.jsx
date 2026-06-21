@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Send, Copy, CheckCircle2, AlertCircle, Loader2, LinkIcon, Trash2 } from 'lucide-react';
-import { useAuth } from '@/lib/AuthContext';
+import { useAuth } from '@/eru/lib/AuthContext';
 import {
   getTelegramAccount,
   initiateTelegramLinking,
   updateTelegramNotifications,
   revokeTelegramAccount,
-} from '@/lib/telegramConnector';
+} from '@/eru/lib/telegramConnector';
 import { toast } from 'sonner';
 
 const NOTIFICATION_TYPES = [

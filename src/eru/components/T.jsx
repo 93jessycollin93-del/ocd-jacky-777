@@ -1,4 +1,4 @@
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage } from '@/eru/context/LanguageContext';
 
 /**
  * Tiny translation primitive for clean JSX usage.

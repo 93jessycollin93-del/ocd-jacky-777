@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Shield, Target, Users, MessageSquareText, Link2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import CommandCenterMissionBuilder from './CommandCenterMissionBuilder.jsx';
 import CommandCenterHierarchy from './CommandCenterHierarchy.jsx';
 import { COMMAND_BOT_SEEDS, DEMO_KNOWLEDGE, DEMO_MISSION } from './commandCenterData';

@@ -5,7 +5,7 @@ import { useFeatureTracking, trackFeatureInteraction } from '../hooks/useFeature
 import AssetComparisonDashboard from '../components/markets/AssetComparisonDashboard';
 import MarketAssetInsightsWidget from '../components/markets/MarketAssetInsightsWidget';
 import PullToRefresh from '../components/mobile/PullToRefresh';
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage } from '@/eru/context/LanguageContext';
 
 function PriceRow({ asset, onClick, selected }) {
   const prevRef = useRef(asset.price);

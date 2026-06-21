@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
 import { Activity, BarChart3, LayoutDashboard, Sparkles } from 'lucide-react';
-import AnalyticsWidget from '@/components/dashboard/AnalyticsWidget';
-import AIInsightsWidget from '@/components/dashboard/AIInsightsWidget';
-import AnalyticsHubOverview from '@/components/analytics/AnalyticsHubOverview';
-import AnalyticsHubPerformancePanel from '@/components/analytics/AnalyticsHubPerformancePanel';
-import Bot24hAISummaryPanel from '@/components/analytics/Bot24hAISummaryPanel';
+import AnalyticsWidget from '@/eru/components/dashboard/AnalyticsWidget';
+import AIInsightsWidget from '@/eru/components/dashboard/AIInsightsWidget';
+import AnalyticsHubOverview from '@/eru/components/analytics/AnalyticsHubOverview';
+import AnalyticsHubPerformancePanel from '@/eru/components/analytics/AnalyticsHubPerformancePanel';
+import Bot24hAISummaryPanel from '@/eru/components/analytics/Bot24hAISummaryPanel';
 
 const TABS = [
   { id: 'overview', label: 'Overview', Icon: LayoutDashboard },

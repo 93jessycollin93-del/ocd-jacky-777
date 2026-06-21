@@ -4,11 +4,11 @@ import {
   Send, Inbox, Coins, Repeat, Handshake, AlertTriangle, CheckCircle2,
   Loader2, X, MessageSquare, History, ArrowLeftRight, Reply,
 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import CardDisplay from './CardDisplay';
 import { RARITY_STYLES } from './StarterCards';
-import { initiateEscrow, holdFundsInEscrow, confirmAndTransferAsset } from '@/lib/economyApi';
-import { createCardWithLore } from '@/lib/cardLore';
+import { initiateEscrow, holdFundsInEscrow, confirmAndTransferAsset } from '@/eru/lib/economyApi';
+import { createCardWithLore } from '@/eru/lib/cardLore';
 
 /**
  * TradingPanel

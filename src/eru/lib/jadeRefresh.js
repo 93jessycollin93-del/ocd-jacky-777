@@ -10,7 +10,7 @@
  * EconomyAuditLog ledger via logRefresh() so the action is auditable.
  */
 
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 const STORAGE_KEY = 'jade_refresh_state_v1';
 const FREE_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24h

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Hammer, CheckCircle2, RotateCcw, Loader2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 const FORMS = [
   { id: 'jewelry',   label: 'Jewelry',   minKg: 0.1,  maxKg: 2 },

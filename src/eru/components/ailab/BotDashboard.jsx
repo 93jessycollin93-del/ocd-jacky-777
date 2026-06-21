@@ -1,5 +1,5 @@
 import { BarChart2, Zap, Star, Clock, TrendingUp } from 'lucide-react';
-import { useRealtimeEntityList } from '@/hooks/useLiveSync';
+import { useRealtimeEntityList } from '@/eru/hooks/useLiveSync';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import BotSkillTreePanel from './BotSkillTreePanel';
 

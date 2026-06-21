@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import translations from '@/lib/translations.json';
+import translations from '@/eru/lib/translations.json';
 
 /**
  * Central i18n provider for the entire ERU application.

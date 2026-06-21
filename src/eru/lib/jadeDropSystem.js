@@ -1,4 +1,4 @@
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 /**
  * BALANCED JADE ECONOMY DROP SYSTEM

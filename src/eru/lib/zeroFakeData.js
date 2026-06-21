@@ -9,7 +9,7 @@
 // route through these helpers. If a real source is missing, helpers return a
 // state object with a label — never a number pretending to be a price.
 
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 // ---- Public constants -----------------------------------------------------
 

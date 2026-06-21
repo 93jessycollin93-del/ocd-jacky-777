@@ -21,7 +21,7 @@
  * helpers are the single chokepoint for that logic.
  */
 
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 const E = base44.entities;
 

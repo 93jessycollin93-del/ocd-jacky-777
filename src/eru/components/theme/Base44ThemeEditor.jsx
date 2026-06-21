@@ -1,6 +1,6 @@
 import { Paintbrush, Sparkles } from 'lucide-react';
-import ThemeEnginePanel from '@/components/theme/ThemeEnginePanel';
-import AdvancedThemeStudio from '@/components/theme/AdvancedThemeStudio';
+import ThemeEnginePanel from '@/eru/components/theme/ThemeEnginePanel';
+import AdvancedThemeStudio from '@/eru/components/theme/AdvancedThemeStudio';
 
 export default function Base44ThemeEditor() {
   return (

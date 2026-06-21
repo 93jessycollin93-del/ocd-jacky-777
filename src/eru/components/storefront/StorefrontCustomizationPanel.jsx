@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Save, Eye, EyeOff, Image as ImageIcon, AlertTriangle, ShieldCheck } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
-import { isSafeImageUrl } from '@/lib/safeUrl';
-import { logAuditEvent } from '@/lib/auditEvents';
-import { isAdmin } from '@/lib/permissions';
+import { base44 } from '@/eru/api/base44Client';
+import { useAuth } from '@/eru/lib/AuthContext';
+import { isSafeImageUrl } from '@/eru/lib/safeUrl';
+import { logAuditEvent } from '@/eru/lib/auditEvents';
+import { isAdmin } from '@/eru/lib/permissions';
 
 /**
  * StorefrontCustomizationPanel

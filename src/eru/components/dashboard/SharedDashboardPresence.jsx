@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { Users } from 'lucide-react';
-import { maskEmail } from '@/lib/privacy';
+import { maskEmail } from '@/eru/lib/privacy';
 
 const DASHBOARD_KEY = 'main-dashboard';
 

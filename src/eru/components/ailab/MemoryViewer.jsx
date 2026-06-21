@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Brain, Trash2, User, Bot, Search, Pin, Gauge } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 export default function MemoryViewer({ bots }) {
   const [memories, setMemories] = useState([]);

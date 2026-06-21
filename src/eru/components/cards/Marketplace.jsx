@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
-import { initiateEscrow, holdFundsInEscrow, confirmAndTransferAsset } from '@/lib/economyApi';
-import { createCardWithLore } from '@/lib/cardLore';
+import { base44 } from '@/eru/api/base44Client';
+import { initiateEscrow, holdFundsInEscrow, confirmAndTransferAsset } from '@/eru/lib/economyApi';
+import { createCardWithLore } from '@/eru/lib/cardLore';
 import CardDisplay from './CardDisplay';
 import { RARITY_STYLES, ELEMENT_COLORS } from './StarterCards';
 import { Tag, ShoppingCart, Plus, X, Loader2, Coins, AlertTriangle, CheckCircle2, Repeat, Send, Handshake, Edit2, Check } from 'lucide-react';
-import MobileSelect from '@/components/mobile/MobileSelect';
-import PullToRefresh from '@/components/mobile/PullToRefresh';
+import MobileSelect from '@/eru/components/mobile/MobileSelect';
+import PullToRefresh from '@/eru/components/mobile/PullToRefresh';
 
 const LISTING_FEE_PCT = 0.05; // 5% listing fee
 

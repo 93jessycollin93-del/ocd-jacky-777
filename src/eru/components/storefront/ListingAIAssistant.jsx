@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { Sparkles, Loader2, Wand2, CheckCircle2, BadgeDollarSign } from 'lucide-react';
 
 export default function ListingAIAssistant({ form, onApply }) {

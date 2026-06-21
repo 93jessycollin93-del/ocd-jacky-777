@@ -4,7 +4,7 @@
 // real provider is connected, callers can swap in AI-sourced text and set
 // `source: "ai_generated"` on the resulting record.
 
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 export const GOLDEN_RULES = [
   {

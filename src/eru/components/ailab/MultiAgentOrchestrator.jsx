@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Network, ChevronRight, Loader2, Star, GitBranch, MessageSquareShare, Wrench, BrainCircuit } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
+import { base44 } from '@/eru/api/base44Client';
+import { useAuth } from '@/eru/lib/AuthContext';
 import CollaborationWorkspace from './CollaborationWorkspace';
 import OrchestratorBotSetupPanel from './OrchestratorBotSetupPanel';
 import OrchestratorStateBoard from './OrchestratorStateBoard';

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { usePriceMap } from '../hooks/useCryptoPrices';
 import { ArrowDown, AlertTriangle } from 'lucide-react';
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage } from '@/eru/context/LanguageContext';
 
 const ASSETS = ['TON','BTC','ETH','USDT','BNB','SOL'];
 

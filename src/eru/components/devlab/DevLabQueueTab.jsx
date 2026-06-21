@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Play, Pause, CheckCircle2, AlertTriangle, Trash2, ArrowRight, Clipboard, Loader2 } from 'lucide-react';
-import ConfirmDialog from '@/components/ConfirmDialog';
+import ConfirmDialog from '@/eru/components/ConfirmDialog';
 
 const STATUS_STYLES = {
   queued:           { tone: 'bg-secondary text-muted-foreground border-border' },

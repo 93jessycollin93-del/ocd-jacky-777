@@ -13,8 +13,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { getSharedPlaylist } from '@/lib/mediaLibrary';
-import { useMediaPlayer } from '@/context/MediaPlayerContext';
+import { getSharedPlaylist } from '@/eru/lib/mediaLibrary';
+import { useMediaPlayer } from '@/eru/context/MediaPlayerContext';
 
 const VISIBILITY_BADGE = {
   private: { icon: Lock, label: 'Private' },

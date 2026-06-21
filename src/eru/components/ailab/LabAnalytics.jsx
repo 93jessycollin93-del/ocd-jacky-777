@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BarChart2, Users, Zap, TrendingUp, Award } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import SwarmCycleAnalyticsDashboard from './SwarmCycleAnalyticsDashboard';
 

@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Coins, CheckCircle2, Loader2, Sparkles, Target, AlertTriangle, RefreshCcw } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { ensureDailyQuests, claimQuest, summarizeQuests } from '@/lib/dailyQuests';
+import { base44 } from '@/eru/api/base44Client';
+import { ensureDailyQuests, claimQuest, summarizeQuests } from '@/eru/lib/dailyQuests';
 
 /**
  * DailyQuestPanel

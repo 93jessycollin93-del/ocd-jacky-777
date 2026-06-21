@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { BrainCircuit, CheckSquare, Loader2, MessageSquareShare, Square, Users, GitBranch } from 'lucide-react';
 import SpeechToTextInput from './SpeechToTextInput.jsx';
 import CollaborationLiveRoom from './CollaborationLiveRoom.jsx';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { analyzeNetworkImprovements, createDecisionPlan, resolveFindingConflicts } from './orchestrationDecisioning';
 
 export default function BotCollaborationWorkspace({ bots }) {

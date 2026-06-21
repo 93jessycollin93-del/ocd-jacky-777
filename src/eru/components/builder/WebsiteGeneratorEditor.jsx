@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { LayoutTemplate, Save } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import WebsiteGeneratorLivePreview from './WebsiteGeneratorLivePreview';
 import WebsiteGeneratorSectionActions from './WebsiteGeneratorSectionActions';
 import WebsiteGeneratorThemeControls from './WebsiteGeneratorThemeControls';

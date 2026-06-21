@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { User2, Bot, MessageSquare, Sparkles, Bell, Save, CheckCircle2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
-import BadgeShowcase from '@/components/profile/BadgeShowcase';
-import ReputationSnapshot from '@/components/profile/ReputationSnapshot';
+import { base44 } from '@/eru/api/base44Client';
+import { useAuth } from '@/eru/lib/AuthContext';
+import BadgeShowcase from '@/eru/components/profile/BadgeShowcase';
+import ReputationSnapshot from '@/eru/components/profile/ReputationSnapshot';
 
 const DEFAULT_BOT_PREFS = {
   autoReply: true,

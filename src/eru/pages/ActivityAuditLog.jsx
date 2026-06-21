@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { ClipboardList, Search, Filter, Shield, CreditCard, Key, Link, Database, Settings, LogIn, Fingerprint, AlertTriangle, CheckCircle, XCircle, ChevronDown, ChevronUp, Download } from 'lucide-react';
 import { jsPDF } from 'jspdf';
-import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
+import { base44 } from '@/eru/api/base44Client';
+import { useAuth } from '@/eru/lib/AuthContext';
 
 const TYPE_CONFIG = {
   auth:        { icon: LogIn,       color: 'text-blue-400',   bg: 'bg-blue-400/10 border-blue-400/20',   label: 'Auth' },

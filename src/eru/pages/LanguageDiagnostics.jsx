@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { CheckCircle2, AlertTriangle, Globe, Languages } from 'lucide-react';
-import { useLanguage, LANGUAGES } from '@/context/LanguageContext';
-import translations from '@/lib/translations.json';
+import { useLanguage, LANGUAGES } from '@/eru/context/LanguageContext';
+import translations from '@/eru/lib/translations.json';
 
 // Walk the translations object and produce a flat list of dotted key paths
 // whose value is a string (i.e. real translatable leaf nodes).

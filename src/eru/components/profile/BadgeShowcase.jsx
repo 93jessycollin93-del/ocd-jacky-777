@@ -1,5 +1,5 @@
 import { Award, Lock } from 'lucide-react';
-import { COLLECTOR_REWARD_BADGES } from '@/lib/collectorRewards';
+import { COLLECTOR_REWARD_BADGES } from '@/eru/lib/collectorRewards';
 
 /**
  * BadgeShowcase

@@ -21,10 +21,10 @@ import {
   collabAddTrack,
   collabRemoveTrack,
   collabReorder,
-} from '@/lib/mediaLibrary';
-import { useMediaPlayer } from '@/context/MediaPlayerContext';
-import AddTracksToPlaylistSheet from '@/components/media/AddTracksToPlaylistSheet';
-import CollaboratorsSheet from '@/components/media/CollaboratorsSheet';
+} from '@/eru/lib/mediaLibrary';
+import { useMediaPlayer } from '@/eru/context/MediaPlayerContext';
+import AddTracksToPlaylistSheet from '@/eru/components/media/AddTracksToPlaylistSheet';
+import CollaboratorsSheet from '@/eru/components/media/CollaboratorsSheet';
 
 function fmt(s) {
   if (!s || !Number.isFinite(s)) return '';

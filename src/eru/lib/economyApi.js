@@ -4,7 +4,7 @@
  * Removes reliance on localStorage and client-side state mutations
  */
 
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 // ─── GOLD MANAGEMENT ─────────────────────────────────────────────────────────
 
@@ -187,7 +187,7 @@ export const confirmAndTransferAsset = async (escrowId, escrow) => {
       // narrative survives the transfer. Non-fatal if the helper fails.
       let nextLog = Array.isArray(card?.historical_log) ? card.historical_log : [];
       try {
-        const { appendLogEntry } = await import('@/lib/cardLore');
+        const { appendLogEntry } = await import('@/eru/lib/cardLore');
         nextLog = appendLogEntry(card, {
           event_type: 'ownership',
           summary: `Transferred to ${escrow.buyer_email} via marketplace.`,

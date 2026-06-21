@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import {
   Key, Plus, X, Copy, Check, AlertTriangle, Trash2, Crown,
   Zap, Eye, BookOpen, Rocket, Star, Shield, Bot, Activity, Globe,

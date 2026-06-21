@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { DollarSign, Coins, Star, AlertTriangle } from 'lucide-react';
-import { useLivePriceMap } from '@/hooks/useLiveSync';
+import { useLivePriceMap } from '@/eru/hooks/useLiveSync';
 
 /**
  * JTAPriceConverter

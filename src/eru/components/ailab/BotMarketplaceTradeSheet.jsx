@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { X } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { ALL_MARKET_CURRENCIES, CRYPTO_CURRENCIES } from './botMarketplaceCurrencies';
 
 export default function BotMarketplaceTradeSheet({ bot, myBots, currentUser, onClose, onSubmitted }) {

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { FlaskConical, Loader2, Send, Sparkles } from 'lucide-react';
 
 export default function TelegramSwarmSandboxPanel({ bot, sessions = [] }) {

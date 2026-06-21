@@ -20,9 +20,9 @@ import {
   createPlaylist,
   importPlaylist,
   listCollaborativePlaylists,
-} from '@/lib/mediaLibrary';
-import { parsePlaylistFile } from '@/lib/playlistIO';
-import { useAuth } from '@/lib/AuthContext';
+} from '@/eru/lib/mediaLibrary';
+import { parsePlaylistFile } from '@/eru/lib/playlistIO';
+import { useAuth } from '@/eru/lib/AuthContext';
 
 const VISIBILITY_BADGE = {
   private: { icon: Lock, label: 'Private' },

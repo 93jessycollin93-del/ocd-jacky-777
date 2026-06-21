@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { Send, ShoppingCart, ShieldCheck, HandCoins, AlertTriangle } from 'lucide-react';
 
 export default function TradeNegotiationChatRoom({ chat, currentUserEmail }) {

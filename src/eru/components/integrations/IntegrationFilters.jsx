@@ -1,4 +1,4 @@
-import { INTEGRATION_CATEGORIES } from '@/lib/integrationRegistry';
+import { INTEGRATION_CATEGORIES } from '@/eru/lib/integrationRegistry';
 
 /**
  * IntegrationFilters — horizontal scroll-row of category chips. Mobile-first.

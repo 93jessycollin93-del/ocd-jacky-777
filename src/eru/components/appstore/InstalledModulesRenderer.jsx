@@ -1,8 +1,8 @@
 import { Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { Store, Trash2 } from 'lucide-react';
-import { APP_STORE_MODULES } from '@/lib/appStoreModules';
-import { useInstalledModules } from '@/hooks/useInstalledModules';
+import { APP_STORE_MODULES } from '@/eru/lib/appStoreModules';
+import { useInstalledModules } from '@/eru/hooks/useInstalledModules';
 
 // Renders all currently-installed App Store modules on the dashboard. Each
 // module is wrapped in a small frame with its name and a quick-uninstall

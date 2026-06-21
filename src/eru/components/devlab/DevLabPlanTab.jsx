@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CheckCircle2, Copy, Archive, Edit3, FileText, ShieldCheck, AlertTriangle } from 'lucide-react';
-import ConfirmDialog from '@/components/ConfirmDialog';
+import ConfirmDialog from '@/eru/components/ConfirmDialog';
 
 const SECTIONS = [
   { key: 'goal', label: 'Goal' },

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { Bot, Plus, Trash2, TrendingUp, TrendingDown, Loader2, AlertTriangle, Rocket } from 'lucide-react';
-import { STRATEGIES, ASSET_PRESETS, simulateBot } from '@/lib/simEngine';
+import { STRATEGIES, ASSET_PRESETS, simulateBot } from '@/eru/lib/simEngine';
 
 const STRATEGY_KEYS = Object.keys(STRATEGIES);
 const ASSET_KEYS = Object.keys(ASSET_PRESETS);

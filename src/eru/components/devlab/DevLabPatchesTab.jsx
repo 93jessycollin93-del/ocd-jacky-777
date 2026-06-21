@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Copy, ShieldCheck, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import ConfirmDialog from '@/components/ConfirmDialog';
+import ConfirmDialog from '@/eru/components/ConfirmDialog';
 
 const RISK_TONE = {
   safe:     'bg-secondary text-muted-foreground border-border',

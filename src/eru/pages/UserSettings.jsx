@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Bell, ChevronRight, Globe, KeyRound, LogOut, Mail, Shield, SlidersHorizontal, User2, Users, Workflow, Fingerprint, MessageCircleWarning } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
-import { useLanguage, LANGUAGES } from '@/context/LanguageContext';
-import SoundSettings from '@/components/SoundSettings';
-import EscrowProfilePanel from '@/components/escrow/EscrowProfilePanel';
-import MaskedEmail from '@/components/privacy/MaskedEmail';
-import SecretArea from '@/components/privacy/SecretArea';
-import DeleteAccountButton from '@/components/settings/DeleteAccountButton';
-import { maskEmail } from '@/lib/privacy';
+import { base44 } from '@/eru/api/base44Client';
+import { useAuth } from '@/eru/lib/AuthContext';
+import { useLanguage, LANGUAGES } from '@/eru/context/LanguageContext';
+import SoundSettings from '@/eru/components/SoundSettings';
+import EscrowProfilePanel from '@/eru/components/escrow/EscrowProfilePanel';
+import MaskedEmail from '@/eru/components/privacy/MaskedEmail';
+import SecretArea from '@/eru/components/privacy/SecretArea';
+import DeleteAccountButton from '@/eru/components/settings/DeleteAccountButton';
+import { maskEmail } from '@/eru/lib/privacy';
 
 const DEFAULT_PREFS = {
   productUpdates: true,

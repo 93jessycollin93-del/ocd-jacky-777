@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   RadialBarChart, RadialBar, XAxis, Tooltip, ResponsiveContainer

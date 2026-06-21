@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Bot, FlaskConical, Play, MessageSquare, ArrowRight, CheckCircle2, AlertTriangle, Paperclip, X } from 'lucide-react';
 import { invokeSelectedModel } from './modelRouting';
 import SpeechToTextInput from './SpeechToTextInput.jsx';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 export default function BotTestingLabWidget({ bots = [], testCases = [], testRuns = [], globalPolicy }) {
   const [selectedBotId, setSelectedBotId] = useState('');

@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { X, Coins, CreditCard, Wallet, ShieldCheck, AlertTriangle, Loader2, CheckCircle2 } from 'lucide-react';
 import TonPaymentPanel from './TonPaymentPanel';
-import { FALLBACK_TON_USD } from '@/lib/tonConfig';
+import { FALLBACK_TON_USD } from '@/eru/lib/tonConfig';
 
 /**
  * BazarCheckoutDialog

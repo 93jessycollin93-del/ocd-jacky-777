@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BrainCircuit, Sparkles } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 export default function LanguageMemorySelector({ selectedMemoryId, onSelect, onApplyReference }) {
   const [items, setItems] = useState([]);

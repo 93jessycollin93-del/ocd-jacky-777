@@ -15,7 +15,7 @@
  *     `metadata` carrying the richer event shape.
  * --------------------------------------------------------------------------*/
 
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { getRole } from './permissions';
 
 const LOCAL_KEY = 'app_audit_events';

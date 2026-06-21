@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { Database, Search } from 'lucide-react';
 import SquadKnowledgeMetrics from './SquadKnowledgeMetrics';
 import SquadKnowledgeRecordCard from './SquadKnowledgeRecordCard';

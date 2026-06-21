@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
+import { base44 } from '@/eru/api/base44Client';
+import { useAuth } from '@/eru/lib/AuthContext';
 import { AlertTriangle, Loader2 } from 'lucide-react';
-import EconomyContractStatus from '@/components/economy/EconomyContractStatus';
-import EconomyBalanceCard from '@/components/economy/EconomyBalanceCard';
-import EconomyTransferForm from '@/components/economy/EconomyTransferForm';
-import EconomyTransactionList from '@/components/economy/EconomyTransactionList';
+import EconomyContractStatus from '@/eru/components/economy/EconomyContractStatus';
+import EconomyBalanceCard from '@/eru/components/economy/EconomyBalanceCard';
+import EconomyTransferForm from '@/eru/components/economy/EconomyTransferForm';
+import EconomyTransactionList from '@/eru/components/economy/EconomyTransactionList';
 
 const ERC20_ABI = [
   {

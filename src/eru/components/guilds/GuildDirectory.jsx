@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Users, Search, Loader2 } from 'lucide-react';
-import { rankFromPoints } from '@/lib/guildSystem';
+import { rankFromPoints } from '@/eru/lib/guildSystem';
 
 /**
  * Browseable directory of all active guilds with one-click join.

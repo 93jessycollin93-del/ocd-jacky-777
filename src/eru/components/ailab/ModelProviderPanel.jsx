@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link2, Sparkles } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 const HUGGING_FACE_CONNECTOR_ID = '69d912f9261810057ced4675';
 const HUGGING_FACE_DEFAULT_MODEL = 'mistralai/Mistral-7B-Instruct-v0.3';

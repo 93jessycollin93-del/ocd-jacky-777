@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
-import { useRealtimeEntityList } from '@/hooks/useLiveSync';
+import { base44 } from '@/eru/api/base44Client';
+import { useAuth } from '@/eru/lib/AuthContext';
+import { useRealtimeEntityList } from '@/eru/hooks/useLiveSync';
 import { Gem, Send, Swords, MessageCircle } from 'lucide-react';
 
 function buildInventory(jadeAssets = [], cards = [], listings = []) {

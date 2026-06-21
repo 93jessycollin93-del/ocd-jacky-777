@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Cpu, AlertTriangle } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import AgentTaskBuilder from '@/components/ailab/AgentTaskBuilder';
-import AgentTaskList from '@/components/ailab/AgentTaskList';
-import AgentActivityDashboard from '@/components/ailab/AgentActivityDashboard';
+import { base44 } from '@/eru/api/base44Client';
+import AgentTaskBuilder from '@/eru/components/ailab/AgentTaskBuilder';
+import AgentTaskList from '@/eru/components/ailab/AgentTaskList';
+import AgentActivityDashboard from '@/eru/components/ailab/AgentActivityDashboard';
 
 export default function AgentOperations() {
   const [bots, setBots] = useState([]);

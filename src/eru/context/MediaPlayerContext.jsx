@@ -16,8 +16,8 @@
  */
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import * as audioEngine from '@/lib/audioEngine';
-import { recordPlay } from '@/lib/mediaLibrary';
+import * as audioEngine from '@/eru/lib/audioEngine';
+import { recordPlay } from '@/eru/lib/mediaLibrary';
 
 const MediaPlayerContext = createContext(null);
 

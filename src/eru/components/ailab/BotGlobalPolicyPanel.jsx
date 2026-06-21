@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ShieldCheck, Save } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 const DEFAULT_POLICY = {
   name: 'Default Global Policy',

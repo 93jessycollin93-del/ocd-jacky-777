@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { BookOpen, Check, Loader2, Plus, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 

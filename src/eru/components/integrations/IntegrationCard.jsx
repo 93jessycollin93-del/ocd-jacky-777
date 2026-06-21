@@ -1,6 +1,6 @@
 import { ExternalLink, BookOpen, ChevronRight } from 'lucide-react';
 import IntegrationStatusBadge from './IntegrationStatusBadge';
-import { getCategoryLabel } from '@/lib/integrationRegistry';
+import { getCategoryLabel } from '@/eru/lib/integrationRegistry';
 
 /**
  * IntegrationCard — generic, honest provider tile used by the hub grid.

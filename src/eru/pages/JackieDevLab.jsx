@@ -1,22 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
+import { base44 } from '@/eru/api/base44Client';
+import { useAuth } from '@/eru/lib/AuthContext';
 import {
   FileText, ListChecks, BookOpen, FileCode, FileDiff, Network, ShieldCheck, Settings, History,
 } from 'lucide-react';
 
-import DevLabHeader from '@/components/devlab/DevLabHeader';
-import DevLabPromptBar from '@/components/devlab/DevLabPromptBar';
-import DevLabInspector from '@/components/devlab/DevLabInspector';
-import DevLabPlanTab from '@/components/devlab/DevLabPlanTab';
-import DevLabQueueTab from '@/components/devlab/DevLabQueueTab';
-import DevLabKnowledgeTab from '@/components/devlab/DevLabKnowledgeTab';
-import DevLabFilesTab from '@/components/devlab/DevLabFilesTab';
-import DevLabPatchesTab from '@/components/devlab/DevLabPatchesTab';
-import DevLabSystemMap from '@/components/devlab/DevLabSystemMap';
-import DevLabTestPlanTab from '@/components/devlab/DevLabTestPlanTab';
-import DevLabSettingsTab from '@/components/devlab/DevLabSettingsTab';
-import DevLabAuditTab from '@/components/devlab/DevLabAuditTab';
+import DevLabHeader from '@/eru/components/devlab/DevLabHeader';
+import DevLabPromptBar from '@/eru/components/devlab/DevLabPromptBar';
+import DevLabInspector from '@/eru/components/devlab/DevLabInspector';
+import DevLabPlanTab from '@/eru/components/devlab/DevLabPlanTab';
+import DevLabQueueTab from '@/eru/components/devlab/DevLabQueueTab';
+import DevLabKnowledgeTab from '@/eru/components/devlab/DevLabKnowledgeTab';
+import DevLabFilesTab from '@/eru/components/devlab/DevLabFilesTab';
+import DevLabPatchesTab from '@/eru/components/devlab/DevLabPatchesTab';
+import DevLabSystemMap from '@/eru/components/devlab/DevLabSystemMap';
+import DevLabTestPlanTab from '@/eru/components/devlab/DevLabTestPlanTab';
+import DevLabSettingsTab from '@/eru/components/devlab/DevLabSettingsTab';
+import DevLabAuditTab from '@/eru/components/devlab/DevLabAuditTab';
 
 import {
   GOLDEN_RULES,
@@ -26,7 +26,7 @@ import {
   logDevAudit,
   rankKnowledgeForPrompt,
   emptyProviderStatus,
-} from '@/lib/devLab';
+} from '@/eru/lib/devLab';
 
 const TABS = [
   { id: 'plan',       label: 'Plan',     icon: FileText },

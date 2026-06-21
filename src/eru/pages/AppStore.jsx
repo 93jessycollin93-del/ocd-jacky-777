@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Store, ArrowLeft, Sparkles, Code2, ArrowRight, Plug } from 'lucide-react';
-import { APP_STORE_MODULES, APP_STORE_CATEGORIES } from '@/lib/appStoreModules';
-import { useInstalledModules } from '@/hooks/useInstalledModules';
-import ModuleCard from '@/components/appstore/ModuleCard';
-import ModulePreviewDialog from '@/components/appstore/ModulePreviewDialog';
+import { APP_STORE_MODULES, APP_STORE_CATEGORIES } from '@/eru/lib/appStoreModules';
+import { useInstalledModules } from '@/eru/hooks/useInstalledModules';
+import ModuleCard from '@/eru/components/appstore/ModuleCard';
+import ModulePreviewDialog from '@/eru/components/appstore/ModulePreviewDialog';
 
 // App Store page — browse, preview, and install dashboard modules. Mobile-
 // first layout: sticky search/category bar, responsive grid, modal preview.

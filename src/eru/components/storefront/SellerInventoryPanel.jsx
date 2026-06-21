@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Edit2, Pause, Play, Trash2, X } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import ListingEditor from './ListingEditor';
 
 /**

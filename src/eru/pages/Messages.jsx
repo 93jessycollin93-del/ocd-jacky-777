@@ -1,14 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Search, Users, Radio } from 'lucide-react';
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage } from '@/eru/context/LanguageContext';
 import SocialFeed from '../components/messages/SocialFeed';
 import ChatDirectory from '../components/messages/ChatDirectory';
 import ChatRoom from '../components/messages/ChatRoom';
 import CreateChatPanel from '../components/messages/CreateChatPanel';
 import TradeNegotiationFeed from '../components/messages/TradeNegotiationFeed';
 import TradeNegotiationChatRoom from '../components/messages/TradeNegotiationChatRoom';
-import { useAuth } from '@/lib/AuthContext';
-import { useRealtimeEntityList } from '@/hooks/useLiveSync';
+import { useAuth } from '@/eru/lib/AuthContext';
+import { useRealtimeEntityList } from '@/eru/hooks/useLiveSync';
 
 const INITIAL_CHATS = [
   {

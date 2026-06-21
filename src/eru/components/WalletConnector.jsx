@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useAuth } from '@/lib/AuthContext';
-import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/eru/lib/AuthContext';
+import { base44 } from '@/eru/api/base44Client';
 import { Wallet, Loader } from 'lucide-react';
 
 export default function WalletConnector({ onConnected }) {

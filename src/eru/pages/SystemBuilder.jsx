@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { Wand2, Bot, Loader2, CheckCircle2, Code2, Layout, Settings2, Rocket, ChevronDown, ChevronUp, Copy, Check, Zap, Globe } from 'lucide-react';
 import WebsiteGeneratorPanel from '../components/builder/WebsiteGeneratorPanel';
 

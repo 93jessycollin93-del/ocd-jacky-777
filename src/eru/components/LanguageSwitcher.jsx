@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLanguage, LANGUAGES } from '@/context/LanguageContext';
+import { useLanguage, LANGUAGES } from '@/eru/context/LanguageContext';
 import { Globe, Check } from 'lucide-react';
 
 // All-languages list (current + future) lives in LANGUAGES; we render every

@@ -12,11 +12,11 @@ import {
   LibraryBig,
   Youtube,
 } from 'lucide-react';
-import YouTubeImportSheet from '@/components/media/YouTubeImportSheet';
+import YouTubeImportSheet from '@/eru/components/media/YouTubeImportSheet';
 import { toast } from 'sonner';
 
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/eru/components/ui/input';
+import { Checkbox } from '@/eru/components/ui/checkbox';
 import {
   AUDIO_FORMATS,
   VIDEO_FORMATS,
@@ -28,8 +28,8 @@ import {
   convertMedia,
   triggerDownload,
   friendlyConverterError,
-} from '@/lib/mediaConverter';
-import { importConvertedTrack } from '@/lib/mediaLibrary';
+} from '@/eru/lib/mediaConverter';
+import { importConvertedTrack } from '@/eru/lib/mediaLibrary';
 
 /**
  * MediaConverter — paste a YouTube/TikTok/etc. URL and download it as audio

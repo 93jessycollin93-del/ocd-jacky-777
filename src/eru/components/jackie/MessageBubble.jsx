@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Bot, Bookmark, Copy, PenLine, Check, Download, Loader2, Sparkles } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import AIEditBar from './AIEditBar';
 import CodePreviewPanel from './CodePreviewPanel';
 import CodeDiffPanel from './CodeDiffPanel';

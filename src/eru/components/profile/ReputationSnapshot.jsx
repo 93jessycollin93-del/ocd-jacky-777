@@ -1,5 +1,5 @@
 import { Flame, TrendingUp, Handshake, Sparkles } from 'lucide-react';
-import { COLLECTOR_STATUS_ICONS, COLLECTOR_STATUS_LABELS } from '@/lib/collectorRewards';
+import { COLLECTOR_STATUS_ICONS, COLLECTOR_STATUS_LABELS } from '@/eru/lib/collectorRewards';
 
 /**
  * ReputationSnapshot

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { Send, Loader2, CheckCircle2, Copy } from 'lucide-react';
 
 export default function TelegramConnectSection() {

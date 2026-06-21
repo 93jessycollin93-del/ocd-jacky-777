@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { SlidersHorizontal, Plus, Trash2, ArrowRightLeft, Loader2 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/eru/components/ui/dialog';
+import { Button } from '@/eru/components/ui/button';
 
 const percent = (value, total) => total > 0 ? (value / total) * 100 : 0;
 const formatMoney = (value) => `$${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;

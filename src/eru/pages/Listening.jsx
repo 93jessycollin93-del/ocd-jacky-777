@@ -11,8 +11,8 @@ import {
   Music2,
 } from 'lucide-react';
 
-import { getListeningStats } from '@/lib/mediaLibrary';
-import { useMediaPlayer } from '@/context/MediaPlayerContext';
+import { getListeningStats } from '@/eru/lib/mediaLibrary';
+import { useMediaPlayer } from '@/eru/context/MediaPlayerContext';
 
 function fmt(s) {
   if (!s || !Number.isFinite(s)) return '';

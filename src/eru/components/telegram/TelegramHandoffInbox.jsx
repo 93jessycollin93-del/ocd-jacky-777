@@ -1,5 +1,5 @@
 import { LifeBuoy, CheckCircle2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 export default function TelegramHandoffInbox({ bot, sessions = [], onRefresh }) {
   if (!bot) return null;

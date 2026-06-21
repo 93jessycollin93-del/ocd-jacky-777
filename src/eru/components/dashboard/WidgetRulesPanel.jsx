@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Plus, Zap, Trash2 } from 'lucide-react';
-import { useDashboardEvents } from '@/context/DashboardEventsContext';
+import { useDashboardEvents } from '@/eru/context/DashboardEventsContext';
 
 const SOURCE_OPTIONS = [
   { value: 'market', label: 'Market Data' },

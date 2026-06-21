@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
-import { initiateEscrow, holdFundsInEscrow, confirmAndTransferAsset } from '@/lib/economyApi';
+import { base44 } from '@/eru/api/base44Client';
+import { useAuth } from '@/eru/lib/AuthContext';
+import { initiateEscrow, holdFundsInEscrow, confirmAndTransferAsset } from '@/eru/lib/economyApi';
 import { ShoppingCart, Tag, Lock, AlertCircle, CheckCircle2, X } from 'lucide-react';
 
 export default function MarketplaceTrading() {

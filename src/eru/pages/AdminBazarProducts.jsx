@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/lib/AuthContext';
-import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/eru/lib/AuthContext';
+import { base44 } from '@/eru/api/base44Client';
 import { Coins, Gem, Plus, Edit2, Trash2, Pause, Play, X, Save, ShieldAlert } from 'lucide-react';
 
 // Admin-only CRUD UI for the BazarProduct catalog.

@@ -1,13 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Shield, Users, LogOut, Loader2, Coins, AlertTriangle, ScrollText, Sparkles } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { fetchUserGold } from '@/lib/economyApi';
+import { base44 } from '@/eru/api/base44Client';
+import { fetchUserGold } from '@/eru/lib/economyApi';
 import {
   loadGuildDetail,
   getMyMembership,
   joinGuild,
   leaveGuild,
-} from '@/lib/guildSystem';
+} from '@/eru/lib/guildSystem';
 import GuildRankBadge from '../components/guilds/GuildRankBadge';
 import GuildBankPanel from '../components/guilds/GuildBankPanel';
 import GuildCosmeticsPanel from '../components/guilds/GuildCosmeticsPanel';

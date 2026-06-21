@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/lib/AuthContext';
+import { useAuth } from '@/eru/lib/AuthContext';
 import { Shield, Database, Globe, CheckCircle2, XCircle, AlertTriangle, Save } from 'lucide-react';
 
 const PROVIDERS = [

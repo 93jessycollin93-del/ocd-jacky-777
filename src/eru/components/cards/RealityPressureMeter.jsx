@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Waves } from 'lucide-react';
-import { fetchPressure, phaseFor } from '@/lib/cardLore';
+import { fetchPressure, phaseFor } from '@/eru/lib/cardLore';
 
 /**
  * RealityPressureMeter

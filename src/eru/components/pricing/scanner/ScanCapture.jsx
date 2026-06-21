@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Upload, Camera, Loader2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 /**
  * ScanCapture — image upload entry point. Uses the existing UploadFile

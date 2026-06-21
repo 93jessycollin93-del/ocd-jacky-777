@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Network, Search } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 
 const COLORS = [
   'bg-primary/15 text-primary border-primary/20',

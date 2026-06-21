@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { BarChart2, CheckCircle2, Scale } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
+import { base44 } from '@/eru/api/base44Client';
+import { useAuth } from '@/eru/lib/AuthContext';
 
 function ScoreBar({ label, value, color }) {
   return (

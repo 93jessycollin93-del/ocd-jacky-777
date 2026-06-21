@@ -7,13 +7,13 @@ import { FileText, Bell, ChevronRight, Lock, AlertTriangle, ExternalLink,
 import BiometricAuth from '../components/BiometricAuth';
 import SoundSettings from '../components/SoundSettings';
 import TelegramSettings from '../components/TelegramSettings';
-import EscrowProfilePanel from '@/components/escrow/EscrowProfilePanel';
-import DeleteAccountButton from '@/components/settings/DeleteAccountButton';
-import ZeroFakeDataPolicyCard from '@/components/pricing/ZeroFakeDataPolicyCard';
-import ZeroFakeDataModeToggle from '@/components/pricing/ZeroFakeDataModeToggle';
-import { getZeroFakeDataMode } from '@/lib/zeroFakeData';
-import { useAuth } from '@/lib/AuthContext';
-import { useLanguage, LANGUAGES } from '@/context/LanguageContext';
+import EscrowProfilePanel from '@/eru/components/escrow/EscrowProfilePanel';
+import DeleteAccountButton from '@/eru/components/settings/DeleteAccountButton';
+import ZeroFakeDataPolicyCard from '@/eru/components/pricing/ZeroFakeDataPolicyCard';
+import ZeroFakeDataModeToggle from '@/eru/components/pricing/ZeroFakeDataModeToggle';
+import { getZeroFakeDataMode } from '@/eru/lib/zeroFakeData';
+import { useAuth } from '@/eru/lib/AuthContext';
+import { useLanguage, LANGUAGES } from '@/eru/context/LanguageContext';
 
 /**
  * Settings

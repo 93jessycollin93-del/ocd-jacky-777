@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Sparkles, BookOpen } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
-import LorePopularityChart from '@/components/insights/LorePopularityChart';
-import ExtractionTrendChart from '@/components/insights/ExtractionTrendChart';
+import { base44 } from '@/eru/api/base44Client';
+import { useAuth } from '@/eru/lib/AuthContext';
+import LorePopularityChart from '@/eru/components/insights/LorePopularityChart';
+import ExtractionTrendChart from '@/eru/components/insights/ExtractionTrendChart';
 
 /**
  * LoreInsights

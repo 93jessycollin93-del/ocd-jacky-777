@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { BookOpen, Pin, Plus, Trash2, ShieldCheck } from 'lucide-react';
-import ConfirmDialog from '@/components/ConfirmDialog';
+import ConfirmDialog from '@/eru/components/ConfirmDialog';
 
 const CATEGORIES = [
   { value: 'golden_rule',   label: 'Golden Rule' },

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { GitBranch, RotateCcw, Rocket, ExternalLink, ShieldCheck, Send } from 'lucide-react';
 
 const ENVIRONMENTS = ['draft', 'staging', 'live'];

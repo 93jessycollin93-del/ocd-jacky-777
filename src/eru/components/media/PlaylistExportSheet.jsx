@@ -1,7 +1,7 @@
 import { X, FileText, FileJson, Download } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { toM3U, toPlaylistJSON, downloadText, slugify } from '@/lib/playlistIO';
+import { toM3U, toPlaylistJSON, downloadText, slugify } from '@/eru/lib/playlistIO';
 
 /**
  * PlaylistExportSheet — download a playlist as M3U (interop with other players)

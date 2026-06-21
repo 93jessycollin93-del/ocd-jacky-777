@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Award, Sparkles } from 'lucide-react';
-import { useAuth } from '@/lib/AuthContext';
-import { COLLECTOR_REWARD_BADGES, COLLECTOR_STATUS_ICONS, COLLECTOR_STATUS_LABELS, syncCollectorRewardProfile } from '@/lib/collectorRewards';
+import { useAuth } from '@/eru/lib/AuthContext';
+import { COLLECTOR_REWARD_BADGES, COLLECTOR_STATUS_ICONS, COLLECTOR_STATUS_LABELS, syncCollectorRewardProfile } from '@/eru/lib/collectorRewards';
 
 export default function CollectorRewardsPanel() {
   const { user } = useAuth();

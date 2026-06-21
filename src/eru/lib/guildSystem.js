@@ -5,8 +5,8 @@
 // GuildBankTransaction entities. All gold movement reuses the central
 // economyApi so audit logs stay consistent with the rest of the app.
 // ----------------------------------------------------------------------------
-import { base44 } from '@/api/base44Client';
-import { awardGold, deductGold } from '@/lib/economyApi';
+import { base44 } from '@/eru/api/base44Client';
+import { awardGold, deductGold } from '@/eru/lib/economyApi';
 
 // ─── Rank ladder ────────────────────────────────────────────────────────────
 // Rank points = pooled member win-rate (0..100) × member-count weight + bank

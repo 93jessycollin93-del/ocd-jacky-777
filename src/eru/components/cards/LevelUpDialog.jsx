@@ -11,9 +11,9 @@ import {
   computeStatsForLevel,
   findDuplicateCandidates,
   runLevelUp,
-} from '@/lib/cardLeveling';
-import { deductGold } from '@/lib/economyApi';
-import { reportQuestEvent } from '@/lib/dailyQuests';
+} from '@/eru/lib/cardLeveling';
+import { deductGold } from '@/eru/lib/economyApi';
+import { reportQuestEvent } from '@/eru/lib/dailyQuests';
 
 /**
  * LevelUpDialog

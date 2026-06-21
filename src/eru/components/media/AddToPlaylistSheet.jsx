@@ -7,7 +7,7 @@ import {
   createPlaylist,
   addTrackToPlaylist,
   moveTracksToPlaylist,
-} from '@/lib/mediaLibrary';
+} from '@/eru/lib/mediaLibrary';
 
 /**
  * AddToPlaylistSheet — bottom sheet to add one or more tracks to an existing

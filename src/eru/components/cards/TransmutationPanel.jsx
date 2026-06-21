@@ -9,8 +9,8 @@ import {
   isTransmutable,
   transmutableRarities,
   runTransmutation,
-} from '@/lib/transmutation';
-import { reportQuestEvent } from '@/lib/dailyQuests';
+} from '@/eru/lib/transmutation';
+import { reportQuestEvent } from '@/eru/lib/dailyQuests';
 
 /**
  * TransmutationPanel

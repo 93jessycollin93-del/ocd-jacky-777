@@ -1,5 +1,5 @@
 import { X, SlidersHorizontal } from 'lucide-react';
-import { useMediaPlayer } from '@/context/MediaPlayerContext';
+import { useMediaPlayer } from '@/eru/context/MediaPlayerContext';
 
 const PRESETS = [0, 3, 6, 9, 12];
 

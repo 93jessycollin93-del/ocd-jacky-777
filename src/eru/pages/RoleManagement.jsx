@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/lib/AuthContext';
-import { base44 } from '@/api/base44Client';
-import { isAdmin } from '@/lib/rbac';
+import { useAuth } from '@/eru/lib/AuthContext';
+import { base44 } from '@/eru/api/base44Client';
+import { isAdmin } from '@/eru/lib/rbac';
 import { ShieldCheck, Plus, Trash2, Edit, AlertTriangle } from 'lucide-react';
 
 export default function RoleManagement() {

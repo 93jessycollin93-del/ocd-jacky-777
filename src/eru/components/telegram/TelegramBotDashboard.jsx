@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { Loader2, Plus, RefreshCw, Save, Settings2, TerminalSquare, Copy, Trash2, BarChart3 } from 'lucide-react';
 import BotFlowBuilder from './BotFlowBuilder';
 import TelegramBotAnalytics from './TelegramBotAnalytics';

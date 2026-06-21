@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, MousePointerClick, Save } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import AIEditBar from './AIEditBar';
 import CodeDiffPanel from './CodeDiffPanel';
 import CodePreviewPanel from './CodePreviewPanel';

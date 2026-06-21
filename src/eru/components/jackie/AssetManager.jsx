@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/eru/api/base44Client';
 import { FolderOpen, Search, Pin, Trash2, Copy, PenLine, Code, Layout, Bot, Zap, FileText, Check, ArrowRight, Download } from 'lucide-react';
 
 const TAG_ICONS = { code: Code, ui: Layout, system: Zap, bot: Bot, strategy: Zap, prompt: FileText, general: FileText };
