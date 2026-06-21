@@ -1,6 +1,13 @@
 import { base44 } from '@/eru/api/base44Client';
 import { enforceOrderStateGate, canGrantAsset } from '@/eru/lib/orderStateMachine';
-import crypto from 'crypto';
+// Browser-safe shim for Node's `crypto.randomBytes`
+const crypto = {
+  randomBytes(n) {
+    const a = new Uint8Array(n);
+    (globalThis.crypto || window.crypto).getRandomValues(a);
+    return { toString: () => Array.from(a).map((b) => b.toString(16).padStart(2, '0')).join('') };
+  },
+};
 
 /**
  * BULLETPROOF ECONOMY VERIFICATION ENGINE
