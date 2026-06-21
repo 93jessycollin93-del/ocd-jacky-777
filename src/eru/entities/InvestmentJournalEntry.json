@@ -1,0 +1,59 @@
+{
+  "name": "InvestmentJournalEntry",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Short title for the journal entry"
+    },
+    "asset_symbol": {
+      "type": "string",
+      "description": "Primary asset tied to the trade or note"
+    },
+    "trade_type": {
+      "type": "string",
+      "enum": ["buy", "sell", "hold", "rebalance", "note"],
+      "default": "note"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Trade notes and reflections"
+    },
+    "performance_goal": {
+      "type": "string",
+      "description": "What outcome the user hoped to achieve"
+    },
+    "emotional_state": {
+      "type": "string",
+      "enum": ["confident", "calm", "fearful", "greedy", "uncertain", "disciplined"],
+      "default": "calm"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "outcome": {
+      "type": "string",
+      "enum": ["open", "win", "loss", "mixed", "watching"],
+      "default": "open"
+    }
+  },
+  "required": ["title"],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

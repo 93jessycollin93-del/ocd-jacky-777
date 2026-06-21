@@ -1,0 +1,75 @@
+{
+  "name": "Task",
+  "type": "object",
+  "properties": {
+    "bot_id": {
+      "type": "string"
+    },
+    "bot_name": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["todo", "in_progress", "done"],
+      "default": "todo"
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["low", "medium", "high"],
+      "default": "medium"
+    },
+    "task_type": {
+      "type": "string",
+      "enum": ["chat_follow_up", "wallet_review", "nft_review", "bot_action"],
+      "default": "bot_action"
+    },
+    "owner_email": {
+      "type": "string"
+    },
+    "due_date": {
+      "type": "string"
+    }
+  },
+  "required": ["title"],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "owner_email": "{{user.email}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "owner_email": "{{user.email}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "owner_email": "{{user.email}}"
+        }
+      ]
+    }
+  }
+}

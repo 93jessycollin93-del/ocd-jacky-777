@@ -1,0 +1,56 @@
+{
+  "name": "CommandMission",
+  "type": "object",
+  "properties": {
+    "title": { "type": "string" },
+    "description": { "type": "string" },
+    "objective": { "type": "string" },
+    "priority": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"],
+      "default": "medium"
+    },
+    "success_criteria": { "type": "string" },
+    "deadline": { "type": "string" },
+    "mission_mode": {
+      "type": "string",
+      "enum": ["manual", "semi_auto", "auto"],
+      "default": "semi_auto"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "planned", "active", "paused", "completed", "failed", "escalated"],
+      "default": "draft"
+    },
+    "leader_decision": {
+      "type": "string",
+      "enum": ["reviewing", "continue", "reassign", "escalate", "pause", "isolate", "reprioritize", "complete"],
+      "default": "reviewing"
+    },
+    "overall_risk": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"],
+      "default": "low"
+    },
+    "assigned_commanders": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "assigned_squads": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "knowledge_summary": { "type": "string" },
+    "completion_progress": { "type": "number", "default": 0 },
+    "simulation_mode": { "type": "boolean", "default": false }
+  },
+  "required": ["title", "objective"],
+  "rls": {
+    "create": { "created_by": "{{user.email}}" },
+    "read": { "created_by": "{{user.email}}" },
+    "update": { "created_by": "{{user.email}}" },
+    "delete": { "created_by": "{{user.email}}" }
+  }
+}

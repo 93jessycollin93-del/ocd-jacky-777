@@ -1,0 +1,195 @@
+{
+  "name": "TelegramBot",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Internal bot name"
+    },
+    "bot_username": {
+      "type": "string",
+      "description": "Telegram bot username without @"
+    },
+    "bot_token": {
+      "type": "string",
+      "description": "Telegram bot token entered for this bot"
+    },
+    "token_label": {
+      "type": "string",
+      "description": "Reference label for the configured bot token"
+    },
+    "webhook_url": {
+      "type": "string",
+      "description": "Webhook endpoint URL"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "active", "offline", "error"],
+      "default": "draft"
+    },
+    "system_prompt": {
+      "type": "string",
+      "description": "Core personality and behavior instructions"
+    },
+    "greeting_message": {
+      "type": "string",
+      "description": "Welcome message for /start"
+    },
+    "flow_blocks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "instanceId": { "type": "string" },
+          "type": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "value": { "type": "string" }
+        }
+      },
+      "default": []
+    },
+    "commands": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "command": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      },
+      "default": []
+    },
+    "is_public": {
+      "type": "boolean",
+      "default": true
+    },
+    "last_webhook_at": {
+      "type": "string",
+      "description": "Last time a webhook was received"
+    },
+    "last_error": {
+      "type": "string",
+      "description": "Last known error message"
+    },
+    "memory_enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "memory_retention": {
+      "type": "string",
+      "enum": ["short", "medium", "long"],
+      "default": "medium"
+    },
+    "memory_message_limit": {
+      "type": "number",
+      "default": 20
+    },
+    "tool_modules": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "agent_notes": {
+      "type": "string",
+      "description": "Internal builder notes for the bot agent"
+    },
+    "source_bot_id": {
+      "type": "string",
+      "description": "Original bot id if cloned"
+    },
+    "swarm_enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "router_bot_id": {
+      "type": "string",
+      "description": "Primary router bot id used by the Telegram front-door"
+    },
+    "specialist_bot_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "swarm_goal_template": {
+      "type": "string",
+      "description": "Routing instructions for Telegram swarm handling"
+    },
+    "front_door_role": {
+      "type": "string",
+      "enum": ["general", "sales", "support", "ops", "custom"],
+      "default": "general"
+    },
+    "backend_swarm_size": {
+      "type": "number",
+      "default": 25,
+      "description": "Expected backend swarm size represented by this Telegram bot"
+    },
+    "swarm_execution_mode": {
+      "type": "string",
+      "enum": ["targeted", "tiered", "wide"],
+      "default": "targeted"
+    },
+    "max_specialists_per_request": {
+      "type": "number",
+      "default": 6,
+      "description": "Hard cap for how many specialists are invoked per Telegram request"
+    },
+    "group_response_mode": {
+      "type": "string",
+      "enum": ["commands_only", "mention_only", "always_reply"],
+      "default": "commands_only"
+    },
+    "group_responses_enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "channel_post_responses_enabled": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": ["name", "system_prompt"],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

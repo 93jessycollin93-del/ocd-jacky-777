@@ -1,0 +1,76 @@
+{
+  "name": "PriceAlert",
+  "type": "object",
+  "properties": {
+    "asset_symbol": {
+      "type": "string",
+      "description": "e.g., BTC, ETH, DOGE"
+    },
+    "alert_type": {
+      "type": "string",
+      "enum": ["above", "below"],
+      "description": "Alert when metric goes above or below threshold"
+    },
+    "threshold_price": {
+      "type": "number",
+      "description": "Price threshold in USD"
+    },
+    "trigger_basis": {
+      "type": "string",
+      "enum": ["price", "percent_change"],
+      "default": "price",
+      "description": "Which metric the alert tracks"
+    },
+    "percent_change": {
+      "type": "number",
+      "description": "24h percentage change threshold"
+    },
+    "note": {
+      "type": "string",
+      "description": "Optional user note for the alert"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "triggered_at": {
+      "type": "string",
+      "description": "ISO timestamp when alert was last triggered"
+    },
+    "notification_sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether user has been notified for this alert"
+    },
+    "push_notification_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether push notifications are enabled for this alert"
+    },
+    "push_notification_status": {
+      "type": "string",
+      "enum": ["ready", "pending", "sent", "failed"],
+      "default": "ready",
+      "description": "Visible push notification delivery state"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "User's email"
+    }
+  },
+  "required": ["asset_symbol", "alert_type"],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

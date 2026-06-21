@@ -1,0 +1,54 @@
+{
+  "name": "BotFarmSquad",
+  "type": "object",
+  "properties": {
+    "name": { "type": "string" },
+    "farm_group": { "type": "string" },
+    "role_type": {
+      "type": "string",
+      "enum": ["leader", "commander", "task", "security"],
+      "default": "task"
+    },
+    "leader_bot_id": { "type": "string" },
+    "commander_bot_id": { "type": "string" },
+    "security_bot_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "member_bot_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "specialization_focus": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "coordination_quality": { "type": "number", "default": 78 },
+    "coordination_overhead": { "type": "number", "default": 12 },
+    "reliability_score": { "type": "number", "default": 80 },
+    "throughput_score": { "type": "number", "default": 72 },
+    "current_load": { "type": "number", "default": 0 },
+    "capacity_limit": { "type": "number", "default": 100 },
+    "current_mission_id": { "type": "string" },
+    "queue_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "status": {
+      "type": "string",
+      "enum": ["idle", "assigned", "active", "strained", "maintenance", "quarantined"],
+      "default": "idle"
+    }
+  },
+  "required": ["name", "role_type"],
+  "rls": {
+    "create": { "created_by": "{{user.email}}" },
+    "read": { "created_by": "{{user.email}}" },
+    "update": { "created_by": "{{user.email}}" },
+    "delete": { "created_by": "{{user.email}}" }
+  }
+}

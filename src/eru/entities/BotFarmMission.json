@@ -1,0 +1,48 @@
+{
+  "name": "BotFarmMission",
+  "type": "object",
+  "properties": {
+    "title": { "type": "string" },
+    "objective": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["planned", "active", "blocked", "review", "complete", "failed"],
+      "default": "planned"
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"],
+      "default": "medium"
+    },
+    "assigned_squad_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "leader_bot_id": { "type": "string" },
+    "commander_bot_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "security_bot_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "progress": { "type": "number", "default": 0 },
+    "mission_value": { "type": "number", "default": 100 },
+    "coordination_complexity": { "type": "number", "default": 40 },
+    "security_pressure": { "type": "number", "default": 20 },
+    "expected_output_quality": { "type": "number", "default": 75 },
+    "actual_output_quality": { "type": "number", "default": 0 },
+    "success_probability": { "type": "number", "default": 70 }
+  },
+  "required": ["title", "objective"],
+  "rls": {
+    "create": { "created_by": "{{user.email}}" },
+    "read": { "created_by": "{{user.email}}" },
+    "update": { "created_by": "{{user.email}}" },
+    "delete": { "created_by": "{{user.email}}" }
+  }
+}

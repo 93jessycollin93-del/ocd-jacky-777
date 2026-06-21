@@ -1,0 +1,47 @@
+{
+  "name": "BotDeployment",
+  "type": "object",
+  "properties": {
+    "bot_id": { "type": "string" },
+    "bot_name": { "type": "string" },
+    "source_version_id": { "type": "string" },
+    "source_version_label": { "type": "string" },
+    "target_type": {
+      "type": "string",
+      "enum": ["page", "environment", "mixed"]
+    },
+    "target_pages": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "target_environment": {
+      "type": "string",
+      "enum": ["draft", "staging", "live"]
+    },
+    "deployment_status": {
+      "type": "string",
+      "enum": ["ready", "deployed", "rolled_back"],
+      "default": "ready"
+    },
+    "deployment_notes": { "type": "string" },
+    "mini_app_route": { "type": "string" },
+    "instruction_quality_score": { "type": "number" },
+    "instruction_quality_status": {
+      "type": "string",
+      "enum": ["pass", "review", "fail"]
+    },
+    "marketplace_ready": { "type": "boolean", "default": false },
+    "triggered_from": {
+      "type": "string",
+      "enum": ["training", "manual", "rollback"],
+      "default": "manual"
+    },
+    "test_summary": { "type": "string" },
+    "candidate_instructions": { "type": "string" },
+    "rollback_version_id": { "type": "string" },
+    "deployed_at": { "type": "string" },
+    "rolled_back_at": { "type": "string" }
+  },
+  "required": ["bot_id", "bot_name", "target_type"]
+}

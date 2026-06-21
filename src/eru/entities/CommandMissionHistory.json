@@ -1,0 +1,17 @@
+{
+  "name": "CommandMissionHistory",
+  "type": "object",
+  "properties": {
+    "mission_id": { "type": "string" },
+    "event_type": { "type": "string" },
+    "summary": { "type": "string" },
+    "actor_bot_code": { "type": "string" }
+  },
+  "required": ["mission_id", "event_type", "summary"],
+  "rls": {
+    "create": { "created_by": "{{user.email}}" },
+    "read": { "created_by": "{{user.email}}" },
+    "update": { "created_by": "{{user.email}}" },
+    "delete": { "created_by": "{{user.email}}" }
+  }
+}

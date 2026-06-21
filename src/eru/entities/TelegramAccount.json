@@ -1,0 +1,52 @@
+{
+  "name": "TelegramAccount",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string"
+    },
+    "telegram_user_id": {
+      "type": "string"
+    },
+    "telegram_username": {
+      "type": "string"
+    },
+    "telegram_display_name": {
+      "type": "string"
+    },
+    "link_code": {
+      "type": "string"
+    },
+    "link_status": {
+      "type": "string",
+      "enum": ["pending", "linked", "expired"],
+      "default": "pending"
+    },
+    "linked_at": {
+      "type": "string"
+    },
+    "last_sync_at": {
+      "type": "string"
+    },
+    "last_sync_source": {
+      "type": "string",
+      "enum": ["telegram_command", "manual"],
+      "default": "manual"
+    }
+  },
+  "required": ["user_email", "link_code", "link_status"],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

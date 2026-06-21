@@ -1,0 +1,25 @@
+{
+  "name": "ReferralEvent",
+  "type": "object",
+  "properties": {
+    "referrer_email": { "type": "string" },
+    "referred_email": { "type": "string" },
+    "invite_code": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "successful", "rewarded"],
+      "default": "pending"
+    },
+    "reward_currency": { "type": "string", "default": "REPUTATION" },
+    "reward_amount": { "type": "number", "default": 25 },
+    "signup_date": { "type": "string" },
+    "rewarded_at": { "type": "string" }
+  },
+  "required": ["referrer_email", "referred_email", "invite_code"],
+  "rls": {
+    "create": { "created_by": "{{user.email}}" },
+    "read": {},
+    "update": { "user_condition": { "role": "admin" } },
+    "delete": { "user_condition": { "role": "admin" } }
+  }
+}
