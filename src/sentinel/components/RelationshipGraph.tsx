@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, useEffect } from "react";
-import { INCIDENTS, WALLETS, shortAddr } from "@/lib/mock-data";
+import { INCIDENTS, WALLETS, shortAddr } from "@/sentinel/lib/mockData";
 
 export interface GraphNode {
   id: string;

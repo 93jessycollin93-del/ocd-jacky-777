@@ -1,5 +1,5 @@
-import type { IncidentStatus } from "@/lib/mock-data";
-import { statusColor } from "@/lib/mock-data";
+import type { IncidentStatus } from "@/sentinel/lib/mockData";
+import { statusColor } from "@/sentinel/lib/mockData";
 
 export function StatusBadge({ status }: { status: IncidentStatus }) {
   const c = statusColor(status);
