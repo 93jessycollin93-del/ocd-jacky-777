@@ -1,4 +1,4 @@
-import PerformanceDashboard from '@/pages/PerformanceDashboard';
+import PerformanceDashboard from '@/eru/pages/PerformanceDashboard';
 
 export default function AnalyticsHubPerformancePanel() {
   return (
