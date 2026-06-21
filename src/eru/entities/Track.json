@@ -1,0 +1,58 @@
+{
+  "name": "Track",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "artist": {
+      "type": "string"
+    },
+    "album": {
+      "type": "string"
+    },
+    "duration_sec": {
+      "type": "number"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "source_url": {
+      "type": "string"
+    },
+    "format": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["audio", "video"],
+      "default": "audio"
+    },
+    "cover_url": {
+      "type": "string"
+    },
+    "size_bytes": {
+      "type": "number"
+    },
+    "added_via": {
+      "type": "string",
+      "enum": ["converter", "upload", "clone"],
+      "default": "converter"
+    }
+  },
+  "required": ["title", "file_url"],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

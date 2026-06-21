@@ -1,0 +1,32 @@
+{
+  "name": "BotFarmRiskFlag",
+  "type": "object",
+  "properties": {
+    "bot_id": { "type": "string" },
+    "task_id": { "type": "string" },
+    "mission_id": { "type": "string" },
+    "squad_id": { "type": "string" },
+    "flag_type": {
+      "type": "string",
+      "enum": ["anomaly", "low_confidence", "contradiction", "integrity_drop", "unstable", "security_issue", "overload", "poor_assignment"]
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["info", "warning", "critical"],
+      "default": "warning"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["open", "reviewing", "resolved"],
+      "default": "open"
+    },
+    "details": { "type": "string" }
+  },
+  "required": ["flag_type", "details"],
+  "rls": {
+    "create": { "created_by": "{{user.email}}" },
+    "read": { "created_by": "{{user.email}}" },
+    "update": { "created_by": "{{user.email}}" },
+    "delete": { "created_by": "{{user.email}}" }
+  }
+}

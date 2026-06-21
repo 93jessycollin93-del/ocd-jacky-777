@@ -1,0 +1,66 @@
+{
+  "name": "NFT",
+  "type": "object",
+  "properties": {
+    "owner_email": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "enum": ["telegram", "manual", "wallet"],
+      "default": "telegram"
+    },
+    "source_message_id": {
+      "type": "string"
+    },
+    "external_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "collection": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "network": {
+      "type": "string",
+      "default": "TON"
+    },
+    "contract_address": {
+      "type": "string"
+    },
+    "token_id": {
+      "type": "string"
+    },
+    "rarity": {
+      "type": "string"
+    },
+    "metadata": {
+      "type": "object"
+    },
+    "imported_at": {
+      "type": "string"
+    }
+  },
+  "required": ["owner_email", "name"],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "owner_email": "{{user.email}}"
+    },
+    "update": {
+      "owner_email": "{{user.email}}"
+    },
+    "delete": {
+      "owner_email": "{{user.email}}"
+    }
+  }
+}

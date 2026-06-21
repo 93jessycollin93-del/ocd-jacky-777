@@ -1,0 +1,33 @@
+{
+  "name": "CommandAlert",
+  "type": "object",
+  "properties": {
+    "mission_id": { "type": "string" },
+    "alert_type": {
+      "type": "string",
+      "enum": ["failed_bot", "stalled_task", "high_risk_mission", "contradictory_outputs", "low_integrity_bot", "overloaded_squad" ]
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["info", "caution", "warning", "critical"],
+      "default": "warning"
+    },
+    "title": { "type": "string" },
+    "details": { "type": "string" },
+    "target_bot_code": { "type": "string" },
+    "target_squad": { "type": "string" },
+    "escalated_to": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["open", "acknowledged", "resolved"],
+      "default": "open"
+    }
+  },
+  "required": ["alert_type", "title"],
+  "rls": {
+    "create": { "created_by": "{{user.email}}" },
+    "read": { "created_by": "{{user.email}}" },
+    "update": { "created_by": "{{user.email}}" },
+    "delete": { "created_by": "{{user.email}}" }
+  }
+}

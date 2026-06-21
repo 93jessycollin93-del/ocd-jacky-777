@@ -1,0 +1,27 @@
+{
+  "name": "BotFarmUpgrade",
+  "type": "object",
+  "properties": {
+    "name": { "type": "string" },
+    "upgrade_type": {
+      "type": "string",
+      "enum": ["capacity", "processing_quality", "coordination", "squad_efficiency", "durability", "fatigue_reduction", "concurrency", "communication_speed", "verification_quality"]
+    },
+    "level": { "type": "number", "default": 1 },
+    "effect_value": { "type": "number", "default": 5 },
+    "complexity_cost": { "type": "number", "default": 2 },
+    "applied_to": {
+      "type": "string",
+      "enum": ["farm", "squad", "bot"],
+      "default": "farm"
+    },
+    "target_id": { "type": "string" }
+  },
+  "required": ["name", "upgrade_type"],
+  "rls": {
+    "create": { "created_by": "{{user.email}}" },
+    "read": { "created_by": "{{user.email}}" },
+    "update": { "created_by": "{{user.email}}" },
+    "delete": { "created_by": "{{user.email}}" }
+  }
+}

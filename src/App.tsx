@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { I18nProvider } from "@/game/i18n";
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Sandbox from "./pages/Sandbox";
@@ -29,6 +29,9 @@ import GunitApiKeys from "./pages/gunit/GunitApiKeys";
 import SphereCommand from "./pages/SphereCommand";
 import JackieControl from "./pages/JackieControl";
 import VeilOps from "./pages/VeilOps";
+const EruRouter = lazy(() => import("./eru/EruRouter"));
+const FloatingEditorNav = lazy(() => import("./eru/FloatingEditorNav"));
+const VisualizerLab = lazy(() => import("./eru/VisualizerLab"));
 
 const queryClient = new QueryClient();
 
@@ -165,8 +168,25 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/eru/visualizers"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={null}><VisualizerLab /></Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/eru/*"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={null}><EruRouter /></Suspense>
+                  </ProtectedRoute>
+                }
+              />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <Suspense fallback={null}><FloatingEditorNav /></Suspense>
             </SandboxCatcher>
           </BrowserRouter>
           </TooltipProvider>

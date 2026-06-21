@@ -1,0 +1,125 @@
+{
+  "name": "AgentTask",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "bot_id": {
+      "type": "string"
+    },
+    "bot_name": {
+      "type": "string"
+    },
+    "router_bot_id": {
+      "type": "string"
+    },
+    "router_bot_name": {
+      "type": "string"
+    },
+    "specialist_bot_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "specialist_bot_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "trigger_type": {
+      "type": "string",
+      "enum": ["time", "event"],
+      "default": "time"
+    },
+    "interval_seconds": {
+      "type": "number",
+      "default": 300
+    },
+    "event_name": {
+      "type": "string"
+    },
+    "event_condition": {
+      "type": "string"
+    },
+    "action_type": {
+      "type": "string",
+      "enum": ["internal_data", "external_data", "bot_creation", "workflow_chain", "orchestration"],
+      "default": "internal_data"
+    },
+    "workflow_prompt": {
+      "type": "string"
+    },
+    "data_sources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "workflow_nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string" },
+          "title": { "type": "string" },
+          "bot_id": { "type": "string" },
+          "bot_name": { "type": "string" },
+          "connector_name": { "type": "string" },
+          "service": { "type": "string" },
+          "access_level": { "type": "string" },
+          "recipient": { "type": "string" },
+          "prompt": { "type": "string" }
+        }
+      },
+      "default": []
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "active", "paused"],
+      "default": "draft"
+    },
+    "run_count": {
+      "type": "number",
+      "default": 0
+    },
+    "success_count": {
+      "type": "number",
+      "default": 0
+    },
+    "last_run_at": {
+      "type": "string"
+    },
+    "last_result": {
+      "type": "string"
+    },
+    "avg_duration_ms": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": ["name", "trigger_type", "action_type"],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

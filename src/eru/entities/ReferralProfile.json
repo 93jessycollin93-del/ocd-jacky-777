@@ -1,0 +1,20 @@
+{
+  "name": "ReferralProfile",
+  "type": "object",
+  "properties": {
+    "user_email": { "type": "string" },
+    "invite_code": { "type": "string" },
+    "invite_link": { "type": "string" },
+    "currency_reward_total": { "type": "number", "default": 0 },
+    "reputation_reward_total": { "type": "number", "default": 0 },
+    "successful_referrals": { "type": "number", "default": 0 },
+    "pending_referrals": { "type": "number", "default": 0 }
+  },
+  "required": ["user_email", "invite_code", "invite_link"],
+  "rls": {
+    "create": { "created_by": "{{user.email}}" },
+    "read": {},
+    "update": { "user_email": "{{user.email}}" },
+    "delete": { "user_email": "{{user.email}}" }
+  }
+}

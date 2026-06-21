@@ -1,0 +1,32 @@
+{
+  "name": "CommandTask",
+  "type": "object",
+  "properties": {
+    "mission_id": { "type": "string" },
+    "title": { "type": "string" },
+    "description": { "type": "string" },
+    "assigned_bot_code": { "type": "string" },
+    "assigned_squad": { "type": "string" },
+    "assigned_commander": { "type": "string" },
+    "depends_on_task_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "assigned", "in_progress", "blocked", "complete", "escalated", "failed"],
+      "default": "pending"
+    },
+    "confidence_level": { "type": "number", "default": 80 },
+    "blockers": { "type": "string" },
+    "output_summary": { "type": "string" }
+  },
+  "required": ["mission_id", "title"],
+  "rls": {
+    "create": { "created_by": "{{user.email}}" },
+    "read": { "created_by": "{{user.email}}" },
+    "update": { "created_by": "{{user.email}}" },
+    "delete": { "created_by": "{{user.email}}" }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "name": "Playlist",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "cover_url": {
+      "type": "string"
+    },
+    "visibility": {
+      "type": "string",
+      "enum": ["private", "unlisted", "public"],
+      "default": "private"
+    },
+    "terms_acknowledged": {
+      "type": "boolean",
+      "default": false
+    },
+    "track_count": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": ["name"],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

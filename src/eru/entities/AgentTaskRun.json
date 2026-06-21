@@ -1,0 +1,69 @@
+{
+  "name": "AgentTaskRun",
+  "type": "object",
+  "properties": {
+    "task_id": {
+      "type": "string"
+    },
+    "task_name": {
+      "type": "string"
+    },
+    "bot_id": {
+      "type": "string"
+    },
+    "bot_name": {
+      "type": "string"
+    },
+    "router_bot_id": {
+      "type": "string"
+    },
+    "router_bot_name": {
+      "type": "string"
+    },
+    "specialist_bot_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "trigger_type": {
+      "type": "string",
+      "enum": ["time", "event"]
+    },
+    "action_type": {
+      "type": "string",
+      "enum": ["internal_data", "external_data", "bot_creation", "workflow_chain", "orchestration"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["running", "success", "error"],
+      "default": "running"
+    },
+    "duration_ms": {
+      "type": "number",
+      "default": 0
+    },
+    "result_summary": {
+      "type": "string"
+    },
+    "details": {
+      "type": "string"
+    }
+  },
+  "required": ["task_id", "task_name", "trigger_type", "action_type"],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

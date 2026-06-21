@@ -1,0 +1,61 @@
+{
+  "name": "BotFarmBot",
+  "type": "object",
+  "properties": {
+    "bot_id": { "type": "string" },
+    "name": { "type": "string" },
+    "role": { "type": "string" },
+    "role_type": {
+      "type": "string",
+      "enum": ["leader", "commander", "task", "security"]
+    },
+    "farm_group": { "type": "string" },
+    "squad_id": { "type": "string" },
+    "commander_code": { "type": "string" },
+    "specialty": {
+      "type": "string",
+      "enum": ["data_gathering", "analysis", "summarization", "monitoring", "verification", "communications", "security", "sorting", "research", "reporting", "command_support"]
+    },
+    "level": { "type": "number", "default": 1 },
+    "efficiency": { "type": "number", "default": 80 },
+    "integrity": { "type": "number", "default": 90 },
+    "confidence": { "type": "number", "default": 82 },
+    "fatigue": { "type": "number", "default": 10 },
+    "load": { "type": "number", "default": 0 },
+    "uptime": { "type": "number", "default": 95 },
+    "maintenance_status": {
+      "type": "string",
+      "enum": ["healthy", "scheduled", "required", "repairing", "recalibrating"],
+      "default": "healthy"
+    },
+    "assigned_task_id": { "type": "string" },
+    "assigned_task_name": { "type": "string" },
+    "output_quality": { "type": "number", "default": 80 },
+    "risk_level": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"],
+      "default": "low"
+    },
+    "communication_status": {
+      "type": "string",
+      "enum": ["clear", "delayed", "congested", "offline"],
+      "default": "clear"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["idle", "assigned", "active", "overloaded", "blocked", "recovering", "maintenance", "quarantined", "offline"],
+      "default": "idle"
+    },
+    "bandwidth": { "type": "number", "default": 75 },
+    "coordination_efficiency": { "type": "number", "default": 80 },
+    "max_concurrent_tasks": { "type": "number", "default": 1 },
+    "system_health": { "type": "number", "default": 88 }
+  },
+  "required": ["bot_id", "name", "role", "role_type", "specialty"],
+  "rls": {
+    "create": { "created_by": "{{user.email}}" },
+    "read": { "created_by": "{{user.email}}" },
+    "update": { "created_by": "{{user.email}}" },
+    "delete": { "created_by": "{{user.email}}" }
+  }
+}

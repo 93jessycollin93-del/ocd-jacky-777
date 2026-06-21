@@ -1,0 +1,32 @@
+{
+  "name": "PlaylistCollaborator",
+  "type": "object",
+  "properties": {
+    "playlist_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string",
+      "enum": ["owner", "editor", "viewer"],
+      "default": "editor"
+    }
+  },
+  "required": ["playlist_id", "user_email"],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

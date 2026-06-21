@@ -1,0 +1,34 @@
+{
+  "name": "PlaylistTrack",
+  "type": "object",
+  "properties": {
+    "playlist_id": {
+      "type": "string"
+    },
+    "track_id": {
+      "type": "string"
+    },
+    "position": {
+      "type": "number",
+      "default": 0
+    },
+    "added_by": {
+      "type": "string"
+    }
+  },
+  "required": ["playlist_id", "track_id"],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "CommandRecommendation",
+  "type": "object",
+  "properties": {
+    "mission_id": { "type": "string" },
+    "source_bot_code": { "type": "string" },
+    "target_bot_code": { "type": "string" },
+    "priority": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"],
+      "default": "medium"
+    },
+    "recommendation": { "type": "string" },
+    "action_type": {
+      "type": "string",
+      "enum": ["continue", "reassign", "escalate", "pause", "isolate", "reprioritize"],
+      "default": "continue"
+    }
+  },
+  "required": ["recommendation"],
+  "rls": {
+    "create": { "created_by": "{{user.email}}" },
+    "read": { "created_by": "{{user.email}}" },
+    "update": { "created_by": "{{user.email}}" },
+    "delete": { "created_by": "{{user.email}}" }
+  }
+}

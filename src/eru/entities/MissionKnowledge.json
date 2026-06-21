@@ -1,0 +1,20 @@
+{
+  "name": "MissionKnowledge",
+  "type": "object",
+  "properties": {
+    "mission_id": { "type": "string" },
+    "objectives": { "type": "string" },
+    "instructions": { "type": "string" },
+    "facts": { "type": "string" },
+    "rules": { "type": "string" },
+    "priorities": { "type": "string" },
+    "constraints": { "type": "string" }
+  },
+  "required": ["mission_id"],
+  "rls": {
+    "create": { "created_by": "{{user.email}}" },
+    "read": { "created_by": "{{user.email}}" },
+    "update": { "created_by": "{{user.email}}" },
+    "delete": { "created_by": "{{user.email}}" }
+  }
+}

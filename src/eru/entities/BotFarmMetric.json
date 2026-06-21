@@ -1,0 +1,23 @@
+{
+  "name": "BotFarmMetric",
+  "type": "object",
+  "properties": {
+    "total_bots": { "type": "number", "default": 0 },
+    "active_bots": { "type": "number", "default": 0 },
+    "idle_bots": { "type": "number", "default": 0 },
+    "overloaded_bots": { "type": "number", "default": 0 },
+    "maintenance_bots": { "type": "number", "default": 0 },
+    "output_rate": { "type": "number", "default": 0 },
+    "mission_progress": { "type": "number", "default": 0 },
+    "system_efficiency": { "type": "number", "default": 75 },
+    "integrity_warning_count": { "type": "number", "default": 0 },
+    "security_alert_count": { "type": "number", "default": 0 },
+    "task_queue_depth": { "type": "number", "default": 0 }
+  },
+  "rls": {
+    "create": { "created_by": "{{user.email}}" },
+    "read": { "created_by": "{{user.email}}" },
+    "update": { "created_by": "{{user.email}}" },
+    "delete": { "created_by": "{{user.email}}" }
+  }
+}

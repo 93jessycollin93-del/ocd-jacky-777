@@ -406,6 +406,58 @@ const Sidebar = ({
           >
             🛡️ VeilOps Threat Intel
           </a>
+          <a
+            href="/eru/visualizers"
+            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
+            title="Shared visualizer primitives — vibe-coding lab"
+          >
+            🧬 Visualizer Lab
+          </a>
+          <a
+            href="/eru/ailab"
+            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
+            title="Eru AI Lab"
+          >
+            🧪 Eru · AI Lab
+          </a>
+          <a
+            href="/eru/admin/security"
+            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
+            title="Eru Security Command Center"
+          >
+            🛰 Eru · Security
+          </a>
+          <a
+            href="/eru/bot-forge"
+            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
+            title="Eru Bot Forge"
+          >
+            🤖 Eru · Bot Forge
+          </a>
+          <a
+            href="/eru/bot-marketplace"
+            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
+            title="Eru Bot Marketplace"
+          >
+            🛍️ Eru · Bot Market
+          </a>
+          <a
+            href="/eru/eru-swarm-test"
+            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
+            title="Eru Swarm test harness"
+          >
+            🐝 Eru · Swarm
+          </a>
+          <a
+            href="/eru/eru-redteam-test"
+            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
+            title="Eru Red-team test harness"
+          >
+            ⚔️ Eru · Red Team
+          </a>
+          <div className="px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground/70">
+            Press ⌘K anywhere to jump to all 84 Eru modules.
+          </div>
           <div className="px-2 py-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
             Core
           </div>

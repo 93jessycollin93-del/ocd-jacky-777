@@ -1,0 +1,60 @@
+{
+  "name": "CollectorRewardProfile",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string"
+    },
+    "current_portfolio_value": {
+      "type": "number",
+      "default": 0
+    },
+    "portfolio_growth_pct": {
+      "type": "number",
+      "default": 0
+    },
+    "successful_trades": {
+      "type": "number",
+      "default": 0
+    },
+    "login_streak": {
+      "type": "number",
+      "default": 1
+    },
+    "last_login_date": {
+      "type": "string"
+    },
+    "status_icon": {
+      "type": "string",
+      "enum": ["seed", "spark", "shield", "flame", "crown"],
+      "default": "seed"
+    },
+    "badge_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    }
+  },
+  "required": ["user_email"],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {},
+    "update": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_email": "{{user.email}}"
+        }
+      ]
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}
