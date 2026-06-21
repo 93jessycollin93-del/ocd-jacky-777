@@ -46,23 +46,46 @@ serve(async (req) => {
         });
       }
 
+      const amount = Number(record.amount);
+      if (!Number.isFinite(amount)) {
+        return new Response(JSON.stringify({ error: "Invalid amount" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Derive canonical balance from the server-side ledger — never trust the
+      // client-supplied balance_before / balance_after figures.
+      const { data: prior, error: priorErr } = await admin
+        .from("game_transactions")
+        .select("balance_after")
+        .eq("user_id", user.id)
+        .eq("currency_type", String(record.currency_type))
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (priorErr) throw priorErr;
+
+      const balance_before = Number(prior?.balance_after) || 0;
+      const balance_after = balance_before + amount;
+
       const { error } = await admin.from("game_transactions").insert({
         user_id: user.id,
         transaction_type: String(record.transaction_type),
         currency_type: String(record.currency_type),
-        amount: Number(record.amount),
-        balance_before: Number(record.balance_before) || 0,
-        balance_after: Number(record.balance_after) || 0,
+        amount,
+        balance_before,
+        balance_after,
         source: String(record.source || "unknown"),
         source_id: record.source_id ? String(record.source_id) : null,
         metadata: record.metadata || {},
       });
 
       if (error) throw error;
-      return new Response(JSON.stringify({ logged: true }), {
+      return new Response(JSON.stringify({ logged: true, balance_before, balance_after }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     // ── Dedup Check ──
     if (action === "dedup") {
