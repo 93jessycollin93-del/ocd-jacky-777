@@ -171,6 +171,10 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route path="/marvels" element={<ProtectedRoute><MarvelsRace /></ProtectedRoute>} />
+              <Route path="/sentinel" element={<ProtectedRoute><SentinelDashboard /></ProtectedRoute>} />
+              <Route path="/sentinel/board" element={<ProtectedRoute><SentinelBoard /></ProtectedRoute>} />
+              <Route path="/apex" element={<ProtectedRoute><ApexHub /></ProtectedRoute>} />
               <Route
                 path="/eru/visualizers"
                 element={
