@@ -426,6 +426,7 @@ const Sidebar = ({
             title="Apex Intelligence Hub — reserved mount point"
           >
             🏔 Apex Hub (placeholder)
+          </a>
           <a
             href="/eru/visualizers"
             className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
