@@ -29,6 +29,10 @@ import GunitApiKeys from "./pages/gunit/GunitApiKeys";
 import SphereCommand from "./pages/SphereCommand";
 import JackieControl from "./pages/JackieControl";
 import VeilOps from "./pages/VeilOps";
+import { lazy, Suspense } from "react";
+const EruRouter = lazy(() => import("./eru/EruRouter"));
+const FloatingEditorNav = lazy(() => import("./eru/FloatingEditorNav"));
+const VisualizerLab = lazy(() => import("./eru/VisualizerLab"));
 
 const queryClient = new QueryClient();
 
