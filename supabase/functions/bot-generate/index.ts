@@ -85,6 +85,10 @@ async function callGateway(body: unknown, apiKey: string) {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const unauth = await requireUser(req);
+  if (unauth) return unauth;
+
+
   try {
     const payload = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
