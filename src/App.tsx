@@ -29,6 +29,10 @@ import GunitApiKeys from "./pages/gunit/GunitApiKeys";
 import SphereCommand from "./pages/SphereCommand";
 import JackieControl from "./pages/JackieControl";
 import VeilOps from "./pages/VeilOps";
+import MarvelsRace from "./pages/MarvelsRace";
+import SentinelDashboard from "./pages/SentinelDashboard";
+import SentinelBoard from "./pages/SentinelBoard";
+import ApexHub from "./pages/ApexHub";
 const EruRouter = lazy(() => import("./eru/EruRouter"));
 const FloatingEditorNav = lazy(() => import("./eru/FloatingEditorNav"));
 const VisualizerLab = lazy(() => import("./eru/VisualizerLab"));
@@ -167,6 +171,10 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route path="/marvels" element={<ProtectedRoute><MarvelsRace /></ProtectedRoute>} />
+              <Route path="/sentinel" element={<ProtectedRoute><SentinelDashboard /></ProtectedRoute>} />
+              <Route path="/sentinel/board" element={<ProtectedRoute><SentinelBoard /></ProtectedRoute>} />
+              <Route path="/apex" element={<ProtectedRoute><ApexHub /></ProtectedRoute>} />
               <Route
                 path="/eru/visualizers"
                 element={
