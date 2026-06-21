@@ -33,6 +33,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const unauth = await requireUser(req);
+  if (unauth) return unauth;
+
+
   try {
     const { prompt, model } = await req.json();
 
