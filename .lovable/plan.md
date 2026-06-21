@@ -1,68 +1,80 @@
-# Jackie → Claude Code Handoff Bundle
 
-Goal: hand Claude Code everything it needs to reconstruct Jackie on Replit, keeping the existing Supabase backend.
+## Goal
 
-## Deliverables (written to `/mnt/documents/jackie-handoff/`)
+Fuse the Eru (`cybernetic67`, Base44) app into Jackie as a single Lovable codebase. Jackie stays the host shell (auth, theme, Supabase, AnimatedCanvas). Eru pages are imported, JSX → TSX, Base44 SDK calls routed through a thin bridge so existing Eru entities keep working without ripping out Base44 yet.
 
-1. **`JACKIE_BRIEF.md`** — single-file spec Claude reads first.
-2. **`jackie-source.zip`** — full source archive (code + edge functions + memory + Jackie/ docs + schema).
-3. **`SUPABASE_SCHEMA.sql`** — pg_dump-style schema export so Claude can recreate tables if needed.
-4. **`CLAUDE_PROMPT.md`** — copy-paste kickoff prompt for Claude Code on Replit.
+## Architecture
 
-## What goes in `JACKIE_BRIEF.md`
+```text
+Jackie shell (React + Vite + Supabase + Tailwind)
+├── /src/eru/                       ← imported Eru namespace
+│   ├── bridge/base44.ts            ← single client, lazy init, env-driven
+│   ├── bridge/entities.ts          ← typed wrappers around Base44 entities
+│   ├── bridge/auth.ts              ← maps Jackie user ↔ Eru profile
+│   ├── components/…                ← Eru components, .tsx
+│   ├── pages/…                     ← Eru pages, .tsx
+│   └── ui/FloatingEditorNav.tsx    ← floating quick-nav + inline editor
+├── /src/pages/eru/                 ← Jackie route entries that mount Eru pages
+└── /src/components/visualizers/    ← shared upgraded visualizers
+```
 
-- Identity & persona (from `Jackie/prompts/system_prompt.md`, `CORE_IDENTITY.md`, `BEHAVIOR_RULES.md`).
-- Architecture overview (modules, room system, memory tiers).
-- Stack: React 18 + Vite + Tailwind + shadcn, Supabase (Auth/DB/RLS/Storage), Lovable AI Gateway, Edge Functions.
-- Memory model (`mem://` index + core rules, Jessy's discernment).
-- Key features list with file pointers (chat, orchestrator, langcheck, vault, sphere, telegram shell, etc.).
-- Supabase config: tables, RLS philosophy, storage buckets (`chat-attachments`), required secrets list.
-- Replit-specific setup notes: env vars to set, `bun install`, `bun run dev`, Supabase URL/anon key reuse.
-- Known external links (sister projects) and what to keep vs strip.
+## Bridge (Keep Base44, add bridge)
 
-## What goes in `jackie-source.zip`
+1. New env vars in `.env.example`: `VITE_BASE44_APP_ID`, `VITE_BASE44_APP_BASE_URL`.
+2. `src/eru/bridge/base44.ts` exports a single `base44` client (`@base44/sdk`) created lazily so missing env vars degrade gracefully (returns null + console warn, never crashes Jackie).
+3. `src/eru/bridge/entities.ts` re-exports the entities Eru pages actually import (`Bot`, `BotListing`, `SecurityEvent`, `RedteamRun`, `SwarmRun`, …) with TS types and a fallback to Supabase shims where a Jackie table already covers the data.
+4. `src/eru/bridge/auth.ts` reads Jackie's `useAuth` session and exposes a `useEruIdentity()` hook so Eru pages stop calling `User.me()` directly.
 
-- `src/` (all components, pages, lib, game, sphere, vault, telegram, hooks, integrations).
-- `supabase/` (config.toml + all `functions/`).
-- `Jackie/` (full identity/architecture/security/memory docs).
-- `mem://` snapshot exported as `memory/` folder (index + every referenced memory file).
-- Root configs: `package.json`, `vite.config.ts`, `tailwind.config.ts`, `tsconfig*.json`, `index.html`, `components.json`, `postcss.config.js`, `eslint.config.js`.
-- `.env.example` (placeholders only — no real keys).
-- `README_REPLIT.md` (install/run on Replit).
+## First-slice pages (TSX-converted, Jackie-themed)
 
-Excluded: `node_modules`, `.git`, build artifacts, real secrets, `src/integrations/supabase/types.ts` (auto-generated note instead).
+Import from the zip, run a transform that:
+- renames `.jsx` → `.tsx`
+- rewrites `@/api/entities` → `@/eru/bridge/entities`
+- rewrites `@/api/integrations` → `@/eru/bridge/integrations`
+- rewrites `createPageUrl(...)` to Jackie router paths (`/eru/<slug>`)
+- wraps each page in `<EruPageShell>` (Jackie sticky banner + `AnimatedCanvas theme="neural_mesh"` background + REFERENCE/LIVE label)
 
-## What goes in `SUPABASE_SCHEMA.sql`
+Pages landing in this wave:
 
-- All `public.*` table DDL (CREATE TABLE + GRANTs + RLS policies + indexes).
-- Functions/triggers (`update_updated_at_column`, `has_role` if present).
-- Storage bucket definitions (`chat-attachments`).
-- Pulled via `supabase--read_query` against `information_schema` + `pg_policies`.
+| Eru page | Mount at | Notes |
+|---|---|---|
+| `BotForge` | `/eru/bot-forge` | also linked from Jackie BotFoundry sidebar |
+| `BotMarketplace` | `/eru/bot-market` | shares card components with Jackie BotSwarm |
+| `SecurityCommandCenter` | `/eru/security` | pairs with VeilOps in the Security cluster |
+| `AILab` | `/eru/ai-lab` | uses `jackie-orchestrate` instead of Base44 LLM call |
+| `EruRedteamTest` | `/eru/redteam` | wired to `jackie-orchestrate` with red-team system prompt |
+| `EruSwarmTest` | `/eru/swarm` | wired to `jackie-orchestrate` with swarm system prompt |
 
-## What goes in `CLAUDE_PROMPT.md`
+## Floating editor nav
 
-A ready-to-paste prompt telling Claude Code:
-- Read `JACKIE_BRIEF.md` first.
-- Unzip `jackie-source.zip`.
-- Install with `bun install` (or `npm install` on Replit).
-- Wire `.env` to the existing Supabase project (URL + anon key from user).
-- Note that `LOVABLE_API_KEY` is Lovable-only; on Replit replace with direct OpenAI/Google keys or an OpenRouter key, and rewrite the `ai.gateway.lovable.dev` calls accordingly.
-- Preserve persona rules ("Jackie here—", discernment, memory tiers).
+`src/eru/ui/FloatingEditorNav.tsx` — bottom-right floating dock visible on every Eru/Jackie route, ported from Eru's `FloatingQuickActions` + `CollabScratchpad`:
+- pill launcher → expands to: jump-to-page, inline Monaco scratchpad, AI ask (calls `jackie-orchestrate`), copy-context, toggle theme.
+- Persists scratchpad to `localStorage` under `jackie.floating.scratchpad`.
+- Mounted once in `App.tsx` inside `ProtectedRoute` so it follows the user across Jackie and Eru pages.
 
-## Technical steps the build phase will execute
+## Visualizers refresh
 
-1. `mkdir -p /mnt/documents/jackie-handoff`.
-2. Snapshot `mem://index.md` + every referenced `mem://...` file into `/tmp/jackie-export/memory/`.
-3. Copy `src/`, `supabase/`, `Jackie/`, root configs into `/tmp/jackie-export/`.
-4. Write `.env.example`, `README_REPLIT.md`.
-5. Query Supabase for schema + RLS, write `SUPABASE_SCHEMA.sql`.
-6. Generate `JACKIE_BRIEF.md` by stitching identity docs + architecture summary + file map.
-7. Generate `CLAUDE_PROMPT.md`.
-8. Zip `/tmp/jackie-export` → `/mnt/documents/jackie-handoff/jackie-source.zip` (nix run nixpkgs#zip).
-9. Emit `<presentation-artifact>` tags for the zip, brief, schema, and prompt so you can download all four.
+Single shared module `src/components/visualizers/` consumed by both Jackie and Eru screens:
+- `NeuralMesh.tsx` — upgraded version of the current AnimatedCanvas mesh, framer-motion entry, jade/gold accent line.
+- `NodeGraph.tsx` — replaces ad-hoc graphs in Eru AILab + Jackie Architecture views.
+- `PulseTimeline.tsx` — used by SecurityCommandCenter and VeilOps.
+- `OrbitField.tsx` — used by Swarm/Redteam panels and SphereCommand mini-cards.
 
-## Out of scope
+Each visualizer accepts `data`, `theme`, `density`, `interactive` props and has a Storybook-style "vibe demo" route at `/eru/visualizers` so both Jackies (Jackie + Eru shell) can preview them.
 
-- Eru (you'll export from base44 separately).
-- Rewriting code for non-Lovable runtimes — Claude Code handles that on Replit using the brief's guidance.
-- Migrating data rows (only schema is exported, not user data).
+## Routing + nav
+
+- `src/App.tsx` adds the six new `/eru/*` routes (lazy-loaded) and `/eru/visualizers`.
+- Jackie sidebar (`src/pages/Index.tsx`) gets a new "Eru" group listing the six pages and the visualizer lab.
+
+## Out of scope (this wave)
+
+- Remaining 70+ Eru pages — imported in later waves once the bridge is proven.
+- Replacing Base44 with Supabase tables — explicit "keep Base44 + bridge" decision.
+- Eru auth screens (`Login`, `Register`, `ResetPassword`) — Jackie's auth wins; bridge maps the session.
+
+## Risks
+
+- Base44 SDK is browser-only and needs `VITE_BASE44_APP_ID`. Without it the bridge no-ops; pages render in "offline" mode with empty data and a banner.
+- JSX→TSX conversion will surface implicit-any errors; we add `// @ts-expect-error eru-import` only where unavoidable and track in `Jackie/ROADMAP.md`.
+- Floating nav must not conflict with Jackie's existing `FloatingQuickActions`; we replace, not stack.
