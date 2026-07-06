@@ -1421,7 +1421,22 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
               )}
             </div>
             <div className="flex items-center justify-between mt-1.5 ml-5">
-              <div className="relative">
+              <div className="relative flex items-center gap-2">
+                <button
+                  onClick={saveCurrentAsPreset}
+                  className={`p-0.5 rounded-sm transition-colors ${
+                    presetModel === selectedModel
+                      ? "text-primary"
+                      : "text-muted-foreground/60 hover:text-primary"
+                  }`}
+                  title={
+                    presetModel === selectedModel
+                      ? "This model is your default for new chats"
+                      : "Pin as default model for new chats"
+                  }
+                >
+                  <Pin size={10} className={presetModel === selectedModel ? "fill-primary" : ""} />
+                </button>
                 <button
                   onClick={() => setModelMenuOpen((prev) => !prev)}
                   className="flex items-center gap-1 font-mono text-[10px] text-muted-foreground hover:text-foreground transition-colors"
