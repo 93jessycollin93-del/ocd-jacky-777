@@ -648,7 +648,16 @@ const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [bgSettings, setBgSettings] = useState<NSSettings>(() => loadNeutronSettings());
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
-  const [selectedModel, setSelectedModel] = useState<JackieModelId>("google/gemini-2.5-pro");
+  const [selectedModel, setSelectedModel] = useState<JackieModelId>(
+    () => (getChatPreset().model as JackieModelId) || "google/gemini-2.5-pro"
+  );
+  const [presetModel, setPresetModel] = useState<string>(() => getChatPreset().model);
+
+  const saveCurrentAsPreset = useCallback(() => {
+    setChatPreset({ provider: "lovable", model: selectedModel });
+    setPresetModel(selectedModel);
+    toast.success("Default model saved for new chats.");
+  }, [selectedModel]);
   const [tags, setTags] = useState<TagType[]>([]);
   const [tagMap, setTagMap] = useState<Record<string, string[]>>({});
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
