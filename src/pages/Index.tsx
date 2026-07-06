@@ -1290,6 +1290,8 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
         onCreateTag={handleCreateTag}
         onDeleteTag={handleDeleteTag}
         onToggleTag={handleToggleTag}
+        onExportArchive={handleExportArchive}
+        onImportArchive={handleImportArchive}
       />
 
       <main
