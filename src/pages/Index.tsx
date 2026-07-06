@@ -496,7 +496,35 @@ const Sidebar = ({
         </div>
 
         <div className="p-4 border-t border-border space-y-2">
-          <div className="font-mono text-[10px] text-muted-foreground truncate" title={userEmail}>
+          <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/70 flex items-center gap-1.5">
+            <ArchiveIcon size={10} /> Archive
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onExportArchive}
+              className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
+              title="Export all conversations to a JSON file"
+            >
+              <Download size={10} /> Export
+            </button>
+            <label
+              className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+              title="Import a Jackie archive JSON file"
+            >
+              <Upload size={10} /> Import
+              <input
+                type="file"
+                accept="application/json,.json"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) onImportArchive(f);
+                  e.currentTarget.value = "";
+                }}
+              />
+            </label>
+          </div>
+          <div className="font-mono text-[10px] text-muted-foreground truncate pt-2 border-t border-border/50" title={userEmail}>
             {userEmail}
           </div>
           <div className="flex items-center gap-2">
