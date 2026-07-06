@@ -101,6 +101,8 @@ const Sidebar = ({
   onCreateTag,
   onDeleteTag,
   onToggleTag,
+  onExportArchive,
+  onImportArchive,
 }: {
   conversations: Conversation[];
   activeId: string | null;
@@ -121,6 +123,8 @@ const Sidebar = ({
   onCreateTag: (name: string, color: string) => void;
   onDeleteTag: (id: string) => void;
   onToggleTag: (convId: string, tagId: string, has: boolean) => void;
+  onExportArchive: () => void;
+  onImportArchive: (file: File) => void;
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showNewTag, setShowNewTag] = useState(false);
