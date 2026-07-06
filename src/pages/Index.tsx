@@ -781,6 +781,29 @@ const Index = () => {
     setMessages([]);
     setChatHistory([]);
     setInput("");
+    // Apply saved preset model for every new chat.
+    const preset = getChatPreset();
+    setSelectedModel(preset.model as JackieModelId);
+  };
+
+  const handleExportArchive = async () => {
+    try {
+      const count = await downloadArchive();
+      toast.success(`Archive exported (${count} conversation${count === 1 ? "" : "s"}).`);
+    } catch (e: any) {
+      toast.error(e?.message || "Export failed.");
+    }
+  };
+
+  const handleImportArchive = async (file: File) => {
+    try {
+      toast.info("Importing archive…");
+      const { conversations: c, messages: m, skipped } = await importArchive(file);
+      toast.success(`Imported ${c} conversation${c === 1 ? "" : "s"}, ${m} message${m === 1 ? "" : "s"}${skipped ? ` (${skipped} skipped)` : ""}.`);
+      await loadConversations();
+    } catch (e: any) {
+      toast.error(e?.message || "Import failed.");
+    }
   };
 
   const handleDeleteConversation = async (id: string) => {
