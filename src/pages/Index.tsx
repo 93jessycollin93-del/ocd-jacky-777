@@ -14,6 +14,8 @@ import {
   getConversationModel,
   type Conversation,
 } from "@/lib/jackie-db";
+import { getChatPreset, setChatPreset } from "@/lib/jackie-preset";
+import { downloadArchive, importArchive } from "@/lib/jackie-archive";
 import {
   uploadAttachment,
   getMessageAttachments,
@@ -28,7 +30,7 @@ import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { AttachmentDisplay } from "@/components/AttachmentDisplay";
 import { toast } from "sonner";
 import { getGameStateContext } from "@/lib/game-state-context";
-import { Plus, Trash2, MessageSquare, LogOut, Send, Menu, X, Sun, Moon, Volume2, VolumeX, Download, Mic, ChevronDown, Zap, DollarSign, Search, Tag, XCircle } from "lucide-react";
+import { Plus, Trash2, MessageSquare, LogOut, Send, Menu, X, Sun, Moon, Volume2, VolumeX, Download, Mic, ChevronDown, Zap, DollarSign, Search, Tag, XCircle, Pin, Upload, Archive as ArchiveIcon } from "lucide-react";
 import {
   listTags,
   createTag,
@@ -99,6 +101,8 @@ const Sidebar = ({
   onCreateTag,
   onDeleteTag,
   onToggleTag,
+  onExportArchive,
+  onImportArchive,
 }: {
   conversations: Conversation[];
   activeId: string | null;
@@ -119,6 +123,8 @@ const Sidebar = ({
   onCreateTag: (name: string, color: string) => void;
   onDeleteTag: (id: string) => void;
   onToggleTag: (convId: string, tagId: string, has: boolean) => void;
+  onExportArchive: () => void;
+  onImportArchive: (file: File) => void;
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showNewTag, setShowNewTag] = useState(false);
@@ -490,7 +496,35 @@ const Sidebar = ({
         </div>
 
         <div className="p-4 border-t border-border space-y-2">
-          <div className="font-mono text-[10px] text-muted-foreground truncate" title={userEmail}>
+          <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/70 flex items-center gap-1.5">
+            <ArchiveIcon size={10} /> Archive
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onExportArchive}
+              className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
+              title="Export all conversations to a JSON file"
+            >
+              <Download size={10} /> Export
+            </button>
+            <label
+              className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+              title="Import a Jackie archive JSON file"
+            >
+              <Upload size={10} /> Import
+              <input
+                type="file"
+                accept="application/json,.json"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) onImportArchive(f);
+                  e.currentTarget.value = "";
+                }}
+              />
+            </label>
+          </div>
+          <div className="font-mono text-[10px] text-muted-foreground truncate pt-2 border-t border-border/50" title={userEmail}>
             {userEmail}
           </div>
           <div className="flex items-center gap-2">
@@ -614,7 +648,16 @@ const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [bgSettings, setBgSettings] = useState<NSSettings>(() => loadNeutronSettings());
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
-  const [selectedModel, setSelectedModel] = useState<JackieModelId>("google/gemini-2.5-pro");
+  const [selectedModel, setSelectedModel] = useState<JackieModelId>(
+    () => (getChatPreset().model as JackieModelId) || "google/gemini-2.5-pro"
+  );
+  const [presetModel, setPresetModel] = useState<string>(() => getChatPreset().model);
+
+  const saveCurrentAsPreset = useCallback(() => {
+    setChatPreset({ provider: "lovable", model: selectedModel });
+    setPresetModel(selectedModel);
+    toast.success("Default model saved for new chats.");
+  }, [selectedModel]);
   const [tags, setTags] = useState<TagType[]>([]);
   const [tagMap, setTagMap] = useState<Record<string, string[]>>({});
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
@@ -738,6 +781,29 @@ const Index = () => {
     setMessages([]);
     setChatHistory([]);
     setInput("");
+    // Apply saved preset model for every new chat.
+    const preset = getChatPreset();
+    setSelectedModel(preset.model as JackieModelId);
+  };
+
+  const handleExportArchive = async () => {
+    try {
+      const count = await downloadArchive();
+      toast.success(`Archive exported (${count} conversation${count === 1 ? "" : "s"}).`);
+    } catch (e: any) {
+      toast.error(e?.message || "Export failed.");
+    }
+  };
+
+  const handleImportArchive = async (file: File) => {
+    try {
+      toast.info("Importing archive…");
+      const { conversations: c, messages: m, skipped } = await importArchive(file);
+      toast.success(`Imported ${c} conversation${c === 1 ? "" : "s"}, ${m} message${m === 1 ? "" : "s"}${skipped ? ` (${skipped} skipped)` : ""}.`);
+      await loadConversations();
+    } catch (e: any) {
+      toast.error(e?.message || "Import failed.");
+    }
   };
 
   const handleDeleteConversation = async (id: string) => {
@@ -1224,6 +1290,8 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
         onCreateTag={handleCreateTag}
         onDeleteTag={handleDeleteTag}
         onToggleTag={handleToggleTag}
+        onExportArchive={handleExportArchive}
+        onImportArchive={handleImportArchive}
       />
 
       <main
@@ -1353,7 +1421,22 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
               )}
             </div>
             <div className="flex items-center justify-between mt-1.5 ml-5">
-              <div className="relative">
+              <div className="relative flex items-center gap-2">
+                <button
+                  onClick={saveCurrentAsPreset}
+                  className={`p-0.5 rounded-sm transition-colors ${
+                    presetModel === selectedModel
+                      ? "text-primary"
+                      : "text-muted-foreground/60 hover:text-primary"
+                  }`}
+                  title={
+                    presetModel === selectedModel
+                      ? "This model is your default for new chats"
+                      : "Pin as default model for new chats"
+                  }
+                >
+                  <Pin size={10} className={presetModel === selectedModel ? "fill-primary" : ""} />
+                </button>
                 <button
                   onClick={() => setModelMenuOpen((prev) => !prev)}
                   className="flex items-center gap-1 font-mono text-[10px] text-muted-foreground hover:text-foreground transition-colors"
