@@ -67,6 +67,8 @@ import {
 } from "@/lib/jackie-files";
 import AnimatedCanvas from "@/components/backgrounds/AnimatedCanvas";
 import NeutronBackgroundSettings, { loadNeutronSettings, type NeutronBackgroundSettings as NSSettings } from "@/components/backgrounds/NeutronBackgroundSettings";
+import { DraggableToolbar } from "@/components/DraggableToolbar";
+import { ScrollNav } from "@/components/ScrollNav";
 
 
 interface DisplayMessage {
