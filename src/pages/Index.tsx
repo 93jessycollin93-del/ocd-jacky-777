@@ -1349,6 +1349,7 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
           </div>
         )}
 
+        <ScrollNav targetRef={feedRef} />
         <div className="flex-1 overflow-y-auto" ref={feedRef}>
           <div className="max-w-[768px] p-4 space-y-6">
             {messages.length === 0 && (
