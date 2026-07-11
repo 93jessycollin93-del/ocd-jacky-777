@@ -34,6 +34,7 @@ import SentinelDashboard from "./pages/SentinelDashboard";
 import SentinelBoard from "./pages/SentinelBoard";
 import ApexHub from "./pages/ApexHub";
 import AIProviders from "./pages/AIProviders";
+import PodStation from "./pages/PodStation";
 const EruRouter = lazy(() => import("./eru/EruRouter"));
 const FloatingEditorNav = lazy(() => import("./eru/FloatingEditorNav"));
 const VisualizerLab = lazy(() => import("./eru/VisualizerLab"));
@@ -177,6 +178,7 @@ const App = () => (
               <Route path="/sentinel/board" element={<ProtectedRoute><SentinelBoard /></ProtectedRoute>} />
               <Route path="/apex" element={<ProtectedRoute><ApexHub /></ProtectedRoute>} />
               <Route path="/providers" element={<ProtectedRoute><AIProviders /></ProtectedRoute>} />
+              <Route path="/pods" element={<ProtectedRoute><PodStation /></ProtectedRoute>} />
               <Route
                 path="/eru/visualizers"
                 element={
