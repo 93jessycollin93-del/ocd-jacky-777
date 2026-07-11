@@ -436,6 +436,12 @@ const Sidebar = ({
             🏔 Apex Hub (placeholder)
           </a>
           <a
+            href="/pods"
+            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
+            title="eYe Pod Station — 24 compression pods with SHA-256 integrity"
+          >
+            🧊 eYe Pod Station
+          <a
             href="/eru/visualizers"
             className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
             title="Shared visualizer primitives — vibe-coding lab"
