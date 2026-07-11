@@ -1,0 +1,21 @@
+{
+  "name": "BotFarmActivityHistory",
+  "type": "object",
+  "properties": {
+    "actor_type": {
+      "type": "string",
+      "enum": ["bot", "squad", "farm", "system"]
+    },
+    "actor_id": { "type": "string" },
+    "event_type": { "type": "string" },
+    "summary": { "type": "string" },
+    "impact_score": { "type": "number", "default": 0 }
+  },
+  "required": ["actor_type", "event_type", "summary"],
+  "rls": {
+    "create": { "created_by": "{{user.email}}" },
+    "read": { "created_by": "{{user.email}}" },
+    "update": { "created_by": "{{user.email}}" },
+    "delete": { "created_by": "{{user.email}}" }
+  }
+}

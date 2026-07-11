@@ -1,0 +1,30 @@
+{
+  "name": "TrackTag",
+  "type": "object",
+  "properties": {
+    "track_id": {
+      "type": "string"
+    },
+    "tag_id": {
+      "type": "string"
+    },
+    "tag_name": {
+      "type": "string"
+    }
+  },
+  "required": ["track_id", "tag_id"],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

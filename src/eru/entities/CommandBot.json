@@ -1,0 +1,58 @@
+{
+  "name": "CommandBot",
+  "type": "object",
+  "properties": {
+    "display_name": { "type": "string" },
+    "bot_code": { "type": "string" },
+    "role_type": {
+      "type": "string",
+      "enum": ["leader", "commander", "squad", "security"]
+    },
+    "squad_name": {
+      "type": "string",
+      "enum": ["leader", "alpha", "beta", "charlie", "delta", "security", "unassigned"]
+    },
+    "commander_code": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["idle", "active", "stable", "caution", "critical", "offline"],
+      "default": "idle"
+    },
+    "specialty": { "type": "string" },
+    "confidence_score": { "type": "number", "default": 82 },
+    "integrity_score": { "type": "number", "default": 90 },
+    "readiness_score": { "type": "number", "default": 88 },
+    "load_score": { "type": "number", "default": 20 },
+    "risk_level": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"],
+      "default": "low"
+    },
+    "operational_stability": { "type": "number", "default": 90 },
+    "active_mission_id": { "type": "string" },
+    "task_count": { "type": "number", "default": 0 },
+    "notes": { "type": "string" },
+    "recent_outputs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "risk_flags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "communication_log": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    }
+  },
+  "required": ["display_name", "bot_code", "role_type", "squad_name"],
+  "rls": {
+    "create": { "created_by": "{{user.email}}" },
+    "read": { "created_by": "{{user.email}}" },
+    "update": { "created_by": "{{user.email}}" },
+    "delete": { "created_by": "{{user.email}}" }
+  }
+}

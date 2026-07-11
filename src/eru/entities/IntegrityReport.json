@@ -1,0 +1,20 @@
+{
+  "name": "IntegrityReport",
+  "type": "object",
+  "properties": {
+    "mission_id": { "type": "string" },
+    "bot_code": { "type": "string" },
+    "squad_name": { "type": "string" },
+    "anomaly_type": { "type": "string" },
+    "integrity_score": { "type": "number", "default": 90 },
+    "stability_score": { "type": "number", "default": 88 },
+    "details": { "type": "string" }
+  },
+  "required": ["details"],
+  "rls": {
+    "create": { "created_by": "{{user.email}}" },
+    "read": { "created_by": "{{user.email}}" },
+    "update": { "created_by": "{{user.email}}" },
+    "delete": { "created_by": "{{user.email}}" }
+  }
+}

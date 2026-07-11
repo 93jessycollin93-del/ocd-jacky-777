@@ -1,0 +1,33 @@
+{
+  "name": "PlayHistory",
+  "type": "object",
+  "properties": {
+    "track_id": {
+      "type": "string"
+    },
+    "track_title": {
+      "type": "string"
+    },
+    "played_at": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    }
+  },
+  "required": ["track_id"],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

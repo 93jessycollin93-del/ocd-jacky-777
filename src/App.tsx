@@ -1,12 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, useSearchParams } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useSearchParams, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { I18nProvider } from "@/game/i18n";
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Sandbox from "./pages/Sandbox";
@@ -28,25 +28,34 @@ import GunitUsers from "./pages/gunit/GunitUsers";
 import GunitApiKeys from "./pages/gunit/GunitApiKeys";
 import SphereCommand from "./pages/SphereCommand";
 import JackieControl from "./pages/JackieControl";
+import VeilOps from "./pages/VeilOps";
+import MarvelsRace from "./pages/MarvelsRace";
+import SentinelDashboard from "./pages/SentinelDashboard";
+import SentinelBoard from "./pages/SentinelBoard";
+import ApexHub from "./pages/ApexHub";
+import AIProviders from "./pages/AIProviders";
+import PodStation from "./pages/PodStation";
+const EruRouter = lazy(() => import("./eru/EruRouter"));
+const FloatingEditorNav = lazy(() => import("./eru/FloatingEditorNav"));
+const VisualizerLab = lazy(() => import("./eru/VisualizerLab"));
 
 const queryClient = new QueryClient();
 
-const isSandbox = () => sessionStorage.getItem("sandbox") === "true";
-
 const SandboxCatcher = ({ children }: { children: React.ReactNode }) => {
   const [params] = useSearchParams();
+  const location = useLocation();
   useEffect(() => {
-    if (params.get("sandbox") === "true") {
+    // Sandbox flag is only honoured on the dedicated /sandbox route — it never
+    // grants access to other protected routes or AI edge functions.
+    if (params.get("sandbox") === "true" && location.pathname.startsWith("/sandbox")) {
       sessionStorage.setItem("sandbox", "true");
     }
-  }, [params]);
+  }, [params, location.pathname]);
   return <>{children}</>;
 };
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
-
-  if (isSandbox()) return <>{children}</>;
 
   if (loading) {
     return (
@@ -156,8 +165,39 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/veilops"
+                element={
+                  <ProtectedRoute>
+                    <VeilOps />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/marvels" element={<ProtectedRoute><MarvelsRace /></ProtectedRoute>} />
+              <Route path="/sentinel" element={<ProtectedRoute><SentinelDashboard /></ProtectedRoute>} />
+              <Route path="/sentinel/board" element={<ProtectedRoute><SentinelBoard /></ProtectedRoute>} />
+              <Route path="/apex" element={<ProtectedRoute><ApexHub /></ProtectedRoute>} />
+              <Route path="/providers" element={<ProtectedRoute><AIProviders /></ProtectedRoute>} />
+              <Route path="/pods" element={<ProtectedRoute><PodStation /></ProtectedRoute>} />
+              <Route
+                path="/eru/visualizers"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={null}><VisualizerLab /></Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/eru/*"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={null}><EruRouter /></Suspense>
+                  </ProtectedRoute>
+                }
+              />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <Suspense fallback={null}><FloatingEditorNav /></Suspense>
             </SandboxCatcher>
           </BrowserRouter>
           </TooltipProvider>

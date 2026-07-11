@@ -14,6 +14,8 @@ import {
   getConversationModel,
   type Conversation,
 } from "@/lib/jackie-db";
+import { getChatPreset, setChatPreset } from "@/lib/jackie-preset";
+import { downloadArchive, importArchive } from "@/lib/jackie-archive";
 import {
   uploadAttachment,
   getMessageAttachments,
@@ -28,7 +30,7 @@ import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { AttachmentDisplay } from "@/components/AttachmentDisplay";
 import { toast } from "sonner";
 import { getGameStateContext } from "@/lib/game-state-context";
-import { Plus, Trash2, MessageSquare, LogOut, Send, Menu, X, Sun, Moon, Volume2, VolumeX, Download, Mic, ChevronDown, Zap, DollarSign, Search, Tag, XCircle } from "lucide-react";
+import { Plus, Trash2, MessageSquare, LogOut, Send, Menu, X, Sun, Moon, Volume2, VolumeX, Download, Mic, ChevronDown, Zap, DollarSign, Search, Tag, XCircle, Pin, Upload, Archive as ArchiveIcon } from "lucide-react";
 import {
   listTags,
   createTag,
@@ -65,6 +67,8 @@ import {
 } from "@/lib/jackie-files";
 import AnimatedCanvas from "@/components/backgrounds/AnimatedCanvas";
 import NeutronBackgroundSettings, { loadNeutronSettings, type NeutronBackgroundSettings as NSSettings } from "@/components/backgrounds/NeutronBackgroundSettings";
+import { DraggableToolbar } from "@/components/DraggableToolbar";
+import { ScrollNav } from "@/components/ScrollNav";
 
 
 interface DisplayMessage {
@@ -99,6 +103,8 @@ const Sidebar = ({
   onCreateTag,
   onDeleteTag,
   onToggleTag,
+  onExportArchive,
+  onImportArchive,
 }: {
   conversations: Conversation[];
   activeId: string | null;
@@ -119,6 +125,8 @@ const Sidebar = ({
   onCreateTag: (name: string, color: string) => void;
   onDeleteTag: (id: string) => void;
   onToggleTag: (convId: string, tagId: string, has: boolean) => void;
+  onExportArchive: () => void;
+  onImportArchive: (file: File) => void;
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showNewTag, setShowNewTag] = useState(false);
@@ -399,6 +407,93 @@ const Sidebar = ({
           >
             👑 Emperors of the Last Kingdom ↗
           </a>
+          <a
+            href="/veilops"
+            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
+            title="VeilOps — factual threat intelligence reference (MITRE ATT&CK, CISA KEV, APT profiles)"
+          >
+            🛡️ VeilOps Threat Intel
+          </a>
+          <a
+            href="/sentinel"
+            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
+            title="RugDNA Sentinel — synthetic crypto-forensics reference dashboard"
+          >
+            🛰️ Sentinel · Crypto Forensics
+          </a>
+          <a
+            href="/marvels"
+            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
+            title="Microscopic Marvels — procedural cell-race simulation (virtual credits only)"
+          >
+            🧬 Microscopic Marvels Lab
+          </a>
+          <a
+            href="/apex"
+            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
+            title="Apex Intelligence Hub — reserved mount point"
+          >
+            🏔 Apex Hub (placeholder)
+          </a>
+          <a
+            href="/pods"
+            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
+            title="eYe Pod Station — 24 compression pods with SHA-256 integrity"
+          >
+            🧊 eYe Pod Station
+          </a>
+          <a
+            href="/eru/visualizers"
+            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
+            title="Shared visualizer primitives — vibe-coding lab"
+          >
+            🧬 Visualizer Lab
+          </a>
+          <a
+            href="/eru/ailab"
+            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
+            title="Eru AI Lab"
+          >
+            🧪 Eru · AI Lab
+          </a>
+          <a
+            href="/eru/admin/security"
+            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
+            title="Eru Security Command Center"
+          >
+            🛰 Eru · Security
+          </a>
+          <a
+            href="/eru/bot-forge"
+            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
+            title="Eru Bot Forge"
+          >
+            🤖 Eru · Bot Forge
+          </a>
+          <a
+            href="/eru/bot-marketplace"
+            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
+            title="Eru Bot Marketplace"
+          >
+            🛍️ Eru · Bot Market
+          </a>
+          <a
+            href="/eru/eru-swarm-test"
+            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
+            title="Eru Swarm test harness"
+          >
+            🐝 Eru · Swarm
+          </a>
+          <a
+            href="/eru/eru-redteam-test"
+            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
+            title="Eru Red-team test harness"
+          >
+            ⚔️ Eru · Red Team
+          </a>
+          <div className="px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground/70">
+            Press ⌘K anywhere to jump to all 84 Eru modules.
+          </div>
           <div className="px-2 py-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
             Core
           </div>
@@ -410,7 +505,35 @@ const Sidebar = ({
         </div>
 
         <div className="p-4 border-t border-border space-y-2">
-          <div className="font-mono text-[10px] text-muted-foreground truncate" title={userEmail}>
+          <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/70 flex items-center gap-1.5">
+            <ArchiveIcon size={10} /> Archive
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onExportArchive}
+              className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
+              title="Export all conversations to a JSON file"
+            >
+              <Download size={10} /> Export
+            </button>
+            <label
+              className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+              title="Import a Jackie archive JSON file"
+            >
+              <Upload size={10} /> Import
+              <input
+                type="file"
+                accept="application/json,.json"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) onImportArchive(f);
+                  e.currentTarget.value = "";
+                }}
+              />
+            </label>
+          </div>
+          <div className="font-mono text-[10px] text-muted-foreground truncate pt-2 border-t border-border/50" title={userEmail}>
             {userEmail}
           </div>
           <div className="flex items-center gap-2">
@@ -534,7 +657,16 @@ const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [bgSettings, setBgSettings] = useState<NSSettings>(() => loadNeutronSettings());
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
-  const [selectedModel, setSelectedModel] = useState<JackieModelId>("google/gemini-2.5-pro");
+  const [selectedModel, setSelectedModel] = useState<JackieModelId>(
+    () => (getChatPreset().model as JackieModelId) || "google/gemini-2.5-pro"
+  );
+  const [presetModel, setPresetModel] = useState<string>(() => getChatPreset().model);
+
+  const saveCurrentAsPreset = useCallback(() => {
+    setChatPreset({ provider: "lovable", model: selectedModel });
+    setPresetModel(selectedModel);
+    toast.success("Default model saved for new chats.");
+  }, [selectedModel]);
   const [tags, setTags] = useState<TagType[]>([]);
   const [tagMap, setTagMap] = useState<Record<string, string[]>>({});
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
@@ -658,6 +790,29 @@ const Index = () => {
     setMessages([]);
     setChatHistory([]);
     setInput("");
+    // Apply saved preset model for every new chat.
+    const preset = getChatPreset();
+    setSelectedModel(preset.model as JackieModelId);
+  };
+
+  const handleExportArchive = async () => {
+    try {
+      const count = await downloadArchive();
+      toast.success(`Archive exported (${count} conversation${count === 1 ? "" : "s"}).`);
+    } catch (e: any) {
+      toast.error(e?.message || "Export failed.");
+    }
+  };
+
+  const handleImportArchive = async (file: File) => {
+    try {
+      toast.info("Importing archive…");
+      const { conversations: c, messages: m, skipped } = await importArchive(file);
+      toast.success(`Imported ${c} conversation${c === 1 ? "" : "s"}, ${m} message${m === 1 ? "" : "s"}${skipped ? ` (${skipped} skipped)` : ""}.`);
+      await loadConversations();
+    } catch (e: any) {
+      toast.error(e?.message || "Import failed.");
+    }
   };
 
   const handleDeleteConversation = async (id: string) => {
@@ -1144,6 +1299,8 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
         onCreateTag={handleCreateTag}
         onDeleteTag={handleDeleteTag}
         onToggleTag={handleToggleTag}
+        onExportArchive={handleExportArchive}
+        onImportArchive={handleImportArchive}
       />
 
       <main
@@ -1199,6 +1356,7 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
           </div>
         )}
 
+        <ScrollNav targetRef={feedRef} />
         <div className="flex-1 overflow-y-auto" ref={feedRef}>
           <div className="max-w-[768px] p-4 space-y-6">
             {messages.length === 0 && (
@@ -1272,63 +1430,83 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
                 </button>
               )}
             </div>
-            <div className="flex items-center justify-between mt-1.5 ml-5">
-              <div className="relative">
-                <button
-                  onClick={() => setModelMenuOpen((prev) => !prev)}
-                  className="flex items-center gap-1 font-mono text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {JACKIE_MODELS.find((m) => m.id === selectedModel)?.label ?? "Model"}
-                  <ChevronDown size={10} />
-                </button>
-                {modelMenuOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setModelMenuOpen(false)} />
-                    <div className="absolute bottom-full left-0 mb-1 z-50 bg-popover border border-border rounded-sm shadow-lg py-1 min-w-[260px]">
-                      {JACKIE_MODELS.map((m) => {
-                        const costLabel = ["$", "$$", "$$$"][m.cost - 1];
-                        const speedDots = Array.from({ length: 3 }, (_, i) => i < m.speed);
-                        return (
-                          <button
-                            key={m.id}
-                            onClick={() => {
-                              changeModel(m.id);
-                              setModelMenuOpen(false);
-                            }}
-                            className={`w-full text-left px-3 py-2 font-mono text-xs hover:bg-secondary transition-colors flex items-center gap-3 ${
-                              selectedModel === m.id ? "text-primary bg-secondary/50" : "text-popover-foreground"
-                            }`}
-                          >
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold">{m.label}</span>
-                                {selectedModel === m.id && <span className="text-[9px] text-primary">●</span>}
-                              </div>
-                              <span className="text-[10px] text-muted-foreground">{m.description}</span>
-                            </div>
-                            <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
-                              <span className={`text-[10px] font-semibold ${m.cost === 1 ? "text-green-500" : m.cost === 2 ? "text-yellow-500" : "text-orange-500"}`}>
-                                {costLabel}
-                              </span>
-                              <div className="flex gap-0.5" title={`Speed: ${m.speed}/3`}>
-                                {speedDots.map((active, i) => (
-                                  <Zap key={i} size={8} className={active ? "text-primary fill-primary" : "text-muted-foreground/30"} />
-                                ))}
-                              </div>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </>
-                )}
-              </div>
-              <span className="font-mono text-[10px] text-muted-foreground">
-                Enter to send · Shift+Enter for new line
-              </span>
-            </div>
           </div>
         </div>
+
+        {/* Floating draggable toolbar — hold grip 1s to move */}
+        <DraggableToolbar>
+          <button
+            onClick={saveCurrentAsPreset}
+            className={`p-1 rounded-full transition-colors ${
+              presetModel === selectedModel ? "text-primary" : "text-muted-foreground hover:text-primary"
+            }`}
+            title={presetModel === selectedModel ? "Default model for new chats" : "Pin as default"}
+          >
+            <Pin size={12} className={presetModel === selectedModel ? "fill-primary" : ""} />
+          </button>
+          <div className="relative">
+            <button
+              onClick={() => setModelMenuOpen((prev) => !prev)}
+              className="flex items-center gap-1 px-2 py-1 rounded-full font-mono text-[10px] text-foreground hover:bg-secondary transition-colors"
+            >
+              {JACKIE_MODELS.find((m) => m.id === selectedModel)?.label ?? "Model"}
+              <ChevronDown size={10} />
+            </button>
+            {modelMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setModelMenuOpen(false)} />
+                <div className="absolute bottom-full right-0 mb-2 z-50 bg-popover border border-border rounded-md shadow-lg py-1 min-w-[260px]">
+                  {JACKIE_MODELS.map((m) => {
+                    const costLabel = ["$", "$$", "$$$"][m.cost - 1];
+                    const speedDots = Array.from({ length: 3 }, (_, i) => i < m.speed);
+                    return (
+                      <button
+                        key={m.id}
+                        onClick={() => { changeModel(m.id); setModelMenuOpen(false); }}
+                        className={`w-full text-left px-3 py-2 font-mono text-xs hover:bg-secondary transition-colors flex items-center gap-3 ${
+                          selectedModel === m.id ? "text-primary bg-secondary/50" : "text-popover-foreground"
+                        }`}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">{m.label}</span>
+                            {selectedModel === m.id && <span className="text-[9px] text-primary">●</span>}
+                          </div>
+                          <span className="text-[10px] text-muted-foreground">{m.description}</span>
+                        </div>
+                        <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                          <span className={`text-[10px] font-semibold ${m.cost === 1 ? "text-green-500" : m.cost === 2 ? "text-yellow-500" : "text-orange-500"}`}>
+                            {costLabel}
+                          </span>
+                          <div className="flex gap-0.5" title={`Speed: ${m.speed}/3`}>
+                            {speedDots.map((active, i) => (
+                              <Zap key={i} size={8} className={active ? "text-primary fill-primary" : "text-muted-foreground/30"} />
+                            ))}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                  <a
+                    href="/providers"
+                    className="block px-3 py-2 border-t border-border font-mono text-[10px] text-muted-foreground hover:text-primary hover:bg-secondary transition-colors"
+                  >
+                    → More providers (Groq, OpenRouter, Ollama…)
+                  </a>
+                </div>
+              </>
+            )}
+          </div>
+          {messages.length > 0 && (
+            <button
+              onClick={exportChat}
+              className="p-1 rounded-full text-muted-foreground hover:text-primary transition-colors"
+              title="Export chat"
+            >
+              <Download size={12} />
+            </button>
+          )}
+        </DraggableToolbar>
       </main>
 
       <style>{`

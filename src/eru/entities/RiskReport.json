@@ -1,0 +1,29 @@
+{
+  "name": "RiskReport",
+  "type": "object",
+  "properties": {
+    "mission_id": { "type": "string" },
+    "reported_by": { "type": "string" },
+    "target_bot_code": { "type": "string" },
+    "target_squad": { "type": "string" },
+    "risk_level": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"],
+      "default": "low"
+    },
+    "summary": { "type": "string" },
+    "recommended_action": { "type": "string" },
+    "recommendation_priority": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"],
+      "default": "medium"
+    }
+  },
+  "required": ["summary"],
+  "rls": {
+    "create": { "created_by": "{{user.email}}" },
+    "read": { "created_by": "{{user.email}}" },
+    "update": { "created_by": "{{user.email}}" },
+    "delete": { "created_by": "{{user.email}}" }
+  }
+}

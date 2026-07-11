@@ -1,0 +1,28 @@
+{
+  "name": "BotFarmOutputLog",
+  "type": "object",
+  "properties": {
+    "bot_id": { "type": "string" },
+    "task_id": { "type": "string" },
+    "mission_id": { "type": "string" },
+    "squad_id": { "type": "string" },
+    "output_type": {
+      "type": "string",
+      "enum": ["collected_data", "processed_intelligence", "summary", "alert", "report", "verified_finding", "mission_progress", "system_efficiency", "resource_gain"]
+    },
+    "assignment_quality": { "type": "number", "default": 70 },
+    "specialization_fit": { "type": "number", "default": 70 },
+    "load_penalty": { "type": "number", "default": 0 },
+    "coordination_penalty": { "type": "number", "default": 0 },
+    "quality_score": { "type": "number", "default": 75 },
+    "value_score": { "type": "number", "default": 50 },
+    "summary": { "type": "string" }
+  },
+  "required": ["output_type", "summary"],
+  "rls": {
+    "create": { "created_by": "{{user.email}}" },
+    "read": { "created_by": "{{user.email}}" },
+    "update": { "created_by": "{{user.email}}" },
+    "delete": { "created_by": "{{user.email}}" }
+  }
+}

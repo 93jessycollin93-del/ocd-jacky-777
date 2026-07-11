@@ -1,0 +1,28 @@
+{
+  "name": "CommandCommunication",
+  "type": "object",
+  "properties": {
+    "mission_id": { "type": "string" },
+    "from_bot_code": { "type": "string" },
+    "to_bot_code": { "type": "string" },
+    "squad_name": { "type": "string" },
+    "severity": {
+      "type": "string",
+      "enum": ["info", "caution", "warning", "critical"],
+      "default": "info"
+    },
+    "message": { "type": "string" },
+    "message_type": {
+      "type": "string",
+      "enum": ["directive", "status", "risk", "recommendation", "escalation", "summary"],
+      "default": "status"
+    }
+  },
+  "required": ["message"],
+  "rls": {
+    "create": { "created_by": "{{user.email}}" },
+    "read": { "created_by": "{{user.email}}" },
+    "update": { "created_by": "{{user.email}}" },
+    "delete": { "created_by": "{{user.email}}" }
+  }
+}

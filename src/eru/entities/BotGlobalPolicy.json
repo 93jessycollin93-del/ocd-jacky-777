@@ -1,0 +1,55 @@
+{
+  "name": "BotGlobalPolicy",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Policy name"
+    },
+    "shared_instructions": {
+      "type": "string",
+      "description": "Global instructions applied to all bots"
+    },
+    "safety_guardrails": {
+      "type": "string",
+      "description": "Safety rules and forbidden behaviors"
+    },
+    "max_response_length": {
+      "type": "number",
+      "default": 1200,
+      "description": "Default response length guidance"
+    },
+    "require_caution_for_security": {
+      "type": "boolean",
+      "default": true,
+      "description": "Require extra caution for security-sensitive tasks"
+    },
+    "require_human_review": {
+      "type": "boolean",
+      "default": false,
+      "description": "Advise human review before risky actions"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this global policy is active"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

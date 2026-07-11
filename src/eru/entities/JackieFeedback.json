@@ -1,0 +1,44 @@
+{
+  "name": "JackieFeedback",
+  "type": "object",
+  "properties": {
+    "category": {
+      "type": "string",
+      "enum": ["performance", "suggestion", "bug", "content"],
+      "default": "suggestion"
+    },
+    "rating": {
+      "type": "number",
+      "default": 5
+    },
+    "title": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "context": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["new", "reviewed", "planned"],
+      "default": "new"
+    }
+  },
+  "required": ["category", "title", "message"],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}
