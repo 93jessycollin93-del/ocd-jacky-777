@@ -441,6 +441,7 @@ const Sidebar = ({
             title="eYe Pod Station — 24 compression pods with SHA-256 integrity"
           >
             🧊 eYe Pod Station
+          </a>
           <a
             href="/eru/visualizers"
             className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
