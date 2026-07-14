@@ -394,3 +394,89 @@ describe("Cross-file consistency of the resonance doctrine", () => {
     expect(resonanceModel.length).toBeGreaterThan(0);
   });
 });
+
+describe("Resonance doctrine - structural integrity and regression guards", () => {
+  let coreIdentity: string;
+  let resonanceModel: string;
+  let systemPrompt: string;
+
+  beforeAll(() => {
+    coreIdentity = readFileSync(CORE_IDENTITY_PATH, "utf-8");
+    resonanceModel = readFileSync(RESONANCE_MODEL_PATH, "utf-8");
+    systemPrompt = readFileSync(SYSTEM_PROMPT_PATH, "utf-8");
+  });
+
+  it("every council table row has exactly three well-formed columns", () => {
+    const rows = extractTableRows(resonanceModel, "| Seat | Lens | Serves |");
+    expect(rows.length).toBe(11);
+    for (const row of rows) {
+      expect(row).toHaveLength(3);
+      for (const cell of row) {
+        expect(cell.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("never lists Jackie herself as a council seat (she is the core voice, not a supporter)", () => {
+    const rows = extractTableRows(resonanceModel, "| Seat | Lens | Serves |");
+    const seatNames = rows.map((row) => row[0]);
+    expect(seatNames).not.toContain("Jackie");
+    expect(seatNames.some((name) => /jackie/i.test(name))).toBe(false);
+  });
+
+  it("does not duplicate the 'Resonance orientation' heading in CORE_IDENTITY.md", () => {
+    const matches = coreIdentity.match(/^## Resonance orientation$/gm) ?? [];
+    expect(matches).toHaveLength(1);
+  });
+
+  it("does not duplicate any top-level section heading in RESONANCE_MODEL.md", () => {
+    const headings = resonanceModel.match(/^## .+$/gm) ?? [];
+    expect(headings.length).toBeGreaterThan(0);
+    expect(new Set(headings).size).toBe(headings.length);
+  });
+
+  it("defines exactly three numbered gate subsections in RESONANCE_MODEL.md", () => {
+    const gateHeadings = resonanceModel.match(/^### \d+\. .+$/gm) ?? [];
+    expect(gateHeadings).toHaveLength(3);
+  });
+
+  it("lists exactly three gate bullets in system_prompt.md, immediately after the gate intro", () => {
+    const introIdx = systemPrompt.indexOf("Before you speak, your thought must pass three gates:");
+    expect(introIdx).toBeGreaterThan(-1);
+
+    const afterIntro = systemPrompt.slice(introIdx).split("\n").filter((l) => l.trim().length > 0);
+    // afterIntro[0] is the intro sentence itself; the next three non-empty lines are the gate bullets.
+    const bulletLines = afterIntro.slice(1, 4);
+    expect(bulletLines).toHaveLength(3);
+    for (const line of bulletLines) {
+      expect(line.trim().startsWith("- ")).toBe(true);
+    }
+    expect(bulletLines[0]).toContain("Coherence:");
+    expect(bulletLines[1]).toContain("Gravity:");
+    expect(bulletLines[2]).toContain("Humility:");
+
+    // The line directly after the three bullets must not itself be a fourth gate bullet.
+    const fourthLine = afterIntro[4] ?? "";
+    expect(fourthLine.trim().startsWith("- ")).toBe(false);
+  });
+
+  it("lists exactly three gate bullets in CORE_IDENTITY.md's Resonance orientation section", () => {
+    const sectionStart = coreIdentity.indexOf("## Resonance orientation");
+    const sectionEnd = coreIdentity.indexOf("## Long-term goal");
+    const section = coreIdentity.slice(sectionStart, sectionEnd);
+
+    const gateBullets = section.match(/^- \*\*.+\*\* —.+$/gm) ?? [];
+    expect(gateBullets).toHaveLength(3);
+  });
+
+  it("keeps the reloop cap consistent at three (not two or four) across doctrine and prompt", () => {
+    expect(resonanceModel).not.toMatch(/(two|four) loops/i);
+    expect(systemPrompt).not.toMatch(/(two|four) loops/i);
+    expect(resonanceModel).not.toContain("Maximum 3 loops");
+  });
+
+  it("does not accidentally describe the council as fewer than ten seats anywhere", () => {
+    expect(coreIdentity).not.toMatch(/\b(five|six|seven|eight|nine)\s+at minimum\b/i);
+    expect(systemPrompt).not.toMatch(/\b(five|six|seven|eight|nine)\s+at minimum\b/i);
+  });
+});
