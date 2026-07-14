@@ -43,7 +43,7 @@ describe("Jackie/CORE_IDENTITY.md - Resonance orientation section", () => {
   let content: string;
 
   beforeAll(() => {
-    content = readFileSync(CORE_IDENTITY_PATH, "utf-8");
+    content = existsSync(CORE_IDENTITY_PATH) ? readFileSync(CORE_IDENTITY_PATH, "utf-8") : "";
   });
 
   it("exists and is readable", () => {
@@ -108,7 +108,7 @@ describe("Jackie/RESONANCE_MODEL.md - doctrine file", () => {
   let content: string;
 
   beforeAll(() => {
-    content = readFileSync(RESONANCE_MODEL_PATH, "utf-8");
+    content = existsSync(RESONANCE_MODEL_PATH) ? readFileSync(RESONANCE_MODEL_PATH, "utf-8") : "";
   });
 
   it("exists as a new top-level doctrine file", () => {
@@ -282,7 +282,7 @@ describe("Jackie/prompts/system_prompt.md - resonance additions", () => {
   let content: string;
 
   beforeAll(() => {
-    content = readFileSync(SYSTEM_PROMPT_PATH, "utf-8");
+    content = existsSync(SYSTEM_PROMPT_PATH) ? readFileSync(SYSTEM_PROMPT_PATH, "utf-8") : "";
   });
 
   it("exists and is readable", () => {
@@ -350,9 +350,9 @@ describe("Cross-file consistency of the resonance doctrine", () => {
   let systemPrompt: string;
 
   beforeAll(() => {
-    coreIdentity = readFileSync(CORE_IDENTITY_PATH, "utf-8");
-    resonanceModel = readFileSync(RESONANCE_MODEL_PATH, "utf-8");
-    systemPrompt = readFileSync(SYSTEM_PROMPT_PATH, "utf-8");
+    coreIdentity = existsSync(CORE_IDENTITY_PATH) ? readFileSync(CORE_IDENTITY_PATH, "utf-8") : "";
+    resonanceModel = existsSync(RESONANCE_MODEL_PATH) ? readFileSync(RESONANCE_MODEL_PATH, "utf-8") : "";
+    systemPrompt = existsSync(SYSTEM_PROMPT_PATH) ? readFileSync(SYSTEM_PROMPT_PATH, "utf-8") : "";
   });
 
   it("uses the same three gate names in every file that defines them", () => {
