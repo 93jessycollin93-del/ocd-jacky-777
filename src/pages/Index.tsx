@@ -30,7 +30,7 @@ import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { AttachmentDisplay } from "@/components/AttachmentDisplay";
 import { toast } from "sonner";
 import { getGameStateContext } from "@/lib/game-state-context";
-import { Plus, Trash2, MessageSquare, LogOut, Send, Menu, X, Sun, Moon, Volume2, VolumeX, Download, Mic, ChevronDown, Zap, DollarSign, Search, Tag, XCircle, Pin, Upload, Archive as ArchiveIcon } from "lucide-react";
+import { Plus, Trash2, MessageSquare, LogOut, Send, Menu, X, Sun, Moon, Volume2, VolumeX, Download, Mic, ChevronDown, Zap, DollarSign, Search, Tag, XCircle, Pin, Upload, Archive as ArchiveIcon, Cpu } from "lucide-react";
 import {
   listTags,
   createTag,
@@ -67,7 +67,8 @@ import {
 } from "@/lib/jackie-files";
 import AnimatedCanvas from "@/components/backgrounds/AnimatedCanvas";
 import NeutronBackgroundSettings, { loadNeutronSettings, type NeutronBackgroundSettings as NSSettings } from "@/components/backgrounds/NeutronBackgroundSettings";
-import { DraggableToolbar } from "@/components/DraggableToolbar";
+import { FloatingWidget } from "@/components/widgets/WidgetDock";
+import { SidebarNav } from "@/components/SidebarNav";
 import { ScrollNav } from "@/components/ScrollNav";
 
 
@@ -365,132 +366,7 @@ const Sidebar = ({
         </div>
 
         <div className="p-2 border-t border-border space-y-0.5">
-          <a href="/play" className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors">
-            ⚔️ Play Game
-          </a>
-          <a href="/bots" className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors">
-            🤖 Bot Foundry
-          </a>
-          <a href="/swarm" className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors">
-            🕸️ Bot Swarm
-          </a>
-          <a href="/control" className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors">
-            🛰️ Control
-          </a>
-          <a href="/keys" className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors">
-            🔑 API Key Vault
-          </a>
-          <a
-            href="https://dragon-chaos-wars.lovable.app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
-            title="Realm Accord — strategy game"
-          >
-            🐉 Realm Accord ↗
-          </a>
-          <a
-            href="https://jadelounge.lovable.app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
-            title="Horizon Network — social network"
-          >
-            🌐 Horizon Network ↗
-          </a>
-          <a
-            href="https://chaos-dragon-emperor.lovable.app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
-            title="Emperors of the Last Kingdom — fantasy strategy"
-          >
-            👑 Emperors of the Last Kingdom ↗
-          </a>
-          <a
-            href="/veilops"
-            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
-            title="VeilOps — factual threat intelligence reference (MITRE ATT&CK, CISA KEV, APT profiles)"
-          >
-            🛡️ VeilOps Threat Intel
-          </a>
-          <a
-            href="/sentinel"
-            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
-            title="RugDNA Sentinel — synthetic crypto-forensics reference dashboard"
-          >
-            🛰️ Sentinel · Crypto Forensics
-          </a>
-          <a
-            href="/marvels"
-            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
-            title="Microscopic Marvels — procedural cell-race simulation (virtual credits only)"
-          >
-            🧬 Microscopic Marvels Lab
-          </a>
-          <a
-            href="/apex"
-            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
-            title="Apex Intelligence Hub — reserved mount point"
-          >
-            🏔 Apex Hub (placeholder)
-          </a>
-          <a
-            href="/pods"
-            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
-            title="eYe Pod Station — 24 compression pods with SHA-256 integrity"
-          >
-            🧊 eYe Pod Station
-          </a>
-          <a
-            href="/eru/visualizers"
-            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
-            title="Shared visualizer primitives — vibe-coding lab"
-          >
-            🧬 Visualizer Lab
-          </a>
-          <a
-            href="/eru/ailab"
-            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
-            title="Eru AI Lab"
-          >
-            🧪 Eru · AI Lab
-          </a>
-          <a
-            href="/eru/admin/security"
-            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
-            title="Eru Security Command Center"
-          >
-            🛰 Eru · Security
-          </a>
-          <a
-            href="/eru/bot-forge"
-            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
-            title="Eru Bot Forge"
-          >
-            🤖 Eru · Bot Forge
-          </a>
-          <a
-            href="/eru/bot-marketplace"
-            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
-            title="Eru Bot Marketplace"
-          >
-            🛍️ Eru · Bot Market
-          </a>
-          <a
-            href="/eru/eru-swarm-test"
-            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
-            title="Eru Swarm test harness"
-          >
-            🐝 Eru · Swarm
-          </a>
-          <a
-            href="/eru/eru-redteam-test"
-            className="flex items-center gap-2 px-2 py-2 font-mono text-xs text-primary hover:bg-secondary/50 rounded-sm transition-colors"
-            title="Eru Red-team test harness"
-          >
-            ⚔️ Eru · Red Team
-          </a>
+          <SidebarNav />
           <div className="px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground/70">
             Press ⌘K anywhere to jump to all 84 Eru modules.
           </div>
@@ -696,6 +572,14 @@ const Index = () => {
   useEffect(() => {
     loadConversations(true);
     loadTags();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Never leave the rate-limit countdown running after unmount.
+  useEffect(() => {
+    return () => {
+      if (cooldownRef.current) clearInterval(cooldownRef.current);
+    };
   }, []);
 
   const handleCreateTag = async (name: string, color: string) => {
@@ -960,7 +844,7 @@ Provide your assessment in this structure:
 Keep it concise but thorough. No hype, no false alarm — just truth.`;
 
           const res = await fetch(
-            `https://rkwhhbxgjdpehfuxsult.supabase.co/functions/v1/jackie-chat`,
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/jackie-chat`,
             {
               method: 'POST',
               headers: {
@@ -1433,8 +1317,13 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
           </div>
         </div>
 
-        {/* Floating draggable toolbar — hold grip 1s to move */}
-        <DraggableToolbar>
+        {/* Floating model toolbar — hold grip 1s to move, chevron docks it */}
+        <FloatingWidget
+          id="model"
+          label="Model"
+          icon={<Cpu size={14} />}
+          defaultPos={{ x: window.innerWidth - 320, y: window.innerHeight - 180 }}
+        >
           <button
             onClick={saveCurrentAsPreset}
             className={`p-1 rounded-full transition-colors ${
@@ -1506,7 +1395,7 @@ Keep it concise but thorough. No hype, no false alarm — just truth.`;
               <Download size={12} />
             </button>
           )}
-        </DraggableToolbar>
+        </FloatingWidget>
       </main>
 
       <style>{`

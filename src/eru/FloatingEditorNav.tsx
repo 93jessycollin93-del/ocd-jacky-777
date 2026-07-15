@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Command, Code2, Search, X, Sparkles, ChevronUp } from 'lucide-react';
+import { FloatingWidget } from '@/components/widgets/WidgetDock';
 import { ERU_ROUTES } from './routes.generated';
 
 const JACKIE_ROUTES: { path: string; label: string }[] = [
@@ -70,17 +71,24 @@ export default function FloatingEditorNav() {
 
   return (
     <>
-      {/* Launcher */}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-5 right-5 z-[60] flex h-12 items-center gap-2 rounded-full border border-border bg-background/80 px-4 text-sm font-medium shadow-lg backdrop-blur transition hover:bg-accent"
-        title="Open command dock (Ctrl+K)"
+      {/* Launcher — movable (hold grip 1s) and collapsible into the dock bar */}
+      <FloatingWidget
+        id="command-dock"
+        label="Dock"
+        icon={<Command size={14} />}
+        defaultPos={{ x: window.innerWidth - 180, y: window.innerHeight - 110 }}
       >
-        <Command className="h-4 w-4 text-primary" />
-        <span className="hidden sm:inline">Dock</span>
-        <span className="hidden rounded bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground sm:inline">⌘K</span>
-      </button>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex items-center gap-2 rounded-full px-2 py-1 text-sm font-medium transition hover:bg-accent"
+          title="Open command dock (Ctrl+K)"
+        >
+          <Command className="h-4 w-4 text-primary" />
+          <span className="hidden sm:inline">Dock</span>
+          <span className="hidden rounded bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground sm:inline">⌘K</span>
+        </button>
+      </FloatingWidget>
 
       {/* Panel */}
       {open && (
