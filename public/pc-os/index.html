@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-zinc-950">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <link rel="manifest" href="/pc-os/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' width='100' height='100'><rect width='100%' height='100%' fill='black' /><text x='50' y='55' font-family='monospace' font-size='28' font-weight='bold' fill='white' text-anchor='middle' dominant-baseline='middle'>‾_o_‾</text></svg>">
+    <title>‾_o_‾</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        os: {
+                            bg: '#1e1e2e',
+                            surface: '#313244',
+                            text: '#cdd6f4',
+                            accent: '#89b4fa'
+                        }
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        input, textarea, select, button {
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
+        html, body {
+            height: 100%;
+            height: 100dvh;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overscroll-behavior: none;
+        }
+
+        body {
+            touch-action: none;
+            position: fixed;
+            overflow: hidden;
+        }
+
+        #root {
+            height: 100%;
+            height: 100dvh;
+            width: 100%;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+
+        /* Custom scrollbar for Mail app */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
+
+        /* iOS momentum scrolling */
+        .overflow-y-auto, .overflow-x-auto {
+            -webkit-overflow-scrolling: touch;
+        }
+    </style>
+
+<script type="importmap">
+{
+  "imports": {
+    "lucide-react": "https://esm.sh/lucide-react@^0.548.0",
+    "@google/genai": "https://esm.sh/@google/genai@^1.27.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.0/",
+    "react/": "https://esm.sh/react@^19.2.0/",
+    "react": "https://esm.sh/react@^19.2.0"
+  }
+}
+</script>
+  <script type="module" crossorigin src="/pc-os/assets/index-8EwCwmjM.js"></script>
+  <link rel="modulepreload" crossorigin href="/pc-os/assets/vendor-react-Dqsy2SAS.js">
+  <link rel="modulepreload" crossorigin href="/pc-os/assets/vendor-genai-D1jNAwLK.js">
+  <link rel="modulepreload" crossorigin href="/pc-os/assets/vendor-icons-bfHQBRY1.js">
+  <link rel="modulepreload" crossorigin href="/pc-os/assets/vendor-chess-0Nnf-7PG.js">
+  <link rel="modulepreload" crossorigin href="/pc-os/assets/vendor-firebase-gZ8J_qHm.js">
+  <link rel="stylesheet" crossorigin href="/pc-os/assets/index-C6syC2k9.css">
+</head>
+<body class="h-full overflow-hidden text-zinc-100 font-sans antialiased">
+    <div id="root" class="h-full w-full flex"></div>
+</body>
+</html>

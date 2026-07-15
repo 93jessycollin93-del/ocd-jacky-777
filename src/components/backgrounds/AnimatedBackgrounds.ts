@@ -415,8 +415,8 @@ function renderCircuitBoard(ctx: CanvasRenderingContext2D, w: number, h: number,
     ctx.stroke();
   }
   // Pads/nodes
-  ctx.fillStyle = `hsla(150, 100%, 70%, ${0.7 + Math.sin(t * 0.003 + i) * 0.3})`;
   for (let i = 0; i < 12; i++) {
+    ctx.fillStyle = `hsla(150, 100%, 70%, ${0.7 + Math.sin(t * 0.003 + i) * 0.3})`;
     const x = Math.random() * w;
     const y = Math.random() * h;
     ctx.beginPath();
