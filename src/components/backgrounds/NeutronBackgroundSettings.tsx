@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Sparkles, X } from 'lucide-react';
-import { FloatingWidget } from '@/components/widgets/WidgetDock';
 import type { BackgroundTheme } from './AnimatedBackgrounds';
 
 const STORAGE_KEY = 'jackie:neutron-bg-settings';
@@ -89,24 +88,18 @@ export default function NeutronBackgroundSettings({ value, onChange }: Props) {
     Math.abs(value.opacity - p.opacity) < 0.02 && Math.abs(value.glow - p.glow) < 0.05;
 
   return (
-    <FloatingWidget
-      id="background"
-      label="Backdrop"
-      icon={<Sparkles size={14} />}
-      defaultPos={{ x: window.innerWidth - 120, y: window.innerHeight - 60 }}
-    >
-      <div className="relative">
+    <>
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
         aria-label="Background settings"
-        className="h-7 w-7 rounded-full flex items-center justify-center text-foreground/80 hover:text-primary transition-colors"
+        className="fixed bottom-4 right-4 z-40 h-11 w-11 rounded-full border border-border/40 bg-card/80 backdrop-blur-md shadow-lg flex items-center justify-center text-foreground/80 hover:text-primary hover:border-primary/50 transition-colors"
       >
-        <Sparkles size={14} />
+        <Sparkles size={18} />
       </button>
 
       {open && (
-        <div className="absolute bottom-full right-0 mb-3 z-50 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-border/40 bg-card/95 backdrop-blur-xl shadow-2xl p-4 animate-fade-in">
+        <div className="fixed bottom-20 right-4 z-50 w-80 rounded-2xl border border-border/40 bg-card/95 backdrop-blur-xl shadow-2xl p-4 animate-fade-in">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Sparkles size={14} className="text-primary" />
@@ -192,8 +185,7 @@ export default function NeutronBackgroundSettings({ value, onChange }: Props) {
           </button>
         </div>
       )}
-      </div>
-    </FloatingWidget>
+    </>
   );
 }
 

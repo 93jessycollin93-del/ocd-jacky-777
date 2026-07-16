@@ -1,6 +1,5 @@
 import { useEffect, useState, type RefObject } from "react";
-import { ArrowUp, ArrowDown, ArrowUpDown, ChevronDown } from "lucide-react";
-import { useDockableWidget } from "@/components/widgets/WidgetDock";
+import { ArrowUp, ArrowDown } from "lucide-react";
 
 /**
  * Floating scroll-to-top / scroll-to-bottom buttons.
@@ -11,11 +10,6 @@ export function ScrollNav({ targetRef }: { targetRef: RefObject<HTMLElement> }) 
   const [visible, setVisible] = useState(false);
   const [canUp, setCanUp] = useState(false);
   const [canDown, setCanDown] = useState(false);
-  const { isDocked, dock } = useDockableWidget({
-    id: "scroll",
-    label: "Scroll",
-    icon: <ArrowUpDown size={14} />,
-  });
 
   useEffect(() => {
     const el = targetRef.current;
@@ -45,8 +39,6 @@ export function ScrollNav({ targetRef }: { targetRef: RefObject<HTMLElement> }) 
 
   const scrollTo = (top: number) => targetRef.current?.scrollTo({ top, behavior: "smooth" });
 
-  if (isDocked) return null;
-
   return (
     <div
       className={`pointer-events-none absolute right-3 bottom-24 z-30 flex flex-col gap-1.5 transition-opacity duration-300 ${
@@ -72,15 +64,6 @@ export function ScrollNav({ targetRef }: { targetRef: RefObject<HTMLElement> }) 
         aria-label="Scroll to bottom"
       >
         <ArrowDown size={14} />
-      </button>
-      <button
-        type="button"
-        onClick={dock}
-        className="pointer-events-auto w-8 h-5 rounded-full bg-popover/95 backdrop-blur-md border border-border shadow-md flex items-center justify-center text-muted-foreground hover:text-primary transition-all"
-        title="Collapse to dock"
-        aria-label="Collapse scroll buttons into the dock bar"
-      >
-        <ChevronDown size={10} />
       </button>
     </div>
   );

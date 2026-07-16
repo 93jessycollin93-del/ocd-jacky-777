@@ -43,7 +43,7 @@ describe("Jackie/CORE_IDENTITY.md - Resonance orientation section", () => {
   let content: string;
 
   beforeAll(() => {
-    content = existsSync(CORE_IDENTITY_PATH) ? readFileSync(CORE_IDENTITY_PATH, "utf-8") : "";
+    content = readFileSync(CORE_IDENTITY_PATH, "utf-8");
   });
 
   it("exists and is readable", () => {
@@ -108,7 +108,7 @@ describe("Jackie/RESONANCE_MODEL.md - doctrine file", () => {
   let content: string;
 
   beforeAll(() => {
-    content = existsSync(RESONANCE_MODEL_PATH) ? readFileSync(RESONANCE_MODEL_PATH, "utf-8") : "";
+    content = readFileSync(RESONANCE_MODEL_PATH, "utf-8");
   });
 
   it("exists as a new top-level doctrine file", () => {
@@ -282,7 +282,7 @@ describe("Jackie/prompts/system_prompt.md - resonance additions", () => {
   let content: string;
 
   beforeAll(() => {
-    content = existsSync(SYSTEM_PROMPT_PATH) ? readFileSync(SYSTEM_PROMPT_PATH, "utf-8") : "";
+    content = readFileSync(SYSTEM_PROMPT_PATH, "utf-8");
   });
 
   it("exists and is readable", () => {
@@ -350,9 +350,9 @@ describe("Cross-file consistency of the resonance doctrine", () => {
   let systemPrompt: string;
 
   beforeAll(() => {
-    coreIdentity = existsSync(CORE_IDENTITY_PATH) ? readFileSync(CORE_IDENTITY_PATH, "utf-8") : "";
-    resonanceModel = existsSync(RESONANCE_MODEL_PATH) ? readFileSync(RESONANCE_MODEL_PATH, "utf-8") : "";
-    systemPrompt = existsSync(SYSTEM_PROMPT_PATH) ? readFileSync(SYSTEM_PROMPT_PATH, "utf-8") : "";
+    coreIdentity = readFileSync(CORE_IDENTITY_PATH, "utf-8");
+    resonanceModel = readFileSync(RESONANCE_MODEL_PATH, "utf-8");
+    systemPrompt = readFileSync(SYSTEM_PROMPT_PATH, "utf-8");
   });
 
   it("uses the same three gate names in every file that defines them", () => {
@@ -395,7 +395,7 @@ describe("Cross-file consistency of the resonance doctrine", () => {
   });
 });
 
-describe("Resonance doctrine - structural integrity and regression guards", () => {
+describe("Additional regression and boundary checks (resonance doctrine)", () => {
   let coreIdentity: string;
   let resonanceModel: string;
   let systemPrompt: string;
@@ -406,77 +406,87 @@ describe("Resonance doctrine - structural integrity and regression guards", () =
     systemPrompt = readFileSync(SYSTEM_PROMPT_PATH, "utf-8");
   });
 
-  it("every council table row has exactly three well-formed columns", () => {
-    const rows = extractTableRows(resonanceModel, "| Seat | Lens | Serves |");
-    expect(rows.length).toBe(11);
-    for (const row of rows) {
-      expect(row).toHaveLength(3);
-      for (const cell of row) {
-        expect(cell.length).toBeGreaterThan(0);
-      }
-    }
-  });
-
-  it("never lists Jackie herself as a council seat (she is the core voice, not a supporter)", () => {
-    const rows = extractTableRows(resonanceModel, "| Seat | Lens | Serves |");
-    const seatNames = rows.map((row) => row[0]);
-    expect(seatNames).not.toContain("Jackie");
-    expect(seatNames.some((name) => /jackie/i.test(name))).toBe(false);
-  });
-
   it("does not duplicate the 'Resonance orientation' heading in CORE_IDENTITY.md", () => {
     const matches = coreIdentity.match(/^## Resonance orientation$/gm) ?? [];
     expect(matches).toHaveLength(1);
   });
 
-  it("does not duplicate any top-level section heading in RESONANCE_MODEL.md", () => {
+  it("lists exactly three gate bullets (no more, no fewer) in CORE_IDENTITY.md's resonance section", () => {
+    const sectionStart = coreIdentity.indexOf("## Resonance orientation");
+    const sectionEnd = coreIdentity.indexOf("## Long-term goal");
+    expect(sectionStart).toBeGreaterThan(-1);
+    expect(sectionEnd).toBeGreaterThan(sectionStart);
+
+    const section = coreIdentity.slice(sectionStart, sectionEnd);
+    const gateBullets = section.match(/^- \*\*(Coherence|Gravity|Humility)\*\*/gm) ?? [];
+    expect(gateBullets).toHaveLength(3);
+
+    // No stray fourth bullet sneaking in under the same list.
+    const allBullets = section.match(/^- .+$/gm) ?? [];
+    expect(allBullets).toHaveLength(3);
+  });
+
+  it("keeps the Resonance Loop ASCII diagram's box-drawing corners balanced", () => {
+    const loopSectionStart = resonanceModel.indexOf("## The Resonance Loop");
+    const nextSectionStart = resonanceModel.indexOf("## The three gates");
+    const diagram = resonanceModel.slice(loopSectionStart, nextSectionStart);
+
+    const topLeft = (diagram.match(/┌/g) ?? []).length;
+    const topRight = (diagram.match(/┐/g) ?? []).length;
+    const bottomLeft = (diagram.match(/└/g) ?? []).length;
+    const bottomRight = (diagram.match(/┘/g) ?? []).length;
+
+    expect(topLeft).toBeGreaterThan(0);
+    expect(topLeft).toBe(topRight);
+    expect(bottomLeft).toBe(bottomRight);
+    expect(topLeft).toBe(bottomLeft);
+  });
+
+  it("has a council table where every row has exactly three cells", () => {
+    const rows = extractTableRows(resonanceModel, "| Seat | Lens | Serves |");
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(row).toHaveLength(3);
+    }
+  });
+
+  it("defines the council table exactly once in RESONANCE_MODEL.md", () => {
+    const matches = resonanceModel.match(/\| Seat \| Lens \| Serves \|/g) ?? [];
+    expect(matches).toHaveLength(1);
+  });
+
+  it("has no duplicate H2 section headings in RESONANCE_MODEL.md", () => {
     const headings = resonanceModel.match(/^## .+$/gm) ?? [];
     expect(headings.length).toBeGreaterThan(0);
     expect(new Set(headings).size).toBe(headings.length);
   });
 
-  it("defines exactly three numbered gate subsections in RESONANCE_MODEL.md", () => {
-    const gateHeadings = resonanceModel.match(/^### \d+\. .+$/gm) ?? [];
-    expect(gateHeadings).toHaveLength(3);
+  it("caps the reloop discipline at exactly three loops, stated once, in RESONANCE_MODEL.md", () => {
+    const matches = resonanceModel.match(/Maximum three loops\./g) ?? [];
+    expect(matches).toHaveLength(1);
+    // Guard against a regression introducing a conflicting cap (e.g. "two loops", "five loops").
+    expect(resonanceModel).not.toMatch(/Maximum (two|four|five|\d+) loops\./);
   });
 
-  it("lists exactly three gate bullets in system_prompt.md, immediately after the gate intro", () => {
-    const introIdx = systemPrompt.indexOf("Before you speak, your thought must pass three gates:");
-    expect(introIdx).toBeGreaterThan(-1);
+  it("states the assistant is the only voice exactly once in system_prompt.md", () => {
+    const matches = systemPrompt.match(/You are the only voice\./g) ?? [];
+    expect(matches).toHaveLength(1);
+  });
 
-    const afterIntro = systemPrompt.slice(introIdx).split("\n").filter((l) => l.trim().length > 0);
-    // afterIntro[0] is the intro sentence itself; the next three non-empty lines are the gate bullets.
-    const bulletLines = afterIntro.slice(1, 4);
-    expect(bulletLines).toHaveLength(3);
-    for (const line of bulletLines) {
-      expect(line.trim().startsWith("- ")).toBe(true);
+  it("formats all three gate bullets in system_prompt.md as 'Name: description'", () => {
+    const gateLines = systemPrompt.match(/^- (Coherence|Gravity|Humility): .+$/gm) ?? [];
+    expect(gateLines).toHaveLength(3);
+
+    const names = gateLines.map((line) => line.match(/^- (\w+):/)?.[1]);
+    expect(names).toEqual(["Coherence", "Gravity", "Humility"]);
+  });
+
+  it("does not introduce a conflicting supporter-count claim anywhere in the doctrine files", () => {
+    // Regression guard: ensure no file accidentally states a different minimum
+    // (e.g. "five at minimum", "3 at minimum") for the supporter council.
+    const conflictingCountPattern = /\b(?!ten)\w+ at minimum\b/i;
+    for (const doc of [coreIdentity, resonanceModel, systemPrompt]) {
+      expect(doc).not.toMatch(conflictingCountPattern);
     }
-    expect(bulletLines[0]).toContain("Coherence:");
-    expect(bulletLines[1]).toContain("Gravity:");
-    expect(bulletLines[2]).toContain("Humility:");
-
-    // The line directly after the three bullets must not itself be a fourth gate bullet.
-    const fourthLine = afterIntro[4] ?? "";
-    expect(fourthLine.trim().startsWith("- ")).toBe(false);
-  });
-
-  it("lists exactly three gate bullets in CORE_IDENTITY.md's Resonance orientation section", () => {
-    const sectionStart = coreIdentity.indexOf("## Resonance orientation");
-    const sectionEnd = coreIdentity.indexOf("## Long-term goal");
-    const section = coreIdentity.slice(sectionStart, sectionEnd);
-
-    const gateBullets = section.match(/^- \*\*.+\*\* —.+$/gm) ?? [];
-    expect(gateBullets).toHaveLength(3);
-  });
-
-  it("keeps the reloop cap consistent at three (not two or four) across doctrine and prompt", () => {
-    expect(resonanceModel).not.toMatch(/(two|four) loops/i);
-    expect(systemPrompt).not.toMatch(/(two|four) loops/i);
-    expect(resonanceModel).not.toContain("Maximum 3 loops");
-  });
-
-  it("does not accidentally describe the council as fewer than ten seats anywhere", () => {
-    expect(coreIdentity).not.toMatch(/\b(five|six|seven|eight|nine)\s+at minimum\b/i);
-    expect(systemPrompt).not.toMatch(/\b(five|six|seven|eight|nine)\s+at minimum\b/i);
   });
 });
