@@ -35,7 +35,12 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/^\/~oauth/, /^\/api/, /^\/functions/],
+        // The embedded PC (/pc-os/) is its own SPA — never rewrite its
+        // navigations to Jackie's shell, and keep its ~3 MB build out of the
+        // precache (the runtime CacheFirst rule below covers it on first use).
+        navigateFallbackDenylist: [/^\/~oauth/, /^\/api/, /^\/functions/, /^\/pc-os/],
+        globIgnores: ["**/pc-os/**"],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         runtimeCaching: [
           {
             urlPattern: ({ request }) => request.mode === "navigate",

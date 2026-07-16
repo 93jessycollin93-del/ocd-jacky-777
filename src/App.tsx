@@ -12,32 +12,43 @@ import Auth from "./pages/Auth";
 import Sandbox from "./pages/Sandbox";
 import { SandboxBanner } from "./components/SandboxBanner";
 
-import Play from "./pages/Play";
-import TelegramShell from "./pages/TelegramShell";
 import NotFound from "./pages/NotFound";
-import Vault from "./pages/Vault";
-import BotFoundry from "./pages/BotFoundry";
-import BotSwarm from "./pages/BotSwarm";
-import ApiKeyManager from "./pages/ApiKeyManager";
-import GunitLayout from "./pages/gunit/GunitLayout";
-import GunitDashboard from "./pages/gunit/GunitDashboard";
-import GunitBotFactory from "./pages/gunit/GunitBotFactory";
-import GunitChat from "./pages/gunit/GunitChat";
-import GunitAgents from "./pages/gunit/GunitAgents";
-import GunitUsers from "./pages/gunit/GunitUsers";
-import GunitApiKeys from "./pages/gunit/GunitApiKeys";
-import SphereCommand from "./pages/SphereCommand";
-import JackieControl from "./pages/JackieControl";
-import VeilOps from "./pages/VeilOps";
-import MarvelsRace from "./pages/MarvelsRace";
-import SentinelDashboard from "./pages/SentinelDashboard";
-import SentinelBoard from "./pages/SentinelBoard";
-import ApexHub from "./pages/ApexHub";
-import AIProviders from "./pages/AIProviders";
-import PodStation from "./pages/PodStation";
+import { WidgetDockProvider, WidgetDockBar } from "./components/widgets/WidgetDock";
+
+// Heavy sections are lazy-loaded so the initial bundle stays small enough to
+// precache and boots fast; each route downloads on first visit.
+const Play = lazy(() => import("./pages/Play"));
+const TelegramShell = lazy(() => import("./pages/TelegramShell"));
+const Vault = lazy(() => import("./pages/Vault"));
+const BotFoundry = lazy(() => import("./pages/BotFoundry"));
+const BotSwarm = lazy(() => import("./pages/BotSwarm"));
+const ApiKeyManager = lazy(() => import("./pages/ApiKeyManager"));
+const GunitLayout = lazy(() => import("./pages/gunit/GunitLayout"));
+const GunitDashboard = lazy(() => import("./pages/gunit/GunitDashboard"));
+const GunitBotFactory = lazy(() => import("./pages/gunit/GunitBotFactory"));
+const GunitChat = lazy(() => import("./pages/gunit/GunitChat"));
+const GunitAgents = lazy(() => import("./pages/gunit/GunitAgents"));
+const GunitUsers = lazy(() => import("./pages/gunit/GunitUsers"));
+const GunitApiKeys = lazy(() => import("./pages/gunit/GunitApiKeys"));
+const SphereCommand = lazy(() => import("./pages/SphereCommand"));
+const JackieControl = lazy(() => import("./pages/JackieControl"));
+const VeilOps = lazy(() => import("./pages/VeilOps"));
+const MarvelsRace = lazy(() => import("./pages/MarvelsRace"));
+const SentinelDashboard = lazy(() => import("./pages/SentinelDashboard"));
+const SentinelBoard = lazy(() => import("./pages/SentinelBoard"));
+const ApexHub = lazy(() => import("./pages/ApexHub"));
+const AIProviders = lazy(() => import("./pages/AIProviders"));
+const PodStation = lazy(() => import("./pages/PodStation"));
+const PCDesktop = lazy(() => import("./pages/PCDesktop"));
 const EruRouter = lazy(() => import("./eru/EruRouter"));
 const FloatingEditorNav = lazy(() => import("./eru/FloatingEditorNav"));
 const VisualizerLab = lazy(() => import("./eru/VisualizerLab"));
+
+const RouteLoader = () => (
+  <div className="min-h-screen bg-background flex items-center justify-center">
+    <span className="font-mono text-4xl font-bold text-primary animate-pulse">J</span>
+  </div>
+);
 
 const queryClient = new QueryClient();
 
@@ -80,6 +91,8 @@ const App = () => (
           <BrowserRouter>
             <SandboxBanner />
             <SandboxCatcher>
+            <WidgetDockProvider>
+              <Suspense fallback={<RouteLoader />}>
               <Routes>
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/sandbox" element={<Sandbox />} />
@@ -179,6 +192,7 @@ const App = () => (
               <Route path="/apex" element={<ProtectedRoute><ApexHub /></ProtectedRoute>} />
               <Route path="/providers" element={<ProtectedRoute><AIProviders /></ProtectedRoute>} />
               <Route path="/pods" element={<ProtectedRoute><PodStation /></ProtectedRoute>} />
+              <Route path="/pc" element={<ProtectedRoute><PCDesktop /></ProtectedRoute>} />
               <Route
                 path="/eru/visualizers"
                 element={
@@ -197,7 +211,10 @@ const App = () => (
               />
               <Route path="*" element={<NotFound />} />
             </Routes>
+              </Suspense>
             <Suspense fallback={null}><FloatingEditorNav /></Suspense>
+            <WidgetDockBar />
+            </WidgetDockProvider>
             </SandboxCatcher>
           </BrowserRouter>
           </TooltipProvider>

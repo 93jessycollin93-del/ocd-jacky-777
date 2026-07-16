@@ -1,0 +1,15 @@
+{
+  "name": "‾_o_‾",
+  "short_name": "‾_o_‾",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\" width=\"100\" height=\"100\"><rect width=\"100%\" height=\"100%\" fill=\"black\" /><text x=\"50\" y=\"55\" font-family=\"monospace\" font-size=\"28\" font-weight=\"bold\" fill=\"white\" text-anchor=\"middle\" dominant-baseline=\"middle\">‾_o_‾</text></svg>",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
