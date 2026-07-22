@@ -1,0 +1,1087 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0e14">
+<meta name="description" content="eYe App Commander — a situation-aware command center for Jackie's PC: fleet control, thermal routing, an offline AES-GCM vault, and the compression pipeline.">
+<title>eYe App Commander</title>
+</head>
+<body>
+<style>
+  /* ============================================================
+     eYe App Commander — situation-room HUD
+     Single deliberate visual world: dark tactical command center.
+     ============================================================ */
+  :root{
+    --bg:#0a0e14; --bg-2:#0c121b;
+    --panel:#111a26; --panel-2:#0e1620; --panel-hi:#162130;
+    --line:#1d2a39; --line-2:#28394d;
+    --ink:#cdd9ea; --ink-dim:#8a9bb2; --muted:#61728a;
+    --eye:#00e6c9; --eye-deep:#0a5c54; --eye-soft:rgba(0,230,201,.14);
+    --gold:#e8b552; --gold-soft:rgba(232,181,82,.12);
+    --nominal:#46e08a; --warn:#f5b73f; --crit:#ff5d78; --crit-soft:rgba(255,93,120,.16);
+    --font-display:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+    --font-mono:ui-monospace,"SF Mono","Cascadia Mono",Menlo,Consolas,monospace;
+    --r:14px; --r-sm:9px;
+    --shadow:0 1px 0 rgba(255,255,255,.03) inset, 0 18px 40px -24px rgba(0,0,0,.9);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:
+      radial-gradient(1200px 620px at 78% -8%, rgba(0,230,201,.07), transparent 60%),
+      radial-gradient(900px 520px at -6% 4%, rgba(232,181,82,.05), transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--font-mono);
+    font-size:15px; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    padding:0 0 48px;
+    overflow-x:hidden;
+  }
+  /* faint scanline atmosphere */
+  body::after{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:60;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,.014) 0 1px, transparent 1px 3px);
+    mix-blend-mode:overlay; opacity:.5;
+  }
+  .wrap{max-width:1260px; margin:0 auto; padding:0 clamp(12px,3vw,26px)}
+
+  /* ---------- Command bar ---------- */
+  .cmdbar{
+    position:sticky; top:0; z-index:50;
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+    padding:14px clamp(12px,3vw,26px);
+    background:linear-gradient(180deg, rgba(10,14,20,.94), rgba(10,14,20,.72));
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .brand{display:flex; align-items:center; gap:13px; min-width:0}
+  .eye-badge{width:46px; height:46px; flex:0 0 auto; position:relative}
+  .eye-badge canvas{width:46px; height:46px; display:block}
+  .wordmark{display:flex; flex-direction:column; gap:2px; min-width:0}
+  .wordmark h1{
+    font-family:var(--font-display); font-size:19px; font-weight:800; letter-spacing:.16em;
+    text-transform:uppercase; margin:0; color:var(--ink); line-height:1;
+    white-space:nowrap;
+  }
+  .wordmark h1 b{color:var(--eye); font-weight:800}
+  .wordmark .sub{
+    font-size:10.5px; letter-spacing:.34em; text-transform:uppercase; color:var(--muted);
+    white-space:nowrap;
+  }
+  .cmdbar .spacer{flex:1 1 auto}
+  .readiness{
+    display:flex; align-items:center; gap:9px; padding:7px 13px; border-radius:999px;
+    border:1px solid var(--line-2); background:var(--panel);
+    font-size:11px; letter-spacing:.14em; text-transform:uppercase; white-space:nowrap;
+  }
+  .readiness .dot{width:8px;height:8px;border-radius:50%;background:var(--nominal);
+    box-shadow:0 0 0 3px rgba(70,224,138,.16)}
+  .readiness b{font-weight:700; letter-spacing:.16em}
+  .clock{font-variant-numeric:tabular-nums; color:var(--ink-dim); font-size:12px;
+    letter-spacing:.08em; white-space:nowrap; display:flex; gap:10px; align-items:center}
+  .clock .z{color:var(--muted)}
+  @media (max-width:560px){ .clock .local{display:none} .wordmark h1{font-size:16px} }
+  .conn{
+    display:inline-flex; align-items:center; gap:8px; cursor:pointer;
+    padding:7px 13px; border-radius:999px; border:1px solid var(--line-2);
+    background:var(--panel); color:var(--ink-dim); font-family:var(--font-mono);
+    font-size:11px; letter-spacing:.14em; text-transform:uppercase; transition:.15s;
+  }
+  .conn:hover{border-color:var(--eye); color:var(--eye)}
+  .conn:focus-visible{outline:2px solid var(--eye); outline-offset:2px}
+  .conn .cdot{width:8px; height:8px; border-radius:50%; background:var(--gold);
+    box-shadow:0 0 0 3px var(--gold-soft)}
+  .conn.live .cdot{background:var(--nominal); box-shadow:0 0 0 3px rgba(70,224,138,.16)}
+  .conn.live{color:var(--nominal); border-color:rgba(70,224,138,.3)}
+  .conn.offline .cdot{background:var(--crit); box-shadow:0 0 0 3px var(--crit-soft)}
+  .conn.offline{color:var(--crit); border-color:rgba(255,93,120,.3)}
+  /* settings modal */
+  .modal{position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center;
+    background:rgba(4,7,11,.72); backdrop-filter:blur(4px); padding:20px}
+  .modal[hidden]{display:none}
+  .modal-card{width:min(440px,100%); background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--line-2); border-radius:var(--r); padding:22px; box-shadow:var(--shadow)}
+  .modal-card h3{font-family:var(--font-display); font-size:13px; font-weight:700; letter-spacing:.2em;
+    text-transform:uppercase; margin:0 0 8px; color:var(--eye)}
+  .modal-card p{font-size:12px; color:var(--ink-dim); line-height:1.55; margin:0 0 16px}
+  .modal-card label{display:block; font-size:10px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--muted); margin:12px 0 6px}
+  .modal-card input{width:100%; background:var(--panel-2); border:1px solid var(--line); border-radius:8px;
+    padding:10px 12px; color:var(--ink); font-family:var(--font-mono); font-size:13px; outline:none}
+  .modal-card input:focus{border-color:var(--eye); box-shadow:0 0 0 3px var(--eye-soft)}
+  .modal-actions{display:flex; align-items:center; gap:9px; margin-top:20px; flex-wrap:wrap}
+  .modal-actions #setStatus{font-size:11px; letter-spacing:.06em}
+
+  /* ---------- Grid ---------- */
+  .grid{display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:14px; margin-top:16px}
+  .panel{
+    grid-column:span 12;
+    background:linear-gradient(180deg, var(--panel), var(--panel-2));
+    border:1px solid var(--line); border-radius:var(--r);
+    box-shadow:var(--shadow); padding:16px 16px 17px; position:relative; min-width:0;
+  }
+  .p-situation{grid-column:span 4}
+  .p-console{grid-column:span 8}
+  .p-fleet{grid-column:span 7}
+  .p-vault{grid-column:span 5}
+  .p-pipeline{grid-column:span 12}
+  @media (max-width:920px){
+    .grid{grid-template-columns:minmax(0,1fr)}
+    .p-situation,.p-console,.p-fleet,.p-vault,.p-pipeline{grid-column:1 / -1}
+  }
+
+  .phead{display:flex; align-items:center; gap:10px; margin:0 0 14px}
+  .phead .ico{width:22px;height:22px;flex:0 0 auto;color:var(--eye);opacity:.9}
+  .phead h2{
+    font-family:var(--font-display); font-size:12px; font-weight:700; letter-spacing:.22em;
+    text-transform:uppercase; margin:0; color:var(--ink-dim);
+  }
+  .phead .tag{
+    margin-left:auto; font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--muted); border:1px solid var(--line-2); border-radius:999px; padding:3px 9px;
+  }
+  .phead .tag.gold{color:var(--gold); border-color:rgba(232,181,82,.3); background:var(--gold-soft)}
+
+  /* ---------- Situation ---------- */
+  .gauge-wrap{display:flex; align-items:center; gap:16px}
+  .gauge{width:132px;height:132px;flex:0 0 auto;position:relative}
+  .gauge svg{width:132px;height:132px;display:block;transform:rotate(135deg)}
+  .gauge .g-center{
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center;
+  }
+  .gauge .g-val{font-size:30px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1; color:var(--ink)}
+  .gauge .g-val .u{font-size:14px; color:var(--muted); font-weight:500}
+  .gauge .g-lab{font-size:9.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin-top:5px}
+  .sit-side{flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:11px}
+  .meter{}
+  .meter .m-top{display:flex; justify-content:space-between; align-items:baseline; font-size:11px;
+    letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:5px}
+  .meter .m-top b{color:var(--ink); font-size:13px; font-variant-numeric:tabular-nums; letter-spacing:0}
+  .track{height:8px; border-radius:6px; background:#0b141d; border:1px solid var(--line);
+    overflow:hidden; position:relative}
+  .track .fill{height:100%; border-radius:6px; width:0%;
+    transition:width .6s cubic-bezier(.4,0,.2,1), background .4s;
+    background:linear-gradient(90deg, var(--eye-deep), var(--eye))}
+  .routing{
+    margin-top:15px; padding:12px 13px; border-radius:var(--r-sm);
+    border:1px solid var(--line); background:var(--panel-2);
+  }
+  .routing .r-top{display:flex; align-items:center; gap:8px; margin-bottom:9px}
+  .routing .r-top .lab{font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted)}
+  .routing .r-top .verdict{margin-left:auto; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase}
+  .tiers{display:flex; gap:6px}
+  .tier{
+    flex:1; text-align:center; font-size:9.5px; letter-spacing:.06em; text-transform:uppercase;
+    padding:7px 4px; border-radius:7px; border:1px solid var(--line); color:var(--muted);
+    background:#0b131c; transition:.3s;
+  }
+  .tier.on{color:var(--bg); font-weight:700; border-color:transparent}
+  .tier.local.on{background:var(--nominal)}
+  .tier.free.on{background:var(--warn)}
+  .tier.paid.on{background:var(--eye)}
+  .tier.halt.on{background:var(--crit); color:#fff}
+
+  /* ---------- Fleet ---------- */
+  .fleet-tools{display:flex; gap:10px; align-items:center; margin-bottom:12px; flex-wrap:wrap}
+  .search{
+    flex:1 1 160px; min-width:120px; display:flex; align-items:center; gap:8px;
+    background:var(--panel-2); border:1px solid var(--line); border-radius:999px; padding:8px 14px;
+  }
+  .search svg{width:14px;height:14px;color:var(--muted);flex:0 0 auto}
+  .search input{
+    flex:1; background:transparent; border:none; outline:none; color:var(--ink);
+    font-family:var(--font-mono); font-size:13px; min-width:0;
+  }
+  .search input::placeholder{color:var(--muted)}
+  .fleet-stat{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); white-space:nowrap}
+  .fleet-stat b{color:var(--nominal); font-variant-numeric:tabular-nums}
+  .fleet{display:grid; grid-template-columns:repeat(auto-fill,minmax(112px,1fr)); gap:9px;
+    max-height:322px; overflow-y:auto; padding-right:4px; scrollbar-width:thin}
+  .fleet::-webkit-scrollbar{width:8px}
+  .fleet::-webkit-scrollbar-thumb{background:var(--line-2); border-radius:8px}
+  .unit{
+    text-align:left; background:var(--panel-2); border:1px solid var(--line);
+    border-radius:var(--r-sm); padding:11px 11px 10px; cursor:pointer; position:relative;
+    display:flex; flex-direction:column; gap:8px; transition:.16s; color:inherit;
+    font-family:inherit;
+  }
+  .unit:hover{border-color:var(--eye); transform:translateY(-2px); background:var(--panel-hi)}
+  .unit:focus-visible{outline:2px solid var(--eye); outline-offset:2px}
+  .unit .u-ico{font-size:19px; line-height:1}
+  .unit .u-name{font-size:11.5px; font-weight:600; color:var(--ink); line-height:1.25;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+  .unit .u-dot{position:absolute; top:11px; right:11px; width:7px; height:7px; border-radius:50%}
+  .u-dot.online{background:var(--nominal); box-shadow:0 0 0 3px rgba(70,224,138,.14)}
+  .u-dot.idle{background:var(--warn); box-shadow:0 0 0 3px rgba(245,183,63,.12)}
+  .u-dot.offline{background:var(--muted)}
+  .unit.pulse{animation:deploy .7s ease}
+  @keyframes deploy{0%{box-shadow:0 0 0 0 var(--eye-soft)}100%{box-shadow:0 0 0 16px transparent}}
+
+  /* ---------- Jackie console ---------- */
+  .console{
+    background:#070b11; border:1px solid var(--line); border-radius:var(--r-sm);
+    height:270px; overflow-y:auto; padding:13px 14px; font-size:12.5px; line-height:1.65;
+    scrollbar-width:thin;
+  }
+  .console::-webkit-scrollbar{width:8px}
+  .console::-webkit-scrollbar-thumb{background:var(--line-2); border-radius:8px}
+  .ln{margin:0 0 7px; white-space:pre-wrap; word-break:break-word}
+  .ln .who{color:var(--muted); user-select:none}
+  .ln.you .who{color:var(--gold)}
+  .ln.jackie .who{color:var(--eye)}
+  .ln.sys{color:var(--muted); font-style:italic}
+  .ln .cur{display:inline-block; width:7px; height:14px; background:var(--eye);
+    transform:translateY(2px); animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .cmdline{display:flex; gap:9px; align-items:center; margin-top:11px}
+  .cmdline .prompt{color:var(--eye); font-weight:700; user-select:none}
+  .cmdline input{
+    flex:1; background:var(--panel-2); border:1px solid var(--line); border-radius:8px;
+    padding:11px 13px; color:var(--ink); font-family:var(--font-mono); font-size:13px; outline:none;
+  }
+  .cmdline input:focus{border-color:var(--eye); box-shadow:0 0 0 3px var(--eye-soft)}
+  .cmdline button{
+    flex:0 0 auto; background:var(--eye); color:#04211d; border:none; border-radius:8px;
+    padding:11px 16px; font-family:var(--font-display); font-weight:700; font-size:11px;
+    letter-spacing:.14em; text-transform:uppercase; cursor:pointer; transition:.15s;
+  }
+  .cmdline button:hover{filter:brightness(1.12)}
+  .cmdline button:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+  .chips{display:flex; gap:6px; flex-wrap:wrap; margin-top:10px}
+  .chip{font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-dim);
+    border:1px solid var(--line-2); background:var(--panel-2); border-radius:999px;
+    padding:5px 11px; cursor:pointer; transition:.15s; font-family:inherit}
+  .chip:hover{border-color:var(--eye); color:var(--eye)}
+
+  /* ---------- Vault ---------- */
+  .vault-lock{display:flex; flex-direction:column; gap:11px}
+  .vault-row{display:flex; gap:9px}
+  .vault input[type=password],.vault input[type=text],.vault textarea,.vault select{
+    width:100%; background:var(--panel-2); border:1px solid var(--line); border-radius:8px;
+    padding:10px 12px; color:var(--ink); font-family:var(--font-mono); font-size:13px; outline:none;
+  }
+  .vault input:focus,.vault textarea:focus,.vault select:focus{border-color:var(--eye); box-shadow:0 0 0 3px var(--eye-soft)}
+  .vault textarea{resize:vertical; min-height:64px}
+  .btn{
+    background:var(--panel-hi); color:var(--ink); border:1px solid var(--line-2); border-radius:8px;
+    padding:10px 14px; font-family:var(--font-display); font-weight:700; font-size:11px;
+    letter-spacing:.12em; text-transform:uppercase; cursor:pointer; transition:.15s; white-space:nowrap;
+  }
+  .btn:hover{border-color:var(--eye); color:var(--eye)}
+  .btn:focus-visible{outline:2px solid var(--eye); outline-offset:2px}
+  .btn.primary{background:var(--eye); color:#04211d; border-color:transparent}
+  .btn.primary:hover{filter:brightness(1.12); color:#04211d}
+  .btn.danger{color:var(--crit); border-color:rgba(255,93,120,.3)}
+  .btn.danger:hover{background:var(--crit-soft)}
+  .vault-note{font-size:11px; color:var(--muted); line-height:1.5}
+  .vault-note b{color:var(--gold); font-weight:600}
+  .boxes{display:flex; flex-direction:column; gap:8px; margin-top:13px; max-height:210px;
+    overflow-y:auto; scrollbar-width:thin}
+  .box{
+    display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:8px;
+    background:var(--panel-2); border:1px solid var(--line);
+  }
+  .box .b-ico{font-size:16px; flex:0 0 auto}
+  .box .b-main{flex:1; min-width:0}
+  .box .b-title{font-size:12.5px; color:var(--ink); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .box .b-meta{font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+  .box .b-body{font-size:11.5px; color:var(--ink-dim); margin-top:3px; white-space:pre-wrap; word-break:break-word; display:none}
+  .box.open .b-body{display:block}
+  .box .b-del{background:none; border:none; color:var(--muted); cursor:pointer; font-size:15px;
+    padding:4px; border-radius:6px; flex:0 0 auto}
+  .box .b-del:hover{color:var(--crit)}
+  .locked-hint{font-size:11.5px; color:var(--muted); text-align:center; padding:16px 0}
+  .lockchip{display:inline-flex; align-items:center; gap:7px; font-size:11px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--gold)}
+
+  /* ---------- Pipeline ---------- */
+  .pipe-head-metrics{display:flex; gap:22px; flex-wrap:wrap; margin-bottom:12px}
+  .metric{display:flex; flex-direction:column; gap:2px}
+  .metric .m-v{font-size:26px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1; color:var(--eye)}
+  .metric .m-v.gold{color:var(--gold)}
+  .metric .m-l{font-size:9.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted)}
+  .pipe-canvas-wrap{position:relative; border-radius:var(--r-sm); overflow:hidden;
+    border:1px solid var(--line); background:#060a10}
+  #pipe{display:block; width:100%; max-width:100%; height:190px}
+  .pipe-ends{position:absolute; inset:0; pointer-events:none; display:flex;
+    justify-content:space-between; align-items:center; padding:0 16px}
+  .pipe-ends .end{font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted)}
+  .pipe-ends .end b{display:block; color:var(--ink-dim); font-size:14px; letter-spacing:.02em; margin-top:3px;
+    font-variant-numeric:tabular-nums}
+  .slider-row{display:flex; align-items:center; gap:14px; margin-top:14px}
+  .slider-row .s-lab{font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); white-space:nowrap}
+  input[type=range]{-webkit-appearance:none; appearance:none; flex:1; height:5px; border-radius:5px;
+    background:linear-gradient(90deg,var(--eye-deep),var(--eye)); outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:18px; height:18px; border-radius:50%;
+    background:var(--ink); border:3px solid var(--eye); cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.5)}
+  input[type=range]::-moz-range-thumb{width:15px; height:15px; border-radius:50%; background:var(--ink);
+    border:3px solid var(--eye); cursor:pointer}
+  input[type=range]:focus-visible{box-shadow:0 0 0 3px var(--eye-soft)}
+  .s-verdict{font-size:11px; letter-spacing:.08em; text-transform:uppercase; white-space:nowrap; min-width:118px; text-align:right}
+
+  .foot{margin-top:22px; text-align:center; font-size:10.5px; letter-spacing:.18em;
+    text-transform:uppercase; color:var(--muted)}
+  .foot b{color:var(--eye)}
+
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none !important; transition:none !important}
+  }
+</style>
+
+<header class="cmdbar">
+  <div class="brand">
+    <div class="eye-badge"><canvas id="eyeBadge" width="92" height="92" aria-hidden="true"></canvas></div>
+    <div class="wordmark">
+      <h1>APP&nbsp;<b>COMMANDER</b></h1>
+      <span class="sub">eYe Vault OS · Jackie's PC</span>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <div class="readiness"><span class="dot" id="readyDot"></span><b id="readyLabel">DEFCON 5 · NOMINAL</b></div>
+  <div class="clock"><span class="z" id="clockZ">--:--:-- Z</span><span class="local" id="clockL">--:--:--</span></div>
+  <button class="conn demo" id="connPill" type="button" title="Backend link — click to configure">
+    <span class="cdot"></span><span id="connText">DEMO</span>
+  </button>
+</header>
+
+<div class="modal" id="settings" hidden aria-modal="true" role="dialog" aria-label="Backend link settings">
+  <div class="modal-card">
+    <h3>Backend Link</h3>
+    <p>Point the Commander at your live Jacky API (<code>serve.py</code> / <code>jacky_api.py</code>) — e.g. your Cloudflare tunnel. It reads <code>/api/status</code> + <code>/api/assessment</code> for live thermals and routes orders through <code>/api/ask</code>. Leave blank for offline demo. (Your backend must send CORS headers.)</p>
+    <label for="setBase">API base URL</label>
+    <input id="setBase" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://sas.cybernetic67.com">
+    <label for="setToken">Access token — optional (SAS)</label>
+    <input id="setToken" type="password" autocomplete="off" placeholder="sent as Bearer + ?token=">
+    <div class="modal-actions">
+      <button class="btn" id="setTest" type="button">Test Link</button>
+      <span id="setStatus"></span>
+      <span style="flex:1"></span>
+      <button class="btn" id="setCancel" type="button">Cancel</button>
+      <button class="btn primary" id="setSave" type="button">Save &amp; Link</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="grid">
+
+    <!-- SITUATION -->
+    <section class="panel p-situation" aria-labelledby="sit-h">
+      <div class="phead">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg>
+        <h2 id="sit-h">Situation</h2>
+        <span class="tag" id="sitTag">Demo</span>
+      </div>
+      <div class="gauge-wrap">
+        <div class="gauge">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <circle cx="60" cy="60" r="52" fill="none" stroke="#0b141d" stroke-width="10"
+              stroke-dasharray="245 327" stroke-linecap="round"/>
+            <circle id="gpuArc" cx="60" cy="60" r="52" fill="none" stroke="var(--nominal)" stroke-width="10"
+              stroke-dasharray="0 327" stroke-linecap="round"/>
+            <circle id="gpuRedline" cx="60" cy="60" r="52" fill="none" stroke="var(--crit)" stroke-width="10"
+              stroke-dasharray="2 325" stroke-dashoffset="-204" stroke-linecap="butt" opacity=".65"/>
+          </svg>
+          <div class="g-center">
+            <div class="g-val"><span id="gpuVal">54</span><span class="u">°C</span></div>
+            <div class="g-lab">GPU · RTX 3090</div>
+          </div>
+        </div>
+        <div class="sit-side">
+          <div class="meter">
+            <div class="m-top"><span>CPU Load</span><b id="cpuVal">32%</b></div>
+            <div class="track"><div class="fill" id="cpuFill"></div></div>
+          </div>
+          <div class="meter">
+            <div class="m-top"><span>Memory</span><b id="ramVal">47%</b></div>
+            <div class="track"><div class="fill" id="ramFill"></div></div>
+          </div>
+          <div class="meter">
+            <div class="m-top"><span>VRAM</span><b id="vramVal">61%</b></div>
+            <div class="track"><div class="fill" id="vramFill"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="routing">
+        <div class="r-top">
+          <span class="lab">Routing Tier</span>
+          <span class="verdict" id="routeVerdict">LOCAL FIRST</span>
+        </div>
+        <div class="tiers">
+          <div class="tier local" id="tLocal">Local · Ollama</div>
+          <div class="tier free" id="tFree">Free Cloud</div>
+          <div class="tier paid" id="tPaid">Paid · Haiku</div>
+          <div class="tier halt" id="tHalt">Thermal Halt</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- JACKIE CONSOLE -->
+    <section class="panel p-console" aria-labelledby="con-h">
+      <div class="phead">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 17l6-6-6-6"/><path d="M12 19h8"/></svg>
+        <h2 id="con-h">Jackie Console</h2>
+        <span class="tag gold">Offline · Local Router</span>
+      </div>
+      <div class="console" id="console" aria-live="polite"></div>
+      <form class="cmdline" id="cmdForm">
+        <span class="prompt">jackie:~$</span>
+        <input id="cmdInput" type="text" autocomplete="off" spellcheck="false"
+          placeholder="issue an order — try 'help', 'status', 'deploy vault'…" aria-label="Command input">
+        <button type="submit">Send</button>
+      </form>
+      <div class="chips" id="chips">
+        <button class="chip" data-cmd="status">status</button>
+        <button class="chip" data-cmd="fleet">fleet</button>
+        <button class="chip" data-cmd="route knowledge compressor">route a task</button>
+        <button class="chip" data-cmd="thermal">thermal</button>
+        <button class="chip" data-cmd="brief">morning brief</button>
+      </div>
+    </section>
+
+    <!-- FLEET -->
+    <section class="panel p-fleet" aria-labelledby="fl-h">
+      <div class="phead">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        <h2 id="fl-h">Fleet Command</h2>
+        <span class="tag" id="fleetTag">— units</span>
+      </div>
+      <div class="fleet-tools">
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+          <input id="fleetSearch" type="text" placeholder="filter units…" aria-label="Filter fleet">
+        </div>
+        <div class="fleet-stat"><b id="onlineCount">0</b> ONLINE</div>
+      </div>
+      <div class="fleet" id="fleet"></div>
+    </section>
+
+    <!-- VAULT -->
+    <section class="panel p-vault vault" aria-labelledby="v-h">
+      <div class="phead">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+        <h2 id="v-h">Secret Box Vault</h2>
+        <span class="tag gold" id="vaultTag">Locked</span>
+      </div>
+      <div id="vaultBody"></div>
+    </section>
+
+    <!-- PIPELINE -->
+    <section class="panel p-pipeline" aria-labelledby="pp-h">
+      <div class="phead">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12c4 0 5-7 9-7s5 14 9 14"/></svg>
+        <h2 id="pp-h">Collapse Pipeline</h2>
+        <span class="tag">eYe · L2 Resident</span>
+      </div>
+      <div class="pipe-head-metrics">
+        <div class="metric"><span class="m-v" id="ppRatio">571:1</span><span class="m-l">Compression</span></div>
+        <div class="metric"><span class="m-v gold" id="ppRetain">97%</span><span class="m-l">Retention</span></div>
+        <div class="metric"><span class="m-v" id="ppSize">2.01 KB</span><span class="m-l">Map Pod</span></div>
+        <div class="metric"><span class="m-v" id="ppPower">0.03 mW</span><span class="m-l">Rest Draw</span></div>
+      </div>
+      <div class="pipe-canvas-wrap">
+        <canvas id="pipe"></canvas>
+        <div class="pipe-ends">
+          <div class="end">Raw Order<b>1150 KB</b></div>
+          <div class="end" style="text-align:right">Map Pod<b id="ppEndSize">2.01 KB</b></div>
+        </div>
+      </div>
+      <div class="slider-row">
+        <span class="s-lab">Retention</span>
+        <input id="retSlider" type="range" min="90" max="100" step="0.5" value="97" aria-label="Retention target">
+        <span class="s-verdict" id="retVerdict" style="color:var(--eye)">SWEET SPOT</span>
+      </div>
+    </section>
+
+  </div>
+  <div class="foot">eYe Vault OS · <b>Local-First</b> · Thermal-Gated · Offline-Capable · Built for 440px</div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+  var $ = function(id){ return document.getElementById(id); };
+
+  /* ============================================================
+     0. Backend link — real Jacky API with graceful offline fallback
+     Endpoints (see jacky_api.py): GET /api/status, GET /api/assessment,
+     POST /api/ask {prompt,task_type}. Configurable base URL + token.
+     ============================================================ */
+  var CFG = {
+    base: (localStorage.getItem("eye_api_base")||"").replace(/\/+$/,""),
+    token: localStorage.getItem("eye_api_token")||""
+  };
+  var LINK = { live:false, checkedOnce:false }; // live = last real fetch succeeded
+  function authHeaders(){ return CFG.token ? { "Authorization":"Bearer "+CFG.token } : {}; }
+  function withToken(url){
+    if(!CFG.token) return url;
+    return url + (url.indexOf("?")>=0?"&":"?") + "token=" + encodeURIComponent(CFG.token);
+  }
+  function apiFetch(path, opts, timeoutMs){
+    if(!CFG.base) return Promise.reject(new Error("no-base"));
+    opts = opts||{};
+    var ctl = ("AbortController" in window) ? new AbortController() : null;
+    var t = ctl ? setTimeout(function(){ ctl.abort(); }, timeoutMs||4500) : null;
+    var headers = Object.assign({}, opts.headers||{}, authHeaders());
+    return fetch(withToken(CFG.base+path), {
+      method: opts.method||"GET", mode:"cors", cache:"no-store",
+      headers: headers, body: opts.body, signal: ctl?ctl.signal:undefined
+    }).then(function(r){
+      if(t) clearTimeout(t);
+      if(!r.ok) throw new Error("HTTP "+r.status);
+      return r.json();
+    }).catch(function(e){ if(t) clearTimeout(t); throw e; });
+  }
+  function apiGet(path){ return apiFetch(path, {}, 4500); }
+  function apiPost(path, obj){
+    return apiFetch(path, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(obj) }, 30000);
+  }
+
+  /* ============================================================
+     1. eYe insignia — radar sweep badge
+     ============================================================ */
+  (function eyeBadge(){
+    var c = $("eyeBadge"); if(!c) return;
+    var ctx = c.getContext("2d"), W = c.width, H = c.height, cx = W/2, cy = H/2, a = 0;
+    function frame(){
+      ctx.clearRect(0,0,W,H);
+      // rings
+      ctx.strokeStyle = "rgba(0,230,201,.28)"; ctx.lineWidth = 2;
+      [40,28,16].forEach(function(r){ ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke(); });
+      // sweep
+      if(!reduce){
+        var g = ctx.createConicGradient ? null : null;
+        ctx.save(); ctx.translate(cx,cy); ctx.rotate(a);
+        var grad = ctx.createLinearGradient(0,0,42,0);
+        grad.addColorStop(0,"rgba(0,230,201,.55)"); grad.addColorStop(1,"rgba(0,230,201,0)");
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,42,-0.5,0); ctx.closePath();
+        ctx.fillStyle = grad; ctx.fill(); ctx.restore();
+      }
+      // pupil
+      ctx.beginPath(); ctx.arc(cx,cy,7,0,Math.PI*2);
+      ctx.fillStyle = "#00e6c9"; ctx.shadowColor="#00e6c9"; ctx.shadowBlur=10; ctx.fill(); ctx.shadowBlur=0;
+      ctx.beginPath(); ctx.arc(cx,cy,3,0,Math.PI*2); ctx.fillStyle="#04211d"; ctx.fill();
+      a += 0.045;
+      if(!reduce) requestAnimationFrame(frame);
+    }
+    frame();
+  })();
+
+  /* ============================================================
+     2. Situation — simulated telemetry + thermal routing
+     Mirrors situation_assessor.py + cloud_router waterfall.
+     ============================================================ */
+  var sit = { gpu:54, cpu:32, ram:47, vram:61 };
+  var ARC_MAX = 245; // arc length for full sweep (matches dasharray track)
+  function mapTemp(t){ // 30..90C -> 0..1
+    return Math.max(0, Math.min(1, (t-30)/60));
+  }
+  function colorFor(t){ return t>=75?"var(--crit)": t>=70?"var(--warn)": "var(--nominal)"; }
+  function setSituation(){
+    // GPU dial
+    var frac = mapTemp(sit.gpu);
+    var arc = $("gpuArc");
+    arc.setAttribute("stroke-dasharray", (ARC_MAX*frac).toFixed(1)+" 327");
+    arc.setAttribute("stroke", colorFor(sit.gpu));
+    $("gpuVal").textContent = Math.round(sit.gpu);
+    // bars
+    function bar(fillId, valId, v, warnHi){
+      $(fillId).style.width = v+"%";
+      $(valId).textContent = Math.round(v)+"%";
+      $(fillId).style.background = v>=warnHi
+        ? "linear-gradient(90deg,#7a4a12,var(--warn))"
+        : "linear-gradient(90deg,var(--eye-deep),var(--eye))";
+    }
+    bar("cpuFill","cpuVal",sit.cpu,85);
+    bar("ramFill","ramVal",sit.ram,88);
+    bar("vramFill","vramVal",sit.vram,90);
+    // routing tier decision
+    var tier, verdict;
+    if(sit.gpu>=75){ tier="halt"; verdict="THERMAL HALT"; }
+    else if(sit.gpu>=70){ tier="free"; verdict="FREE CLOUD"; }
+    else if(sit.cpu>=90||sit.ram>=92){ tier="paid"; verdict="OFFLOAD · PAID"; }
+    else { tier="local"; verdict="LOCAL FIRST"; }
+    ["tLocal","tFree","tPaid","tHalt"].forEach(function(id){ $(id).classList.remove("on"); });
+    $({local:"tLocal",free:"tFree",paid:"tPaid",halt:"tHalt"}[tier]).classList.add("on");
+    var rv = $("routeVerdict"); rv.textContent = verdict;
+    rv.style.color = tier==="halt"?"var(--crit)": tier==="free"?"var(--warn)": tier==="paid"?"var(--eye)":"var(--nominal)";
+    // readiness
+    var dot = $("readyDot"), lab = $("readyLabel");
+    if(sit.gpu>=75){ dot.style.background="var(--crit)"; dot.style.boxShadow="0 0 0 3px var(--crit-soft)"; lab.textContent="DEFCON 2 · THERMAL"; }
+    else if(sit.gpu>=70){ dot.style.background="var(--warn)"; dot.style.boxShadow="0 0 0 3px rgba(245,183,63,.16)"; lab.textContent="DEFCON 3 · ELEVATED"; }
+    else { dot.style.background="var(--nominal)"; dot.style.boxShadow="0 0 0 3px rgba(70,224,138,.16)"; lab.textContent="DEFCON 5 · NOMINAL"; }
+    return { tier:tier, verdict:verdict };
+  }
+  function driftTelemetry(){
+    function d(v,lo,hi,step){ v += (Math.random()-0.5)*step; return Math.max(lo,Math.min(hi,v)); }
+    sit.gpu = d(sit.gpu, 42, 78, 3.2);
+    sit.cpu = d(sit.cpu, 12, 96, 9);
+    sit.ram = d(sit.ram, 30, 90, 5);
+    sit.vram= d(sit.vram, 40, 94, 4);
+    setSituation();
+  }
+  function setConn(state){ // 'live' | 'demo' | 'offline'
+    var pill = $("connPill"), txt = $("connText"), st = $("sitTag");
+    if(pill){ pill.classList.remove("live","demo","offline"); pill.classList.add(state); }
+    if(txt) txt.textContent = state==="live"?"LIVE":state==="offline"?"OFFLINE":"DEMO";
+    if(st){ st.textContent = state==="live"?"Live":"Demo"; st.style.color = state==="live"?"var(--nominal)":""; }
+    LINK.live = (state==="live"); LINK.checkedOnce = true;
+  }
+  function applyRealStatus(s){
+    if(typeof s.cpu==="number") sit.cpu = s.cpu;
+    if(typeof s.memory==="number") sit.ram = s.memory;
+    var g = s.gpu||{};
+    if(g.available){
+      if(typeof g.temp_c==="number") sit.gpu = g.temp_c;
+      if(typeof g.mem_used_mb==="number" && g.mem_total_mb>0)
+        sit.vram = Math.round(g.mem_used_mb/g.mem_total_mb*100);
+    }
+    setSituation();
+  }
+  function pollTelemetry(){
+    if(!CFG.base){ if(!reduce) driftTelemetry(); setConn("demo"); return; }
+    apiGet("/api/status")
+      .then(function(s){ applyRealStatus(s||{}); setConn("live"); })
+      .catch(function(){ if(!reduce) driftTelemetry(); setConn(CFG.base?"offline":"demo"); });
+  }
+  setSituation();
+  setConn(CFG.base?"live":"demo"); // optimistic; poll corrects
+  pollTelemetry();
+  setInterval(pollTelemetry, 3500);
+
+  /* ============================================================
+     3. Clock
+     ============================================================ */
+  function tick(){
+    var n = new Date();
+    function p(x){ return String(x).padStart(2,"0"); }
+    $("clockZ").textContent = p(n.getUTCHours())+":"+p(n.getUTCMinutes())+":"+p(n.getUTCSeconds())+" Z";
+    $("clockL").textContent = p(n.getHours())+":"+p(n.getMinutes())+":"+p(n.getSeconds());
+  }
+  tick(); setInterval(tick, 1000);
+
+  /* ============================================================
+     4. Fleet — real app roster from Jackie's PC
+     ============================================================ */
+  var FLEET = [
+    {n:"Mission Control", i:"🛰️", s:"online"},
+    {n:"Model Router", i:"🔀", s:"online"},
+    {n:"On-Device Models", i:"🧠", s:"online"},
+    {n:"Jacky V3 Core", i:"🤖", s:"online"},
+    {n:"Small Agent Fleet", i:"🐝", s:"online"},
+    {n:"Fleet Atlas", i:"🗺️", s:"idle"},
+    {n:"Knowledge Compressor", i:"🗜️", s:"online"},
+    {n:"Data Pods", i:"💾", s:"online"},
+    {n:"Secret Box Vault", i:"🔐", s:"online"},
+    {n:"Sonic Capsule", i:"🎵", s:"idle"},
+    {n:"Claude Assistant", i:"📎", s:"online"},
+    {n:"Grok Terminal", i:"⚡", s:"online"},
+    {n:"Codex", i:"📜", s:"idle"},
+    {n:"Budget Guardian", i:"💰", s:"online"},
+    {n:"Automation", i:"⚙️", s:"online"},
+    {n:"Notification Center", i:"🔔", s:"online"},
+    {n:"Permission Broker", i:"🛂", s:"idle"},
+    {n:"API Keys Vault", i:"🗝️", s:"online"},
+    {n:"Archiver", i:"📦", s:"idle"},
+    {n:"System Settings", i:"🎛️", s:"online"},
+    {n:"Ollama Host", i:"🦙", s:"online"},
+    {n:"Cloud Infra", i:"☁️", s:"idle"},
+    {n:"Flipper Zero", i:"🐬", s:"offline"},
+    {n:"Term Studio", i:"💻", s:"online"}
+  ];
+  var fleetEl = $("fleet");
+  function renderFleet(filter){
+    filter = (filter||"").toLowerCase().trim();
+    fleetEl.innerHTML = "";
+    var shown = FLEET.filter(function(u){ return !filter || u.n.toLowerCase().indexOf(filter)>=0; });
+    shown.forEach(function(u){
+      var b = document.createElement("button");
+      b.className = "unit"; b.type = "button";
+      b.setAttribute("aria-label", u.n+" — "+u.s);
+      b.innerHTML = '<span class="u-dot '+u.s+'"></span><span class="u-ico">'+u.i+'</span><span class="u-name">'+u.n+'</span>';
+      b.addEventListener("click", function(){
+        b.classList.remove("pulse"); void b.offsetWidth; b.classList.add("pulse");
+        deploy(u);
+      });
+      fleetEl.appendChild(b);
+    });
+    var online = FLEET.filter(function(u){ return u.s==="online"; }).length;
+    $("onlineCount").textContent = online;
+    $("fleetTag").textContent = FLEET.length+" units";
+  }
+  renderFleet();
+  $("fleetSearch").addEventListener("input", function(e){ renderFleet(e.target.value); });
+
+  /* ============================================================
+     5. Jackie console — offline local responder / router
+     ============================================================ */
+  var consoleEl = $("console");
+  function line(who, text, cls){
+    var p = document.createElement("div");
+    p.className = "ln "+(cls||"");
+    p.innerHTML = who ? '<span class="who">'+who+'</span> ' : "";
+    var span = document.createElement("span"); span.textContent = text;
+    p.appendChild(span);
+    consoleEl.appendChild(p);
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+    return span;
+  }
+  function type(span, text, done){
+    if(reduce){ span.textContent = text; consoleEl.scrollTop = consoleEl.scrollHeight; if(done) done(); return; }
+    var i = 0, cur = document.createElement("span"); cur.className = "cur";
+    span.parentNode.appendChild(cur);
+    (function step(){
+      if(i <= text.length){ span.textContent = text.slice(0,i); i++; consoleEl.scrollTop = consoleEl.scrollHeight;
+        setTimeout(step, 9 + Math.random()*14);
+      } else { if(cur.parentNode) cur.parentNode.removeChild(cur); if(done) done(); }
+    })();
+  }
+  function jackieSay(text){ var s = line("jackie:", "", "jackie"); type(s, text); }
+
+  function askBackend(prompt, r){
+    var thinking = line("jackie:", "routing order through live backend…", "sys");
+    apiPost("/api/ask", { prompt: prompt, task_type: "general" })
+      .then(function(res){
+        if(thinking && thinking.parentNode) thinking.parentNode.remove();
+        if(!LINK.live) setConn("live");
+        var text = res.response || res.error || "(no response)";
+        var route = res.route || res.engine || "routed";
+        var model = res.model ? " · "+res.model : "";
+        var lat = (typeof res.latency_s==="number") ? " · "+res.latency_s.toFixed(1)+"s" : "";
+        var s = line("jackie:", "", "jackie");
+        type(s, text, function(){ line("system", "↳ "+route+model+lat, "sys"); });
+      })
+      .catch(function(e){
+        if(thinking && thinking.parentNode) thinking.parentNode.remove();
+        line("system", "⚠ backend unreachable ("+e.message+") — offline responder.", "sys");
+        setConn("offline");
+        jackieSay("Can't reach the live backend, Commander — running offline. "+
+          (r.tier==="local"?"Local models would take this.":"Cloud tier would engage to protect the die."));
+      });
+  }
+
+  function deploy(u){
+    if(u.s==="offline"){ line("system", "⚠ "+u.n+" is OFFLINE — no route to unit.", "sys"); return; }
+    var r = setSituation();
+    line("system", "▸ Deploying "+u.n+" via "+r.verdict+" tier…", "sys");
+    setTimeout(function(){ jackieSay("Copy that, Commander. "+u.n+" is live. Routed "+r.verdict.toLowerCase()+" — "+
+      (r.tier==="local"?"zero cloud cost, thermally clear.":"cloud tier engaged to protect the 3090.")); }, 260);
+  }
+
+  function respond(raw){
+    var cmd = raw.toLowerCase().trim();
+    var r = setSituation();
+    if(cmd==="help"){ jackieSay("Orders I take: status · fleet · thermal · route <task> · deploy <unit> · lock · unlock · brief · clear. I run offline on a local responder; wire OLLAMA_HOST or the cloud_router for live inference."); return; }
+    if(cmd==="status"||cmd==="sitrep"){ jackieSay("SITREP — GPU "+Math.round(sit.gpu)+"°C, CPU "+Math.round(sit.cpu)+"%, RAM "+Math.round(sit.ram)+"%. Readiness "+$("readyLabel").textContent+". Routing "+r.verdict+". "+FLEET.filter(function(u){return u.s==="online";}).length+" units online."); return; }
+    if(cmd==="fleet"||cmd==="units"){ var on=FLEET.filter(function(u){return u.s==="online";}).map(function(u){return u.n;}); jackieSay("Active fleet ("+on.length+"): "+on.slice(0,8).join(", ")+(on.length>8?" +"+(on.length-8)+" more.":".")); return; }
+    if(cmd==="thermal"||cmd==="temp"){ jackieSay("RTX 3090 at "+Math.round(sit.gpu)+"°C. Hard stop is 75°C. "+(sit.gpu>=70?"We're in the gated zone — I'm favoring free cloud to keep the die cool.":"Plenty of headroom — local models are cleared for burn.")); return; }
+    if(cmd.indexOf("route")===0){ var task = raw.replace(/^route/i,"").trim()||"the task"; jackieSay("Routing '"+task+"' → "+r.verdict+". "+(r.tier==="local"?"Ollama takes it, $0.":r.tier==="free"?"Groq→Gemini→OpenRouter waterfall, still $0.":"Paid Haiku fallback — logging the spend to Budget Guardian.")); return; }
+    if(cmd.indexOf("deploy")===0){ var name = raw.replace(/^deploy/i,"").trim(); var u = FLEET.find(function(x){ return x.n.toLowerCase().indexOf(name.toLowerCase())>=0; }); if(u){ deploy(u); } else { jackieSay("No unit matches '"+name+"'. Try 'fleet' for the roster."); } return; }
+    if(cmd==="lock"){ lockVault(); jackieSay("Vault sealed. AES-GCM keys wiped from memory."); return; }
+    if(cmd==="unlock"){ jackieSay("Use the Vault panel to enter the master password — I never hold it in the console."); return; }
+    if(cmd==="brief"||cmd==="morning brief"){ jackieSay("Morning brief, Commander: die is cool at "+Math.round(sit.gpu)+"°C, "+FLEET.filter(function(u){return u.s==="online";}).length+" units up, vault "+($("vaultTag").textContent.toLowerCase())+", pipeline holding "+$("ppRetain").textContent+" retention. No spend overnight. Orders?"); return; }
+    if(cmd==="clear"){ consoleEl.innerHTML=""; return; }
+    if(!cmd){ return; }
+    // free-form order → route to the live backend if linked, else offline responder
+    if(CFG.base){ askBackend(raw, r); return; }
+    var replies = [
+      "Understood. Standing by — say 'help' for the order set.",
+      "Logged, Commander. I'll keep it local unless the 3090 says otherwise.",
+      "Acknowledged 🫡 — offline responder. Link a backend (⚙ top-right) for full inference.",
+      "Copy. Routing that thought through "+r.verdict+"."
+    ];
+    jackieSay(replies[Math.floor(Math.random()*replies.length)]);
+  }
+
+  $("cmdForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var v = $("cmdInput").value; if(!v.trim()) return;
+    line("commander:", v, "you"); $("cmdInput").value = "";
+    setTimeout(function(){ respond(v); }, 180);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll(".chip"), function(ch){
+    ch.addEventListener("click", function(){
+      var c = ch.getAttribute("data-cmd");
+      line("commander:", c, "you"); setTimeout(function(){ respond(c); }, 160);
+    });
+  });
+  // boot log
+  line("system", CFG.base ? ("eYe Vault OS · console online · linked → "+CFG.base) : "eYe Vault OS · console online · offline demo (⚙ top-right to link backend)", "sys");
+  setTimeout(function(){ jackieSay("Jackie reporting, Commander. Fleet is up and the die is cool. Awaiting orders. 🫡"); }, 500);
+
+  /* ============================================================
+     6. Vault — real WebCrypto AES-GCM + PBKDF2 (100k)
+     ============================================================ */
+  var LS = { verify:"eye_vault_verify", boxes:"eye_vault_boxes", salt:"eye_vault_salt" };
+  var vaultKey = null;
+  var enc = new TextEncoder(), dec = new TextDecoder();
+  function b64(buf){ var b=new Uint8Array(buf),s=""; for(var i=0;i<b.length;i++) s+=String.fromCharCode(b[i]); return btoa(s); }
+  function unb64(str){ var s=atob(str),a=new Uint8Array(s.length); for(var i=0;i<s.length;i++) a[i]=s.charCodeAt(i); return a; }
+  function getSalt(){
+    var s = localStorage.getItem(LS.salt);
+    if(s) return unb64(s);
+    var salt = crypto.getRandomValues(new Uint8Array(16));
+    localStorage.setItem(LS.salt, b64(salt)); return salt;
+  }
+  function deriveKey(pw){
+    return crypto.subtle.importKey("raw", enc.encode(pw), "PBKDF2", false, ["deriveKey"])
+      .then(function(base){
+        return crypto.subtle.deriveKey(
+          { name:"PBKDF2", salt:getSalt(), iterations:100000, hash:"SHA-256" },
+          base, { name:"AES-GCM", length:256 }, false, ["encrypt","decrypt"]);
+      });
+  }
+  function encryptStr(key, text){
+    var iv = crypto.getRandomValues(new Uint8Array(12));
+    return crypto.subtle.encrypt({name:"AES-GCM",iv:iv}, key, enc.encode(text))
+      .then(function(ct){ return { iv:b64(iv), ct:b64(ct) }; });
+  }
+  function decryptStr(key, obj){
+    return crypto.subtle.decrypt({name:"AES-GCM",iv:unb64(obj.iv)}, key, unb64(obj.ct))
+      .then(function(pt){ return dec.decode(pt); });
+  }
+  function loadBoxes(){ try{ return JSON.parse(localStorage.getItem(LS.boxes)||"[]"); }catch(e){ return []; } }
+  function saveBoxes(b){ localStorage.setItem(LS.boxes, JSON.stringify(b)); }
+
+  var vaultBody = $("vaultBody"), vaultTag = $("vaultTag");
+  var ICONS = { note:"📝", code:"💻", music:"🎵", capsule:"🧪", key:"🗝️" };
+
+  function renderLockScreen(){
+    vaultTag.textContent = "Locked"; vaultKey = null;
+    var initialized = !!localStorage.getItem(LS.verify);
+    vaultBody.innerHTML =
+      '<div class="vault-lock">'+
+        '<input id="vpw" type="password" placeholder="'+(initialized?'master password':'create a master password')+'" autocomplete="off" aria-label="Master password">'+
+        '<div class="vault-row">'+
+          '<button class="btn primary" id="vgo" style="flex:1">'+(initialized?'Unlock Vault':'Initialize Vault')+'</button>'+
+          (initialized?'<button class="btn danger" id="vwipe">Wipe</button>':'')+
+        '</div>'+
+        '<div class="vault-note"><b>PBKDF2</b> 100k · <b>AES-GCM</b> 256 · offline. '+
+          (initialized?'Enter your password to re-derive the key.':'Nothing is stored until you set a password — it never leaves this device.')+'</div>'+
+      '</div>';
+    $("vgo").addEventListener("click", function(){ initialized ? unlockVault() : initVault(); });
+    $("vpw").addEventListener("keydown", function(e){ if(e.key==="Enter"){ initialized?unlockVault():initVault(); } });
+    if($("vwipe")) $("vwipe").addEventListener("click", wipeVault);
+  }
+  function initVault(){
+    var pw = $("vpw").value; if(pw.length<4){ flashNote("Password must be at least 4 characters."); return; }
+    deriveKey(pw).then(function(key){
+      return encryptStr(key, "eye-vault-verify-ok").then(function(v){
+        localStorage.setItem(LS.verify, JSON.stringify(v)); vaultKey = key; renderUnlocked();
+        line("system","🔓 Vault initialized — AES-GCM key derived.","sys");
+      });
+    });
+  }
+  function unlockVault(){
+    var pw = $("vpw").value;
+    deriveKey(pw).then(function(key){
+      var v = JSON.parse(localStorage.getItem(LS.verify));
+      return decryptStr(key, v).then(function(txt){
+        if(txt==="eye-vault-verify-ok"){ vaultKey = key; renderUnlocked(); line("system","🔓 Vault unlocked.","sys"); }
+        else throw new Error("bad");
+      }).catch(function(){ flashNote("Wrong password — key rejected."); });
+    });
+  }
+  function lockVault(){ vaultKey = null; renderLockScreen(); }
+  function wipeVault(){
+    if(!confirm("Wipe the vault? All encrypted boxes are permanently destroyed.")) return;
+    localStorage.removeItem(LS.verify); localStorage.removeItem(LS.boxes); localStorage.removeItem(LS.salt);
+    renderLockScreen(); line("system","🧨 Vault wiped — salt, verify blob and boxes destroyed.","sys");
+  }
+  function flashNote(msg){
+    var n = document.createElement("div"); n.className="vault-note"; n.style.color="var(--crit)"; n.textContent=msg;
+    vaultBody.appendChild(n); setTimeout(function(){ if(n.parentNode) n.parentNode.removeChild(n); }, 2600);
+  }
+  function renderUnlocked(){
+    vaultTag.textContent = "Unlocked";
+    vaultBody.innerHTML =
+      '<div class="vault-lock">'+
+        '<input id="btitle" type="text" placeholder="box title" aria-label="Box title">'+
+        '<textarea id="bbody" placeholder="secret contents — encrypted before it touches disk" aria-label="Box contents"></textarea>'+
+        '<div class="vault-row">'+
+          '<select id="btype" aria-label="Box type" style="flex:0 0 130px">'+
+            '<option value="note">📝 note</option><option value="code">💻 code</option>'+
+            '<option value="music">🎵 music</option><option value="capsule">🧪 capsule</option>'+
+            '<option value="key">🗝️ key</option></select>'+
+          '<button class="btn primary" id="badd" style="flex:1">Save Encrypted</button>'+
+        '</div>'+
+        '<div class="vault-row">'+
+          '<button class="btn" id="block" style="flex:1"><span class="lockchip">🔒 Lock Vault</span></button>'+
+          '<button class="btn danger" id="vwipe2">Wipe</button>'+
+        '</div>'+
+      '</div>'+
+      '<div class="boxes" id="boxes"></div>';
+    $("badd").addEventListener("click", addBox);
+    $("block").addEventListener("click", lockVault);
+    $("vwipe2").addEventListener("click", wipeVault);
+    renderBoxList();
+  }
+  function addBox(){
+    var title = $("btitle").value.trim(), body = $("bbody").value, type = $("btype").value;
+    if(!title){ flashNote("Give the box a title."); return; }
+    encryptStr(vaultKey, JSON.stringify({title:title, body:body, type:type, ts:Date.now()}))
+      .then(function(payload){
+        var boxes = loadBoxes(); boxes.unshift(payload); saveBoxes(boxes);
+        $("btitle").value=""; $("bbody").value="";
+        renderBoxList(); line("system","🔐 Box '"+title+"' encrypted & stored.","sys");
+      });
+  }
+  function renderBoxList(){
+    var wrap = $("boxes"); if(!wrap) return;
+    var boxes = loadBoxes();
+    if(!boxes.length){ wrap.innerHTML = '<div class="locked-hint">No encrypted boxes yet.</div>'; return; }
+    wrap.innerHTML = "";
+    boxes.forEach(function(payload, idx){
+      decryptStr(vaultKey, payload).then(function(json){
+        var d = JSON.parse(json);
+        var el = document.createElement("div"); el.className="box";
+        el.innerHTML =
+          '<span class="b-ico">'+(ICONS[d.type]||"📝")+'</span>'+
+          '<div class="b-main"><div class="b-title"></div>'+
+            '<div class="b-meta">'+d.type+' · '+new Date(d.ts).toLocaleDateString()+'</div>'+
+            '<div class="b-body"></div></div>'+
+          '<button class="b-del" aria-label="Delete box" title="Delete">✕</button>';
+        el.querySelector(".b-title").textContent = d.title;
+        el.querySelector(".b-body").textContent = d.body || "(empty)";
+        el.querySelector(".b-main").addEventListener("click", function(){ el.classList.toggle("open"); });
+        el.querySelector(".b-del").addEventListener("click", function(ev){
+          ev.stopPropagation();
+          var b = loadBoxes(); b.splice(idx,1); saveBoxes(b); renderBoxList();
+        });
+        wrap.appendChild(el);
+      });
+    });
+  }
+  if(window.crypto && crypto.subtle){ renderLockScreen(); }
+  else { vaultBody.innerHTML = '<div class="locked-hint">WebCrypto unavailable in this context (needs HTTPS or localhost).</div>'; }
+
+  /* ============================================================
+     7. Collapse pipeline — canvas visualizer + retention slider
+     ============================================================ */
+  var pipe = $("pipe"), pctx = pipe.getContext("2d");
+  var DPR = Math.min(window.devicePixelRatio||1, 1.5); // DPR cap 1.5 per eYe spec
+  var pw, ph, particles = [], collapseX, retention = 97;
+  function sizePipe(){
+    var r = pipe.getBoundingClientRect();
+    pw = r.width; ph = r.height || 190;
+    pipe.width = pw*DPR; pipe.height = ph*DPR;
+    pctx.setTransform(DPR,0,0,DPR,0,0);
+    collapseX = pw*0.72;
+  }
+  function spawn(){
+    particles.push({
+      x:-6, y:ph*0.5 + (Math.random()-0.5)*ph*0.62,
+      vx:0.7+Math.random()*1.1, size:1.4+Math.random()*2.2,
+      survives: (Math.random()*100) < retention,
+      hue: Math.random()<0.5, life:0
+    });
+  }
+  function drawPipe(){
+    pctx.clearRect(0,0,pw,ph);
+    // collapse core glow
+    var cy = ph*0.5;
+    var g = pctx.createRadialGradient(collapseX,cy,2,collapseX,cy,46);
+    g.addColorStop(0,"rgba(0,230,201,.5)"); g.addColorStop(1,"rgba(0,230,201,0)");
+    pctx.fillStyle = g; pctx.beginPath(); pctx.arc(collapseX,cy,46,0,Math.PI*2); pctx.fill();
+    // map pod
+    pctx.beginPath(); pctx.arc(collapseX,cy,7,0,Math.PI*2);
+    pctx.fillStyle="#00e6c9"; pctx.shadowColor="#00e6c9"; pctx.shadowBlur=14; pctx.fill(); pctx.shadowBlur=0;
+
+    for(var i=particles.length-1;i>=0;i--){
+      var p = particles[i]; p.life++;
+      if(p.x < collapseX){
+        p.x += p.vx;
+        // converge toward core line as it approaches
+        var t = p.x/collapseX;
+        p.y += (cy - p.y)*0.02*t;
+        pctx.globalAlpha = 0.5+0.5*t;
+        pctx.fillStyle = p.hue ? "rgba(0,230,201,"+(0.35+0.5*t)+")" : "rgba(232,181,82,"+(0.28+0.4*t)+")";
+        pctx.beginPath(); pctx.arc(p.x,p.y,p.size,0,Math.PI*2); pctx.fill();
+      } else {
+        // at collapse point: survivors compress into pod (cold residue dissolves)
+        pctx.globalAlpha = Math.max(0, 1 - (p.x-collapseX)/60);
+        if(p.survives){
+          p.x += 0.4; p.size *= 0.94;
+          pctx.fillStyle = "rgba(0,230,201,.9)";
+          pctx.beginPath(); pctx.arc(collapseX + (p.x-collapseX)*0.3, cy + (p.y-cy)*0.2, Math.max(0.4,p.size),0,Math.PI*2); pctx.fill();
+        } else {
+          p.x += 2.4; p.y += (Math.random()-0.5)*3;
+          pctx.fillStyle = "rgba(120,140,160,.4)";
+          pctx.beginPath(); pctx.arc(p.x,p.y,p.size*0.8,0,Math.PI*2); pctx.fill();
+        }
+        if(p.x > collapseX+70 || p.size<0.5){ particles.splice(i,1); }
+      }
+    }
+    pctx.globalAlpha = 1;
+  }
+  function pipeFrame(){ if(Math.random()<0.55) spawn(); if(particles.length>240) particles.splice(0, particles.length-240); drawPipe(); if(!reduce) requestAnimationFrame(pipeFrame); }
+  sizePipe();
+  window.addEventListener("resize", sizePipe);
+  if(reduce){ for(var k=0;k<80;k++){ spawn(); particles.forEach(function(p){p.x=Math.random()*collapseX;}); } drawPipe(); }
+  else pipeFrame();
+
+  // retention slider -> live metrics
+  var retSlider = $("retSlider");
+  function updateRetention(){
+    retention = parseFloat(retSlider.value);
+    // model: baseline 1150KB; ratio scales with retention (lower retention -> tighter but lossy)
+    var kb = (2.01 * (retention/97) * (retention/97)).toFixed(2);
+    var ratio = Math.round(1150/parseFloat(kb));
+    $("ppRatio").textContent = ratio+":1";
+    $("ppRetain").textContent = retention.toFixed(retention%1?1:0)+"%";
+    $("ppSize").textContent = kb+" KB"; $("ppEndSize").textContent = kb+" KB";
+    var v = $("retVerdict");
+    if(retention>=99.5){ v.textContent="FORENSIC TAIL"; v.style.color="var(--warn)"; }
+    else if(retention>=95.5 && retention<=98.5){ v.textContent="SWEET SPOT"; v.style.color="var(--eye)"; }
+    else if(retention<93){ v.textContent="LOSSY · LEAN"; v.style.color="var(--gold)"; }
+    else { v.textContent="BALANCED"; v.style.color="var(--nominal)"; }
+  }
+  retSlider.addEventListener("input", updateRetention);
+  updateRetention();
+
+  /* ============================================================
+     8. Settings modal — backend link configuration
+     ============================================================ */
+  var modal = $("settings");
+  function openSettings(){ $("setBase").value = CFG.base; $("setToken").value = CFG.token; $("setStatus").textContent=""; modal.hidden = false; $("setBase").focus(); }
+  function closeSettings(){ modal.hidden = true; }
+  function normBase(v){ v=(v||"").trim().replace(/\/+$/,""); if(v && !/^https?:\/\//i.test(v)) v="https://"+v; return v; }
+  function testLink(base, token){
+    var url = base + "/api/status" + (token ? "?token="+encodeURIComponent(token) : "");
+    var ctl = ("AbortController" in window) ? new AbortController() : null;
+    var t = ctl ? setTimeout(function(){ ctl.abort(); }, 4500) : null;
+    return fetch(url, { mode:"cors", cache:"no-store",
+      headers: token?{"Authorization":"Bearer "+token}:{}, signal: ctl?ctl.signal:undefined })
+      .then(function(r){ if(t) clearTimeout(t); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); });
+  }
+  $("connPill").addEventListener("click", openSettings);
+  $("setCancel").addEventListener("click", closeSettings);
+  modal.addEventListener("click", function(e){ if(e.target===modal) closeSettings(); });
+  document.addEventListener("keydown", function(e){ if(e.key==="Escape" && !modal.hidden) closeSettings(); });
+  $("setTest").addEventListener("click", function(){
+    var b = normBase($("setBase").value), tok = $("setToken").value.trim(), st = $("setStatus");
+    if(!b){ st.style.color="var(--muted)"; st.textContent="enter a URL"; return; }
+    st.style.color="var(--ink-dim)"; st.textContent="testing…";
+    testLink(b, tok).then(function(s){
+      var g = s.gpu||{}; st.style.color="var(--nominal)";
+      st.textContent = "linked ✓ "+(g.available?("GPU "+Math.round(g.temp_c)+"°C"):("CPU "+Math.round(s.cpu||0)+"%"));
+    }).catch(function(e){ st.style.color="var(--crit)"; st.textContent="no link ("+e.message+")"; });
+  });
+  $("setSave").addEventListener("click", function(){
+    CFG.base = normBase($("setBase").value); CFG.token = $("setToken").value.trim();
+    localStorage.setItem("eye_api_base", CFG.base); localStorage.setItem("eye_api_token", CFG.token);
+    closeSettings();
+    setConn(CFG.base?"live":"demo"); pollTelemetry();
+    line("system", CFG.base ? "🔗 Backend link saved → "+CFG.base : "🔌 Backend link cleared — offline demo.", "sys");
+  });
+
+})();
+</script>
+</body>
+</html>
