@@ -1,0 +1,383 @@
+/* ============================================================================
+ * eYe Theme — the fleet's shared visual identity.
+ *
+ * One palette for PC, Eru, Jackie and Cybernetic Empath. Copied verbatim into
+ * each repo (`src/fleet-ui/eye-theme.css`) so the four apps stay in sync by
+ * being literally the same file; edit it in PC and propagate.
+ *
+ * ---------------------------------------------------------------------------
+ * TWO LAYERS, AND WHY THE SPLIT MATTERS
+ * ---------------------------------------------------------------------------
+ *
+ *   1. `--eye-*` raw tokens — the situation-room palette lifted from
+ *      `public/app-commander.html`. Always active. A fresh namespace that
+ *      collides with nothing, so importing this file is inert for existing UI.
+ *
+ *   2. shadcn / Base44 bridge — the same colors re-expressed as the bare
+ *      `H S% L%` triplets that `hsl(var(--background))` expects. This is the
+ *      cheap path to fleet-wide consistency: Eru and Jackie are shadcn builds
+ *      with hundreds of components, and the bridge restyles all of them from
+ *      one place instead of touching each.
+ *
+ * The bridge is **opt-in**, gated behind `data-eye-theme` on <html>. That is a
+ * cascade requirement, not a preference: unlayered declarations outrank
+ * anything inside `@layer base`, so an ungated `:root` block here would
+ * silently override each host app's existing palette the moment the file was
+ * imported. Gating it means landing this file changes nothing until a theme is
+ * explicitly chosen — adopt per app, on purpose, when someone can look at it.
+ *
+ *     document.documentElement.dataset.eyeTheme = 'eye-dark';
+ *
+ * Themes: `eye-dark` (default look), `cyber-neon`, `cream-light`.
+ * ========================================================================= */
+
+/* ============================================================================
+ * LAYER 1 — raw tokens. Always active; safe to import anywhere.
+ * ========================================================================= */
+
+:root {
+  /* ---- ground & structure ---- */
+  --eye-bg: #0a0e14;
+  --eye-bg-2: #0c121b;
+  --eye-panel: #111a26;
+  --eye-panel-2: #0e1620;
+  --eye-panel-hi: #162130;
+  --eye-line: #1d2a39;
+  --eye-line-2: #28394d;
+
+  /* ---- ink ---- */
+  --eye-ink: #cdd9ea;
+  --eye-ink-dim: #8a9bb2;
+  --eye-muted: #61728a;
+
+  /* ---- signature teal — the eYe itself ---- */
+  --eye-accent: #00e6c9;
+  --eye-accent-deep: #0a5c54;
+  --eye-accent-soft: rgba(0, 230, 201, 0.14);
+
+  /* ---- rank gold — status and insignia only, never body text ---- */
+  --eye-gold: #e8b552;
+  --eye-gold-soft: rgba(232, 181, 82, 0.12);
+
+  /* ---- semantics — paired with THERMAL in lib/jackyClient.ts ---- */
+  --eye-nominal: #46e08a;
+  --eye-warn: #f5b73f;
+  --eye-crit: #ff5d78;
+  --eye-crit-soft: rgba(255, 93, 120, 0.16);
+
+  /* ---- type ---- */
+  --eye-font-display: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+  --eye-font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+
+  /* ---- geometry ---- */
+  --eye-radius: 14px;
+  --eye-radius-sm: 9px;
+  --eye-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 18px 40px -24px rgba(0, 0, 0, 0.9);
+
+  /* ---- atmosphere ---- */
+  --eye-scanline-opacity: 0.5;
+  --eye-glow-teal: radial-gradient(1200px 620px at 78% -8%, rgba(0, 230, 201, 0.07), transparent 60%);
+  --eye-glow-gold: radial-gradient(900px 520px at -6% 4%, rgba(232, 181, 82, 0.05), transparent 55%);
+}
+
+/* ---- Cyber Neon: hotter, higher-contrast variant of the same structure ---- */
+:root[data-eye-theme='cyber-neon'] {
+  --eye-bg: #07060f;
+  --eye-bg-2: #0b0918;
+  --eye-panel: #150f28;
+  --eye-panel-2: #100b1f;
+  --eye-panel-hi: #1e1638;
+  --eye-line: #2b1f4d;
+  --eye-line-2: #3d2c6b;
+
+  --eye-ink: #e6dcff;
+  --eye-ink-dim: #a99bd0;
+  --eye-muted: #7b6ca3;
+
+  --eye-accent: #00f0ff;
+  --eye-accent-deep: #0a4a5c;
+  --eye-accent-soft: rgba(0, 240, 255, 0.16);
+
+  --eye-gold: #ff4fd8;
+  --eye-gold-soft: rgba(255, 79, 216, 0.14);
+
+  --eye-nominal: #3dffa8;
+  --eye-warn: #ffc447;
+  --eye-crit: #ff3d6e;
+  --eye-crit-soft: rgba(255, 61, 110, 0.18);
+
+  --eye-scanline-opacity: 0.7;
+  --eye-glow-teal: radial-gradient(1200px 620px at 78% -8%, rgba(0, 240, 255, 0.1), transparent 60%);
+  --eye-glow-gold: radial-gradient(900px 520px at -6% 4%, rgba(255, 79, 216, 0.07), transparent 55%);
+}
+
+/* ---- Cream Light: the daylight skin. Same geometry, inverted ground ---- */
+:root[data-eye-theme='cream-light'] {
+  --eye-bg: #f7f4ec;
+  --eye-bg-2: #efeade;
+  --eye-panel: #ffffff;
+  --eye-panel-2: #faf7f0;
+  --eye-panel-hi: #f2ede1;
+  --eye-line: #ded6c4;
+  --eye-line-2: #c9bfa8;
+
+  --eye-ink: #2a2b26;
+  --eye-ink-dim: #5d5f56;
+  --eye-muted: #8a8c81;
+
+  --eye-accent: #00887a;
+  --eye-accent-deep: #b8ede6;
+  --eye-accent-soft: rgba(0, 136, 122, 0.1);
+
+  --eye-gold: #a8761c;
+  --eye-gold-soft: rgba(168, 118, 28, 0.1);
+
+  --eye-nominal: #1d8a4e;
+  --eye-warn: #b5791a;
+  --eye-crit: #c62d4c;
+  --eye-crit-soft: rgba(198, 45, 76, 0.1);
+
+  /* Daylight: scanlines and glows read as dirt on a light ground. */
+  --eye-scanline-opacity: 0;
+  --eye-glow-teal: none;
+  --eye-glow-gold: none;
+  --eye-shadow: 0 1px 2px rgba(42, 43, 38, 0.06), 0 12px 28px -20px rgba(42, 43, 38, 0.35);
+}
+
+/* ============================================================================
+ * LAYER 2 — shadcn / Base44 bridge. Opt-in per the header note.
+ *
+ * Each block restates the theme's colors as bare HSL triplets. Setting
+ * `data-eye-theme` hands the host app's entire shadcn component tree over to
+ * the eYe palette in one step.
+ * ========================================================================= */
+
+:root[data-eye-theme='eye-dark'] {
+  --background: 216 33% 6%;
+  --foreground: 215 41% 86%;
+  --card: 214 38% 11%;
+  --card-foreground: 215 41% 86%;
+  --popover: 213 39% 9%;
+  --popover-foreground: 215 41% 86%;
+  --primary: 172 100% 45%;
+  --primary-foreground: 216 33% 6%;
+  --secondary: 215 37% 14%;
+  --secondary-foreground: 215 41% 86%;
+  --muted: 215 37% 14%;
+  --muted-foreground: 215 17% 46%;
+  --accent: 174 80% 20%;
+  --accent-foreground: 172 100% 45%;
+  --destructive: 350 100% 68%;
+  --destructive-foreground: 216 33% 6%;
+  --border: 212 33% 17%;
+  --input: 212 32% 23%;
+  --ring: 172 100% 45%;
+  --radius: 14px;
+
+  /* Eru's shadcn build expects the sidebar set. */
+  --sidebar-background: 213 39% 9%;
+  --sidebar-foreground: 215 41% 86%;
+  --sidebar-primary: 172 100% 45%;
+  --sidebar-primary-foreground: 216 33% 6%;
+  --sidebar-accent: 215 37% 14%;
+  --sidebar-accent-foreground: 172 100% 45%;
+  --sidebar-border: 212 33% 17%;
+  --sidebar-ring: 172 100% 45%;
+
+  /* Teal → gold ramp, so data viz reads as one system across the fleet. */
+  --chart-1: 172 100% 45%;
+  --chart-2: 40 77% 62%;
+  --chart-3: 146 71% 58%;
+  --chart-4: 40 90% 60%;
+  --chart-5: 350 100% 68%;
+}
+
+:root[data-eye-theme='cyber-neon'] {
+  --background: 253 44% 5%;
+  --foreground: 258 100% 93%;
+  --card: 259 45% 11%;
+  --card-foreground: 258 100% 93%;
+  --popover: 258 48% 9%;
+  --popover-foreground: 258 100% 93%;
+  --primary: 184 100% 50%;
+  --primary-foreground: 253 44% 5%;
+  --secondary: 259 41% 15%;
+  --secondary-foreground: 258 100% 93%;
+  --muted: 259 41% 15%;
+  --muted-foreground: 258 21% 53%;
+  --accent: 193 80% 20%;
+  --accent-foreground: 184 100% 50%;
+  --destructive: 344 100% 62%;
+  --destructive-foreground: 253 44% 5%;
+  --border: 259 42% 21%;
+  --input: 259 42% 30%;
+  --ring: 184 100% 50%;
+  --radius: 14px;
+
+  --sidebar-background: 258 48% 9%;
+  --sidebar-foreground: 258 100% 93%;
+  --sidebar-primary: 184 100% 50%;
+  --sidebar-primary-foreground: 253 44% 5%;
+  --sidebar-accent: 259 41% 15%;
+  --sidebar-accent-foreground: 184 100% 50%;
+  --sidebar-border: 259 42% 21%;
+  --sidebar-ring: 184 100% 50%;
+
+  --chart-1: 184 100% 50%;
+  --chart-2: 313 100% 65%;
+  --chart-3: 157 100% 62%;
+  --chart-4: 42 100% 64%;
+  --chart-5: 344 100% 62%;
+}
+
+:root[data-eye-theme='cream-light'] {
+  --background: 44 39% 95%;
+  --foreground: 72 5% 16%;
+  --card: 0 0% 100%;
+  --card-foreground: 72 5% 16%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 72 5% 16%;
+  --primary: 175 100% 27%;
+  --primary-foreground: 44 39% 95%;
+  --secondary: 44 30% 91%;
+  --secondary-foreground: 72 5% 16%;
+  --muted: 44 30% 91%;
+  --muted-foreground: 68 4% 53%;
+  --accent: 173 55% 83%;
+  --accent-foreground: 175 100% 27%;
+  --destructive: 347 63% 48%;
+  --destructive-foreground: 44 39% 95%;
+  --border: 42 30% 82%;
+  --input: 42 26% 72%;
+  --ring: 175 100% 27%;
+  --radius: 14px;
+
+  --sidebar-background: 44 43% 96%;
+  --sidebar-foreground: 72 5% 16%;
+  --sidebar-primary: 175 100% 27%;
+  --sidebar-primary-foreground: 44 39% 95%;
+  --sidebar-accent: 44 30% 91%;
+  --sidebar-accent-foreground: 175 100% 27%;
+  --sidebar-border: 42 30% 82%;
+  --sidebar-ring: 175 100% 27%;
+
+  --chart-1: 175 100% 27%;
+  --chart-2: 35 72% 38%;
+  --chart-3: 148 65% 33%;
+  --chart-4: 40 75% 41%;
+  --chart-5: 347 63% 48%;
+}
+
+/* ============================================================================
+ * PRIMITIVES — the shell language, so the same panel reads as the same object
+ * in every app. All opt-in by class; none of it applies on its own.
+ * ========================================================================= */
+
+/** Situation-room ground. Put on <body> or the app's outermost container. */
+.eye-ground {
+  background: var(--eye-glow-teal), var(--eye-glow-gold), var(--eye-bg);
+  color: var(--eye-ink);
+  font-family: var(--eye-font-mono);
+  -webkit-font-smoothing: antialiased;
+}
+
+/** Faint CRT atmosphere. `--eye-scanline-opacity: 0` disables it per theme. */
+.eye-scanlines::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+  background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.014) 0 1px, transparent 1px 3px);
+  mix-blend-mode: overlay;
+  opacity: var(--eye-scanline-opacity);
+}
+
+.eye-panel {
+  background: linear-gradient(180deg, var(--eye-panel), var(--eye-panel-2));
+  border: 1px solid var(--eye-line);
+  border-radius: var(--eye-radius);
+  box-shadow: var(--eye-shadow);
+}
+
+/** Uppercase micro-label above a readout. */
+.eye-label {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--eye-muted);
+}
+
+/** Numeric readout. Tabular figures so digits don't jitter as values update. */
+.eye-readout {
+  font-family: var(--eye-font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/** Connection pill. `.live` / `.demo` / `.offline` mirror JackyLinkState. */
+.eye-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--eye-line-2);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--eye-ink-dim);
+}
+.eye-pill::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--eye-muted);
+}
+.eye-pill.live {
+  color: var(--eye-nominal);
+  border-color: color-mix(in srgb, var(--eye-nominal) 40%, transparent);
+}
+.eye-pill.live::before {
+  background: var(--eye-nominal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--eye-nominal) 16%, transparent);
+}
+.eye-pill.demo {
+  color: var(--eye-gold);
+  border-color: color-mix(in srgb, var(--eye-gold) 40%, transparent);
+}
+.eye-pill.demo::before {
+  background: var(--eye-gold);
+}
+.eye-pill.offline {
+  color: var(--eye-crit);
+  border-color: color-mix(in srgb, var(--eye-crit) 40%, transparent);
+}
+.eye-pill.offline::before {
+  background: var(--eye-crit);
+  box-shadow: 0 0 0 3px var(--eye-crit-soft);
+}
+
+/**
+ * Simulated-data marker. Pair with any panel rendering telemetry whose
+ * `simulated` flag is true — see the honesty rule in lib/jackyClient.ts.
+ */
+.eye-simulated {
+  outline: 1px dashed color-mix(in srgb, var(--eye-gold) 45%, transparent);
+  outline-offset: 2px;
+}
+
+/* Every eYe animation is decorative; none of it carries meaning on its own. */
+@media (prefers-reduced-motion: reduce) {
+  .eye-scanlines::after {
+    opacity: 0;
+  }
+  .eye-ground *,
+  .eye-ground *::before,
+  .eye-ground *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
