@@ -67,4 +67,6 @@ export const jacky = {
   ask: (prompt: string, task_type = "general") =>
     proxy<JackyAskResult>("ask", "POST", { prompt, task_type }),
   getControl: () => proxy<{ active: boolean; thinking_mode: string }>("control"),
+  askSquad: (squad: string, prompt: string) =>
+    proxy<JackyAskResult>(`squads/${squad}/ask`, "POST", { prompt }),
 };
