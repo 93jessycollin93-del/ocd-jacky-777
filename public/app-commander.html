@@ -110,9 +110,10 @@
   .modal-card p{font-size:12px; color:var(--ink-dim); line-height:1.55; margin:0 0 16px}
   .modal-card label{display:block; font-size:10px; letter-spacing:.16em; text-transform:uppercase;
     color:var(--muted); margin:12px 0 6px}
-  .modal-card input{width:100%; background:var(--panel-2); border:1px solid var(--line); border-radius:8px;
+  .modal-card input,.modal-card select{width:100%; background:var(--panel-2); border:1px solid var(--line); border-radius:8px;
     padding:10px 12px; color:var(--ink); font-family:var(--font-mono); font-size:13px; outline:none}
-  .modal-card input:focus{border-color:var(--eye); box-shadow:0 0 0 3px var(--eye-soft)}
+  .modal-card input:focus,.modal-card select:focus{border-color:var(--eye); box-shadow:0 0 0 3px var(--eye-soft)}
+  .modal-card input:disabled{opacity:.45; cursor:not-allowed}
   .modal-actions{display:flex; align-items:center; gap:9px; margin-top:20px; flex-wrap:wrap}
   .modal-actions #setStatus{font-size:11px; letter-spacing:.06em}
 
@@ -352,8 +353,13 @@
 <div class="modal" id="settings" hidden aria-modal="true" role="dialog" aria-label="Backend link settings">
   <div class="modal-card">
     <h3>Backend Link</h3>
-    <p>Point the Commander at your live Jacky API (<code>serve.py</code> / <code>jacky_api.py</code>) — e.g. your Cloudflare tunnel. It reads <code>/api/status</code> + <code>/api/assessment</code> for live thermals and routes orders through <code>/api/ask</code>. Leave blank for offline demo. (Your backend must send CORS headers.)</p>
-    <label for="setBase">API base URL</label>
+    <p><b>Same-origin proxy</b> works with zero config when this page is served by PC's server (<code>/api/jacky/*</code> → just set <code>JACKY_API_BASE</code> there). <b>Direct URL</b> hits a jacky host (e.g. your Cloudflare tunnel) and needs CORS headers. Leave on Direct with a blank URL for offline demo.</p>
+    <label for="setMode">Link mode</label>
+    <select id="setMode">
+      <option value="direct">Direct URL — jacky host / tunnel</option>
+      <option value="proxy">Same-origin proxy — /api/jacky (served by PC)</option>
+    </select>
+    <label for="setBase" id="setBaseLabel">API base URL</label>
     <input id="setBase" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://sas.cybernetic67.com">
     <label for="setToken">Access token — optional (SAS)</label>
     <input id="setToken" type="password" autocomplete="off" placeholder="sent as Bearer + ?token=">
@@ -514,22 +520,30 @@
      POST /api/ask {prompt,task_type}. Configurable base URL + token.
      ============================================================ */
   var CFG = {
+    mode: localStorage.getItem("eye_api_mode")||"direct", // "direct" | "proxy"
     base: (localStorage.getItem("eye_api_base")||"").replace(/\/+$/,""),
     token: localStorage.getItem("eye_api_token")||""
   };
   var LINK = { live:false, checkedOnce:false }; // live = last real fetch succeeded
+  // "proxy" mode calls the same-origin /api/jacky/* route (PC server.ts) — no CORS,
+  // token stays server-side. "direct" mode hits a jacky host URL. Endpoint paths
+  // ("/api/status") map to "/api/jacky/status" in proxy mode.
+  function linked(){ return CFG.mode==="proxy" || !!CFG.base; }
+  function targetUrl(path){
+    return CFG.mode==="proxy" ? path.replace(/^\/api\//,"/api/jacky/") : (CFG.base+path);
+  }
   function authHeaders(){ return CFG.token ? { "Authorization":"Bearer "+CFG.token } : {}; }
   function withToken(url){
     if(!CFG.token) return url;
     return url + (url.indexOf("?")>=0?"&":"?") + "token=" + encodeURIComponent(CFG.token);
   }
   function apiFetch(path, opts, timeoutMs){
-    if(!CFG.base) return Promise.reject(new Error("no-base"));
+    if(!linked()) return Promise.reject(new Error("no-link"));
     opts = opts||{};
     var ctl = ("AbortController" in window) ? new AbortController() : null;
     var t = ctl ? setTimeout(function(){ ctl.abort(); }, timeoutMs||4500) : null;
     var headers = Object.assign({}, opts.headers||{}, authHeaders());
-    return fetch(withToken(CFG.base+path), {
+    return fetch(withToken(targetUrl(path)), {
       method: opts.method||"GET", mode:"cors", cache:"no-store",
       headers: headers, body: opts.body, signal: ctl?ctl.signal:undefined
     }).then(function(r){
@@ -645,13 +659,13 @@
     setSituation();
   }
   function pollTelemetry(){
-    if(!CFG.base){ if(!reduce) driftTelemetry(); setConn("demo"); return; }
+    if(!linked()){ if(!reduce) driftTelemetry(); setConn("demo"); return; }
     apiGet("/api/status")
       .then(function(s){ applyRealStatus(s||{}); setConn("live"); })
-      .catch(function(){ if(!reduce) driftTelemetry(); setConn(CFG.base?"offline":"demo"); });
+      .catch(function(){ if(!reduce) driftTelemetry(); setConn(linked()?"offline":"demo"); });
   }
   setSituation();
-  setConn(CFG.base?"live":"demo"); // optimistic; poll corrects
+  setConn(linked()?"live":"demo"); // optimistic; poll corrects
   pollTelemetry();
   setInterval(pollTelemetry, 3500);
 
@@ -789,7 +803,7 @@
     if(cmd==="clear"){ consoleEl.innerHTML=""; return; }
     if(!cmd){ return; }
     // free-form order → route to the live backend if linked, else offline responder
-    if(CFG.base){ askBackend(raw, r); return; }
+    if(linked()){ askBackend(raw, r); return; }
     var replies = [
       "Understood. Standing by — say 'help' for the order set.",
       "Logged, Commander. I'll keep it local unless the 3090 says otherwise.",
@@ -812,7 +826,7 @@
     });
   });
   // boot log
-  line("system", CFG.base ? ("eYe Vault OS · console online · linked → "+CFG.base) : "eYe Vault OS · console online · offline demo (⚙ top-right to link backend)", "sys");
+  line("system", linked() ? ("eYe Vault OS · console online · linked → "+(CFG.mode==="proxy"?"same-origin proxy (/api/jacky)":CFG.base)) : "eYe Vault OS · console online · offline demo (⚙ top-right to link backend)", "sys");
   setTimeout(function(){ jackieSay("Jackie reporting, Commander. Fleet is up and the die is cool. Awaiting orders. 🫡"); }, 500);
 
   /* ============================================================
@@ -1049,11 +1063,16 @@
      8. Settings modal — backend link configuration
      ============================================================ */
   var modal = $("settings");
-  function openSettings(){ $("setBase").value = CFG.base; $("setToken").value = CFG.token; $("setStatus").textContent=""; modal.hidden = false; $("setBase").focus(); }
+  function syncModeUI(){
+    var proxy = $("setMode").value==="proxy";
+    $("setBase").disabled = proxy;
+    var lbl = $("setBaseLabel"); if(lbl) lbl.style.opacity = proxy ? ".45" : "";
+  }
+  function openSettings(){ $("setBase").value = CFG.base; $("setToken").value = CFG.token; $("setMode").value = CFG.mode; $("setStatus").textContent=""; syncModeUI(); modal.hidden = false; $("setMode").focus(); }
   function closeSettings(){ modal.hidden = true; }
   function normBase(v){ v=(v||"").trim().replace(/\/+$/,""); if(v && !/^https?:\/\//i.test(v)) v="https://"+v; return v; }
-  function testLink(base, token){
-    var url = base + "/api/status" + (token ? "?token="+encodeURIComponent(token) : "");
+  function testLink(mode, base, token){
+    var url = (mode==="proxy" ? "/api/jacky/status" : (base + "/api/status")) + (token ? "?token="+encodeURIComponent(token) : "");
     var ctl = ("AbortController" in window) ? new AbortController() : null;
     var t = ctl ? setTimeout(function(){ ctl.abort(); }, 4500) : null;
     return fetch(url, { mode:"cors", cache:"no-store",
@@ -1064,21 +1083,23 @@
   $("setCancel").addEventListener("click", closeSettings);
   modal.addEventListener("click", function(e){ if(e.target===modal) closeSettings(); });
   document.addEventListener("keydown", function(e){ if(e.key==="Escape" && !modal.hidden) closeSettings(); });
+  $("setMode").addEventListener("change", syncModeUI);
   $("setTest").addEventListener("click", function(){
-    var b = normBase($("setBase").value), tok = $("setToken").value.trim(), st = $("setStatus");
-    if(!b){ st.style.color="var(--muted)"; st.textContent="enter a URL"; return; }
+    var mode = $("setMode").value, b = normBase($("setBase").value), tok = $("setToken").value.trim(), st = $("setStatus");
+    if(mode!=="proxy" && !b){ st.style.color="var(--muted)"; st.textContent="enter a URL"; return; }
     st.style.color="var(--ink-dim)"; st.textContent="testing…";
-    testLink(b, tok).then(function(s){
+    testLink(mode, b, tok).then(function(s){
       var g = s.gpu||{}; st.style.color="var(--nominal)";
       st.textContent = "linked ✓ "+(g.available?("GPU "+Math.round(g.temp_c)+"°C"):("CPU "+Math.round(s.cpu||0)+"%"));
     }).catch(function(e){ st.style.color="var(--crit)"; st.textContent="no link ("+e.message+")"; });
   });
   $("setSave").addEventListener("click", function(){
-    CFG.base = normBase($("setBase").value); CFG.token = $("setToken").value.trim();
+    CFG.mode = $("setMode").value; CFG.base = normBase($("setBase").value); CFG.token = $("setToken").value.trim();
+    localStorage.setItem("eye_api_mode", CFG.mode);
     localStorage.setItem("eye_api_base", CFG.base); localStorage.setItem("eye_api_token", CFG.token);
     closeSettings();
-    setConn(CFG.base?"live":"demo"); pollTelemetry();
-    line("system", CFG.base ? "🔗 Backend link saved → "+CFG.base : "🔌 Backend link cleared — offline demo.", "sys");
+    setConn(linked()?"live":"demo"); pollTelemetry();
+    line("system", linked() ? ("🔗 Backend link saved → "+(CFG.mode==="proxy"?"same-origin proxy (/api/jacky)":CFG.base)) : "🔌 Backend link cleared — offline demo.", "sys");
   });
 
 })();
