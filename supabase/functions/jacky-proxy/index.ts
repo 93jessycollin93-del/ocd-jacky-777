@@ -54,6 +54,16 @@ const ALLOWED_EXACT = new Set([
 // Squad routes carry a name segment, so they need a pattern.
 const ALLOWED_PATTERNS = [/^\/api\/squads\/[A-Za-z0-9_-]{1,64}\/(ask|discuss)$/];
 
+// KNOWN GAP — `/api/control` is the engine's master on/off switch, so it should
+// require more than a signed-in caller. Eru's equivalent gates it on
+// `user.role === 'admin'`, which Base44 supplies directly. Supabase has no
+// app-level role here: `getClaims` returns the Postgres role
+// (`authenticated`), not an application one. Closing this properly needs the
+// `user_roles` table + `has_role()` security-definer function that
+// FLEET_PARITY_PLAN.md §4 already calls for — a migration, not a patch to this
+// file. Until that lands, treat `/api/control` as reachable by any signed-in
+// user and gate it in the UI rather than relying on this relay.
+
 function isAllowed(path: string): boolean {
   if (ALLOWED_EXACT.has(path)) return true;
   return ALLOWED_PATTERNS.some((re) => re.test(path));
@@ -168,7 +178,10 @@ serve(async (req) => {
     try {
       payload = JSON.parse(text);
     } catch {
-      payload = { error: "Engine returned a non-JSON response", raw: text.slice(0, 2_000) };
+      // Don't echo the upstream body back. A misconfigured tunnel typically
+      // answers with someone else's HTML error page, and any signed-in user can
+      // reach this relay — the status code is enough to diagnose from.
+      payload = { error: "Engine returned a non-JSON response" };
     }
     return json(payload, upstream.ok ? 200 : upstream.status);
   } catch (err) {

@@ -10,6 +10,13 @@ idiomatic to the platform it lives on so you can manipulate it there.
 | **PC** | `PC` (`jackies-pc`) | Vite/React 19, self-hosted | Express `server.ts` + Firebase + on-device AI + the `jacky` Flask engine |
 | **Eru** | `eru` | **base44.com** | Base44 entities + serverless functions + Base44 auth |
 | **Jackie** | `ocd-jacky-777` | **lovable.dev** | Supabase (Postgres + RLS + edge functions) + Lovable auth |
+| **Empath** | `CYBERNETIC_EMPATH` | *undecided — greenfield* | None yet; carries the shared layer only (see §6 tracker) |
+
+The fourth row is why the tracker has an "Empath" column. `CYBERNETIC_EMPATH` was an
+empty repo; it now holds the shared `fleet-ui` kit and `jackyClient` so anything built
+there starts consistent rather than being retrofitted. It has no app and no platform
+decision yet, so most parity rows read `todo` against it by definition rather than by
+omission.
 
 **Design tenets.** *Human simplicity on the surface, full depth underneath.* A clean
 shell and a single obvious way in (the **App Commander** launcher, already shipped to

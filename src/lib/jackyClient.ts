@@ -6,7 +6,7 @@
  * engine that actually knows the GPU temperature, the routing waterfall and the
  * ECPS codec was never wired up. This module is that wire, generalized from the
  * fetch layer in `public/app-commander.html` so one implementation serves all
- * three front-ends.
+ * front-ends.
  *
  * Portability is deliberate: the same file drops into Eru (Base44) and Jackie
  * (Lovable/Supabase) unchanged. Those platforms cannot call the engine directly
@@ -50,7 +50,17 @@ export type JackyTransport =
 export interface JackyConfig {
   /** Engine origin, e.g. `https://jacky.example.trycloudflare.com`. No trailing slash. */
   base: string;
-  /** Bearer token; also mirrored onto the query string for engines that read it there. */
+  /**
+   * Bearer token for `direct` transport, sent as an `Authorization` header.
+   *
+   * Persisted in localStorage under the same key the App Commander uses, so the
+   * two share one saved link. That is a deliberate trade: a token in
+   * localStorage is readable by any script on the origin, but splitting the
+   * storage would desync the Commander's settings drawer from every React
+   * panel. `proxy` transport avoids the question entirely — the token lives in
+   * platform secrets and never reaches the browser — and is the recommended
+   * setup for exactly this reason.
+   */
   token: string;
   transport: JackyTransport;
   /** Same-origin path that relays to the engine when `transport === 'proxy'`. */
@@ -457,9 +467,11 @@ class JackyClient {
       // token server-side, so it never reaches the browser bundle.
       return `${stripTrailingSlashes(this.cfg.proxyPath)}?path=${encodeURIComponent(path)}`;
     }
-    const url = this.cfg.base + path;
-    if (!this.cfg.token) return url;
-    return `${url}${url.includes('?') ? '&' : '?'}token=${encodeURIComponent(this.cfg.token)}`;
+    // The token travels in the Authorization header only. It used to be
+    // mirrored onto the query string as well, copying the App Commander — but a
+    // token in a URL lands in server logs, proxy logs and Referer headers, and
+    // nothing in the engine's documented API needs it there.
+    return this.cfg.base + path;
   }
 
   private headers(hasBody: boolean): Record<string, string> {

@@ -66,8 +66,9 @@
   --eye-crit-soft: rgba(255, 93, 120, 0.16);
 
   /* ---- type ---- */
-  --eye-font-display: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
-  --eye-font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+  /* Family names are quoted so linters don't read them as CSS-wide keywords. */
+  --eye-font-display: -apple-system, 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', system-ui, sans-serif;
+  --eye-font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Cascadia Mono', 'Menlo', 'Consolas', monospace;
 
   /* ---- geometry ---- */
   --eye-radius: 14px;
@@ -300,12 +301,18 @@
   box-shadow: var(--eye-shadow);
 }
 
-/** Uppercase micro-label above a readout. */
+/**
+ * Uppercase micro-label above a readout.
+ *
+ * Deliberately `--eye-ink-dim`, not `--eye-muted`: at 11px this is small text
+ * needing 4.5:1, and muted measures 3.57:1 on the panel. ink-dim gives 6.18:1.
+ * Reserve `--eye-muted` for non-text use (borders, dot fills).
+ */
 .eye-label {
   font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--eye-muted);
+  color: var(--eye-ink-dim);
 }
 
 /** Numeric readout. Tabular figures so digits don't jitter as values update. */
@@ -372,6 +379,13 @@
 @media (prefers-reduced-motion: reduce) {
   .eye-scanlines::after {
     opacity: 0;
+  }
+  /* The Tailwind preset exposes these as utilities usable anywhere, so they
+     need stopping on their own — the .eye-ground rule below won't reach them
+     when they're applied outside the situation-room shell. */
+  .animate-eye-sweep,
+  .animate-eye-pulse {
+    animation: none !important;
   }
   .eye-ground *,
   .eye-ground *::before,
