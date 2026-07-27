@@ -45,6 +45,8 @@ const ALLOWED_EXACT = new Set([
   "/api/assessment",
   "/api/ask",
   "/api/control",
+  "/api/models",
+  "/api/bots",
   "/api/squads",
   "/api/ecps/compress",
   "/api/ecps/decompress",

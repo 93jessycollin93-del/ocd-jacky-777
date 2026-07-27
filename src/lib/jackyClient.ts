@@ -121,6 +121,20 @@ export interface JackyGpuStatus {
   util_pct?: number;
   mem_used_mb?: number;
   mem_total_mb?: number;
+  /**
+   * The five fields below came from a second, independently-written client
+   * that landed on `main` while this one was in review — richer GPU/thermal
+   * detail than the App Commander's fetch layer (this file's original
+   * source) ever read. Kept as optional additions rather than merged into the
+   * fields above because neither version has been checked against a live
+   * engine: `jacky_api.py` lives outside every one of these repos, so which
+   * spelling is authoritative is unverified either way.
+   */
+  load_percent?: number;
+  max_temp_c?: number;
+  thermal_margin?: number;
+  headroom_c?: number;
+  safe_to_use?: boolean;
 }
 
 /** `GET /api/status` */
@@ -136,6 +150,13 @@ export interface JackyStatus {
   enabled?: boolean;
   uptime_s?: number;
   host?: string;
+  /** See the JackyGpuStatus note — unverified alternate spellings, kept as extras. */
+  disk_free?: string;
+  disk_used_percent?: number;
+  temps?: Record<string, unknown>;
+  /** Free-text status line some engine builds send at the top level. */
+  status_text?: string;
+  timestamp?: string;
 }
 
 /** Routing tier chosen by the engine's situation assessor. */
@@ -149,6 +170,11 @@ export interface JackyAssessment {
   reasons?: string[];
   /** Engine's own thermal read, when it reports one separately from status. */
   gpu_temp_c?: number;
+  /** See the JackyGpuStatus note — unverified alternate spellings, kept as extras. */
+  level?: string;
+  badge?: string;
+  safe_to_run_local?: boolean;
+  timestamp?: string;
 }
 
 /** `POST /api/ask` */
@@ -177,6 +203,28 @@ export interface JackyAskResponse {
 export interface JackyControl {
   enabled?: boolean;
   reason?: string;
+  /** See the JackyGpuStatus note — unverified alternate spellings, kept as extras. */
+  active?: boolean;
+  thinking_mode?: string;
+  valid_modes?: string[];
+  timestamp?: string;
+}
+
+/** `GET /api/models` — local Ollama roster (online vs downloading). */
+export type JackyModelsResponse = Record<string, unknown>;
+
+export interface JackyBot {
+  name?: string;
+  key?: string;
+  model?: string;
+  provider?: string;
+  cost?: string;
+  status?: string;
+}
+
+/** `GET /api/bots` — named cloud backup bots. */
+export interface JackyBotsResponse {
+  bots?: JackyBot[];
 }
 
 /** `GET /api/squads` */
@@ -586,6 +634,16 @@ class JackyClient {
       method: 'POST',
       body: { enabled, reason },
     });
+  }
+
+  /** `GET /api/models` — local Ollama roster (online vs downloading). */
+  models(): Promise<JackyModelsResponse> {
+    return this.request<JackyModelsResponse>('/api/models');
+  }
+
+  /** `GET /api/bots` — named cloud backup bots. */
+  bots(): Promise<JackyBotsResponse> {
+    return this.request<JackyBotsResponse>('/api/bots');
   }
 
   /** `GET /api/squads` — the multi-agent roster. */
