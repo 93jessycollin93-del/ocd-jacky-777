@@ -1,6 +1,12 @@
 import type { Config } from "tailwindcss";
+// Shared eYe design system — adds HUD colors (text-eye, bg-nominal, …), the
+// display/hud font stacks and the eYe radius/shadow scales. Extend-only, so
+// every existing utility in this config keeps its current meaning.
+// See src/fleet-ui/README.md.
+import eyePreset from "./src/fleet-ui/tailwind-eye-preset.cjs";
 
 export default {
+  presets: [eyePreset],
   darkMode: ["class"],
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
   prefix: "",

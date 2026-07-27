@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { jacky, type JackyStatus, type JackyAssessment } from "@/lib/jackyClient";
+import { jacky, type JackyStatus, type JackyAssessment } from "@/lib/jackyCompat";
 
 type Sit = { gpu: number; cpu: number; ram: number; vram: number };
 type Msg = { who: "you" | "jackie" | "system"; text: string };
