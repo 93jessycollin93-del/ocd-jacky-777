@@ -71,6 +71,18 @@ function isAllowed(path: string): boolean {
   return ALLOWED_PATTERNS.some((re) => re.test(path));
 }
 
+/**
+ * Folds a bare path (`status`, `squads/coding/ask`) or an already-full one
+ * (`/api/status`) into one canonical `/api/...` form, so the allowlist has a
+ * single spelling to check regardless of which caller sent the request.
+ * `jackyClient.ts` always sends full paths; kept for parity with the other two
+ * relays and in case a future caller sends the bare form.
+ */
+function canonicalizePath(raw: string): string {
+  const trimmed = raw.trim().replace(/^\/+/, '');
+  return `/api/${trimmed.replace(/^api\//, '')}`;
+}
+
 // Reads default fast; inference needs room to think.
 const READ_TIMEOUT_MS = 8_000;
 const INFERENCE_TIMEOUT_MS = 60_000;
@@ -137,10 +149,10 @@ serve(async (req) => {
       400,
     );
   }
-  if (!path.startsWith("/api/")) return json({ error: "path must start with /api/" }, 400);
-  if (!isAllowed(path)) {
+  const enginePath = canonicalizePath(path);
+  if (!isAllowed(enginePath)) {
     // Explicit about the reason — a silent 404 here is a debugging trap.
-    return json({ error: `Path not allowlisted by jacky-proxy: ${path}` }, 403);
+    return json({ error: `Path not allowlisted by jacky-proxy: ${enginePath}` }, 403);
   }
 
   // The method the ENGINE should see. In SDK style this is always declared in
@@ -166,7 +178,7 @@ serve(async (req) => {
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const upstream = await fetch(base + path, {
+    const upstream = await fetch(base + enginePath, {
       method,
       headers,
       body,

@@ -242,6 +242,8 @@ export interface JackySquadReply {
   messages?: { member?: string; content?: string }[];
   squad?: string;
   error?: string;
+  /** Which model the lead answered with, when the engine reports one. */
+  model?: string;
 }
 
 /** `POST /api/ecps/compress` */
