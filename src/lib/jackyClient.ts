@@ -276,6 +276,16 @@ export interface JackyTelemetry {
   /** When the reading was taken. */
   at: number;
   gpuName?: string;
+  /**
+   * Which numeric fields above are real engine readings, vs. a `0` standing in
+   * for a field the engine's payload omitted. Every field on this interface is
+   * optional in the wire format (see the module note), so `0` is ambiguous with
+   * "not reported" — and reading an unreported 0°C as a genuine measurement is
+   * exactly the kind of fabricated all-clear this module's honesty rule exists
+   * to prevent. Absent from this map (not `false`) means it WAS reported.
+   * `deriveRouting` checks `gpuTempC` here before calling `0` nominal.
+   */
+  reported?: { gpuTempC?: boolean; cpuPct?: boolean; ramPct?: boolean; vramPct?: boolean };
 }
 
 export interface JackyRouting {
@@ -312,7 +322,21 @@ export const THERMAL = {
 } as const;
 
 /** Classify telemetry into a routing tier. Pure — safe to call per frame. */
-export function deriveRouting(t: Pick<JackyTelemetry, 'gpuTempC' | 'cpuPct' | 'ramPct'>): JackyRouting {
+export function deriveRouting(
+  t: Pick<JackyTelemetry, 'gpuTempC' | 'cpuPct' | 'ramPct' | 'reported'>,
+): JackyRouting {
+  // An engine build that omits gpu.temp_c reads as 0°C after normalizeStatus,
+  // which this function would otherwise call safely nominal — a fabricated
+  // all-clear on exactly the reading the thermal halt exists to catch. Treat
+  // "not reported" as "can't clear the die," not as "cold."
+  if (t.reported && t.reported.gpuTempC === false) {
+    return {
+      tier: 'halt',
+      verdict: 'THERMAL UNKNOWN',
+      readiness: 'DEFCON 2 · THERMAL',
+      reasons: ['Engine did not report gpu.temp_c — cannot confirm the die is safe, so treating it as unsafe.'],
+    };
+  }
   if (t.gpuTempC >= THERMAL.gpuHalt) {
     return {
       tier: 'halt',
@@ -348,18 +372,26 @@ export function deriveRouting(t: Pick<JackyTelemetry, 'gpuTempC' | 'cpuPct' | 'r
 /** Fold a raw `/api/status` payload into normalized telemetry. */
 export function normalizeStatus(s: JackyStatus): JackyTelemetry {
   const gpu = s.gpu ?? {};
-  const vram =
-    gpu.mem_total_mb && gpu.mem_total_mb > 0 && typeof gpu.mem_used_mb === 'number'
-      ? Math.round((gpu.mem_used_mb / gpu.mem_total_mb) * 100)
-      : 0;
+  const gpuTempReported = typeof gpu.temp_c === 'number';
+  const cpuReported = typeof s.cpu === 'number';
+  const ramReported = typeof s.memory === 'number';
+  const vramReported = Boolean(gpu.mem_total_mb && gpu.mem_total_mb > 0 && typeof gpu.mem_used_mb === 'number');
+  const vram = vramReported ? Math.round((gpu.mem_used_mb as number) / (gpu.mem_total_mb as number) * 100) : 0;
   return {
-    gpuTempC: typeof gpu.temp_c === 'number' ? gpu.temp_c : 0,
-    cpuPct: typeof s.cpu === 'number' ? s.cpu : 0,
-    ramPct: typeof s.memory === 'number' ? s.memory : 0,
+    gpuTempC: gpuTempReported ? (gpu.temp_c as number) : 0,
+    cpuPct: cpuReported ? (s.cpu as number) : 0,
+    ramPct: ramReported ? (s.memory as number) : 0,
     vramPct: vram,
     simulated: false,
     at: Date.now(),
     gpuName: gpu.name,
+    // Only recorded when `false` — see the JackyTelemetry doc comment.
+    reported: {
+      ...(gpuTempReported ? {} : { gpuTempC: false }),
+      ...(cpuReported ? {} : { cpuPct: false }),
+      ...(ramReported ? {} : { ramPct: false }),
+      ...(vramReported ? {} : { vramPct: false }),
+    },
   };
 }
 
@@ -404,11 +436,18 @@ class JackyClient {
   private cfg: JackyConfig = loadConfig();
   private linkState: JackyLinkState = 'demo';
   /**
-   * Platform function invoker for proxy transport. Left unset, proxy mode falls
-   * back to a plain same-origin fetch against `proxyPath` — which is what PC
-   * wants, since its own Express server can host the relay. Eru and Jackie set
-   * one so the call goes through `base44.functions.invoke` /
+   * Platform function invoker for proxy transport. Eru and Jackie always set
+   * one, so the call goes through `base44.functions.invoke` /
    * `supabase.functions.invoke` and inherits platform auth.
+   *
+   * Left unset, proxy mode falls back to a plain same-origin fetch against
+   * `proxyPath` — but that fetch carries none of PC's own auth. `server.ts`'s
+   * `/api/jacky` relay is behind `requireAuth`, which needs an `x-jackie-token`
+   * header this bare fetch never sends. It only works while `JACKIE_API_TOKEN`
+   * is unset (dev mode, where `requireAuth` passes everyone through) — once a
+   * token is configured, this fallback gets a 403. PC itself never hits this
+   * path: `lib/jackyBootstrap.ts` always calls `setProxyInvoker` at startup and
+   * attaches the token itself. Don't rely on the bare fallback authenticating.
    */
   private proxyInvoker: JackyProxyInvoker | null = null;
   /** Retains the last drift values so demo telemetry moves smoothly. */
@@ -543,19 +582,44 @@ class JackyClient {
       throw new JackyLinkError('No Jacky engine configured', 'no-base');
     }
 
-    // Platform-invoker path: the SDK owns auth, CORS and retries, so there is
-    // nothing here to time out or abort against — hand the call straight over.
+    // Platform-invoker path. The SDK underneath (base44/Supabase `invoke`) owns
+    // its own transport, but nothing upstream of it bounds how long that call
+    // can run — without a timeout here, a stalled relay leaves this pending
+    // forever: telemetry() never settles, pollTelemetry stops emitting, and the
+    // link never flips to offline. Raced against a timer so request() always
+    // settles regardless of what the invoker is doing underneath.
     if (this.cfg.transport === 'proxy' && this.proxyInvoker) {
+      const timeoutMs = opts.timeoutMs ?? (opts.method === 'POST' ? INFERENCE_TIMEOUT_MS : READ_TIMEOUT_MS);
+      let timedOut = false;
+      const timeout = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          timedOut = true;
+          reject(new Error(`Proxy invoker timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+      });
+      const abort = opts.signal
+        ? new Promise<never>((_, reject) => {
+            const onAbort = () => reject(new Error('Request cancelled by caller'));
+            if (opts.signal!.aborted) onAbort();
+            else opts.signal!.addEventListener('abort', onAbort, { once: true });
+          })
+        : null;
+
       try {
-        const data = (await this.proxyInvoker(path, {
-          method: opts.method ?? 'GET',
-          body: opts.body,
-        })) as T;
+        const data = (await Promise.race(
+          [this.proxyInvoker(path, { method: opts.method ?? 'GET', body: opts.body }), timeout, abort].filter(
+            (p): p is Promise<unknown> => p !== null,
+          ),
+        )) as T;
         this.setLinkState('live');
         return data;
       } catch (err) {
         this.setLinkState('offline');
-        throw new JackyLinkError(`Engine unreachable via proxy: ${(err as Error).message}`, 'network');
+        const message = (err as Error).message;
+        throw new JackyLinkError(
+          timedOut ? message : `Engine unreachable via proxy: ${message}`,
+          timedOut ? 'timeout' : 'network',
+        );
       }
     }
 
@@ -564,10 +628,14 @@ class JackyClient {
     const timeoutMs = opts.timeoutMs ?? (opts.method === 'POST' ? INFERENCE_TIMEOUT_MS : READ_TIMEOUT_MS);
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     // Honor a caller-supplied signal alongside our timeout.
-    const relay = opts.signal
-      ? () => controller.abort()
-      : undefined;
-    if (opts.signal && relay) opts.signal.addEventListener('abort', relay, { once: true });
+    const relay = opts.signal ? () => controller.abort() : undefined;
+    if (opts.signal && relay) {
+      // A signal that's already aborted before we get here would otherwise
+      // never fire its 'abort' event, and the request would run to the full
+      // timeout instead of failing immediately.
+      if (opts.signal.aborted) relay();
+      else opts.signal.addEventListener('abort', relay, { once: true });
+    }
 
     try {
       const res = await fetch(this.resolveUrl(path), {
@@ -589,8 +657,16 @@ class JackyClient {
       if (err instanceof JackyLinkError) throw err;
       this.setLinkState('offline');
       const aborted = err instanceof DOMException && err.name === 'AbortError';
+      // The internal timer and a caller's own signal both abort the same
+      // controller, so a caller-initiated cancel must not be reported as an
+      // engine timeout — the die behind it may be perfectly healthy.
+      const byCaller = Boolean(opts.signal?.aborted);
       throw new JackyLinkError(
-        aborted ? `Engine timed out after ${timeoutMs}ms` : `Engine unreachable: ${(err as Error).message}`,
+        aborted
+          ? byCaller
+            ? 'Request cancelled by caller'
+            : `Engine timed out after ${timeoutMs}ms`
+          : `Engine unreachable: ${(err as Error).message}`,
         aborted ? 'timeout' : 'network',
       );
     } finally {
@@ -742,16 +818,21 @@ class JackyClient {
    */
   pollTelemetry(onData: (t: JackyTelemetry) => void, intervalMs = 3_500): () => void {
     let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    // Self-scheduling rather than setInterval: the next poll starts only after
+    // the current one resolves. A slow or hung engine with a fixed interval
+    // would otherwise pile up overlapping in-flight requests, whose onData
+    // callbacks can then land out of order.
     const run = async () => {
       if (stopped) return;
       const t = await this.telemetry();
       if (!stopped) onData(t);
+      if (!stopped) timer = setTimeout(run, intervalMs);
     };
     void run();
-    const id = setInterval(run, intervalMs);
     return () => {
       stopped = true;
-      clearInterval(id);
+      if (timer) clearTimeout(timer);
     };
   }
 

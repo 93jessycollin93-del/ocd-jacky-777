@@ -44,10 +44,15 @@ Jackie's embed is why its parity story differs from Eru's: PC's apps are already
 verified by checksum, not by inspection. The client's request allowlist
 (`/api/status`, `/api/metrics`, `/api/assessment`, `/api/ask`, `/api/control`,
 `/api/models`, `/api/bots`, `/api/squads/*`, `/api/ecps/*`) is likewise identical
-across all three relays, and `/api/control` — the engine's master switch — is
-gated beyond plain auth on the platforms with a role concept (Eru: `admin` role;
-PC: shared token model). Jackie's relay documents that gap rather than faking a
-check that wouldn't hold — closing it needs the RLS `has_role()` work below.
+across all three relays, but the three don't gate `/api/control` — the engine's
+master switch — equally. Only **Eru** adds a real role check beyond plain auth
+(`user.role === 'admin'`, which Base44 supplies directly). **PC** applies the
+same `requireAuth` to `/api/control` as to every other allowlisted path — no
+extra gate, and `requireAuth` passes every caller through when
+`JACKIE_API_TOKEN` is unset, same as it does for `/api/shell/exec`. **Jackie**
+has the same shape of gap and documents it in the relay rather than faking a
+check that wouldn't hold — closing either one needs the RLS `has_role()` work
+below.
 
 > **Go live:** set `JACKY_API_BASE` (+ optional `JACKY_API_TOKEN`) in each app's
 > env/secrets. PC's App Commander adds a **Same-origin proxy** link mode (⚙,

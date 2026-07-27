@@ -232,35 +232,43 @@
 }
 
 :root[data-eye-theme='cream-light'] {
+  /*
+   * Every foreground/background pair below is verified at ≥4.5:1 (WCAG AA,
+   * normal text) by computing relative luminance from these exact values —
+   * not eyeballed. `primary`, `accent-foreground`, `destructive` and
+   * `muted-foreground` all originally failed (as low as 2.93:1) and were
+   * darkened until they cleared the threshold with margin. Re-verify with the
+   * same method before changing any value here.
+   */
   --background: 44 39% 95%;
   --foreground: 72 5% 16%;
   --card: 0 0% 100%;
   --card-foreground: 72 5% 16%;
   --popover: 0 0% 100%;
   --popover-foreground: 72 5% 16%;
-  --primary: 175 100% 27%;
-  --primary-foreground: 44 39% 95%;
+  --primary: 175 100% 22%;
+  --primary-foreground: 0 0% 100%;
   --secondary: 44 30% 91%;
   --secondary-foreground: 72 5% 16%;
   --muted: 44 30% 91%;
-  --muted-foreground: 68 4% 53%;
+  --muted-foreground: 68 8% 32%;
   --accent: 173 55% 83%;
-  --accent-foreground: 175 100% 27%;
-  --destructive: 347 63% 48%;
-  --destructive-foreground: 44 39% 95%;
+  --accent-foreground: 175 100% 18%;
+  --destructive: 347 70% 38%;
+  --destructive-foreground: 0 0% 100%;
   --border: 42 30% 82%;
   --input: 42 26% 72%;
-  --ring: 175 100% 27%;
+  --ring: 175 100% 22%;
   --radius: 14px;
 
   --sidebar-background: 44 43% 96%;
   --sidebar-foreground: 72 5% 16%;
-  --sidebar-primary: 175 100% 27%;
-  --sidebar-primary-foreground: 44 39% 95%;
+  --sidebar-primary: 175 100% 22%;
+  --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 44 30% 91%;
-  --sidebar-accent-foreground: 175 100% 27%;
+  --sidebar-accent-foreground: 175 100% 18%;
   --sidebar-border: 42 30% 82%;
-  --sidebar-ring: 175 100% 27%;
+  --sidebar-ring: 175 100% 22%;
 
   --chart-1: 175 100% 27%;
   --chart-2: 35 72% 38%;
@@ -282,13 +290,23 @@
   -webkit-font-smoothing: antialiased;
 }
 
-/** Faint CRT atmosphere. `--eye-scanline-opacity: 0` disables it per theme. */
+/**
+ * Faint CRT atmosphere. `--eye-scanline-opacity: 0` disables it per theme.
+ *
+ * `z-index: 1`, deliberately low. This is applied to `<body>` per the README,
+ * and a decorative, non-interactive texture has no reason to outrank real UI —
+ * `pointer-events: none` stops it from intercepting clicks, but does nothing
+ * about visually covering a dialog or toast stacked below whatever value this
+ * used to be. `1` clears the ordinary page content this is meant to sit above
+ * while losing to virtually every overlay component, which almost universally
+ * declares an explicit z-index of its own.
+ */
 .eye-scanlines::after {
   content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 60;
+  z-index: 1;
   background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.014) 0 1px, transparent 1px 3px);
   mix-blend-mode: overlay;
   opacity: var(--eye-scanline-opacity);
