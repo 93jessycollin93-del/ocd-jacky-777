@@ -51,9 +51,12 @@ master switch — identically, because their auth layers differ.
   gates the whole path, so a non-admin cannot read the current mode either.
 - **Jackie** now gates **writes** on `has_role('admin')`, backed by the
   `user_roles` table and security-definer function added in
-  `20260908000000_user_roles_and_has_role.sql`. `GET` stays open: the current
-  mode is not sensitive and dashboards show it to everyone. This is the
-  narrower of the two rules — the difference is deliberate, not drift.
+  `20260908000000_user_roles_and_has_role.sql`. `GET` stays available to any
+  *authenticated* caller — authentication runs before the method is resolved,
+  so an unauthenticated read still gets a 401; it is the admin requirement,
+  not the sign-in requirement, that writes add. Dashboards can therefore show
+  the current mode to every signed-in user. This is the narrower of the two
+  rules — the difference is deliberate, not drift.
 - **PC** applies the same `requireAuth` as every other allowlisted path, plus
   lockdown, a rate limit, and a `jacky-control-write` audit event. It is
   single-tenant — an authenticated caller *is* the owner — so there is no

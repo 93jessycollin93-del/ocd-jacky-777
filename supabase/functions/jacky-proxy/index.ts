@@ -58,8 +58,9 @@ const ALLOWED_PATTERNS = [/^\/api\/squads\/[A-Za-z0-9_-]{1,64}\/(ask|discuss)$/]
 
 // Writes to these paths need more than a signed-in caller. `/api/control` is
 // the engine's master on/off switch: flipping it pauses inference for everyone
-// sharing the engine, so being logged in is not enough. Reads stay open — the
-// current mode is not sensitive, and dashboards show it to everybody.
+// sharing the engine, so being logged in is not enough. Reads still require
+// sign-in — authentication runs before any of this — but not the admin role:
+// the current mode is not sensitive, and dashboards show it to every user.
 const ADMIN_ONLY_WRITES = new Set(["/api/control"]);
 
 /**
