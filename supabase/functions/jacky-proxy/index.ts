@@ -200,8 +200,16 @@ serve(async (req) => {
 
   // The method the ENGINE should see. In SDK style this is always declared in
   // the envelope, because the SDK itself can only issue POSTs.
+  //
+  // Compared case-insensitively, matching eru's relay. A strict `=== "POST"`
+  // read `{ method: "post" }` as a GET, so the engine answered with the current
+  // state and the write silently did not happen — indistinguishable from
+  // success at the call site. Failing safe, but failing quietly.
   const method =
-    envelope.method === "POST" || (!envelope.path && req.method === "POST") ? "POST" : "GET";
+    String(envelope.method || "").toUpperCase() === "POST" ||
+    (!envelope.path && req.method === "POST")
+      ? "POST"
+      : "GET";
 
   // Checked after the method is resolved, not before: the engine path alone
   // does not say whether this call reads the switch or flips it.
