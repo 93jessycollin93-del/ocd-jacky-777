@@ -16,7 +16,7 @@ Deliverables:
 - architecture notes
 - knowledge vault structure
 
-## Phase 2: Local core
+## Phase 2: Local core — built
 
 Goals:
 - basic assistant engine
@@ -33,7 +33,7 @@ Deliverables:
 - dispatcher.py
 - security.py
 
-## Phase 3: Persistent memory
+## Phase 3: Persistent memory — built
 
 Goals:
 - SQLite storage
