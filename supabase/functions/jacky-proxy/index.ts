@@ -56,15 +56,11 @@ const ALLOWED_EXACT = new Set([
 // Squad routes carry a name segment, so they need a pattern.
 const ALLOWED_PATTERNS = [/^\/api\/squads\/[A-Za-z0-9_-]{1,64}\/(ask|discuss)$/];
 
-// KNOWN GAP — `/api/control` is the engine's master on/off switch, so it should
-// require more than a signed-in caller. Eru's equivalent gates it on
-// `user.role === 'admin'`, which Base44 supplies directly. Supabase has no
-// app-level role here: `getClaims` returns the Postgres role
-// (`authenticated`), not an application one. Closing this properly needs the
-// `user_roles` table + `has_role()` security-definer function that
-// FLEET_PARITY_PLAN.md §4 already calls for — a migration, not a patch to this
-// file. Until that lands, treat `/api/control` as reachable by any signed-in
-// user and gate it in the UI rather than relying on this relay.
+// Writes to these paths need more than a signed-in caller. `/api/control` is
+// the engine's master on/off switch: flipping it pauses inference for everyone
+// sharing the engine, so being logged in is not enough. Reads stay open — the
+// current mode is not sensitive, and dashboards show it to everybody.
+const ADMIN_ONLY_WRITES = new Set(["/api/control"]);
 
 function isAllowed(path: string): boolean {
   if (ALLOWED_EXACT.has(path)) return true;
@@ -94,9 +90,19 @@ function json(payload: unknown, status = 200): Response {
   });
 }
 
-async function requireUser(req: Request): Promise<Response | null> {
+type Caller = {
+  userId: string;
+  sb: ReturnType<typeof createClient>;
+};
+
+/** Resolves the caller, or the 401 to return instead. */
+async function authenticate(
+  req: Request,
+): Promise<{ error: Response } | { caller: Caller }> {
   const auth = req.headers.get("Authorization");
-  if (!auth?.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
+  if (!auth?.startsWith("Bearer ")) {
+    return { error: json({ error: "Unauthorized" }, 401) };
+  }
 
   const sb = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -104,15 +110,52 @@ async function requireUser(req: Request): Promise<Response | null> {
     { global: { headers: { Authorization: auth } } },
   );
   const { data, error } = await sb.auth.getClaims(auth.replace("Bearer ", ""));
-  if (error || !data?.claims) return json({ error: "Unauthorized" }, 401);
+  const userId = data?.claims?.sub;
+  if (error || !userId) return { error: json({ error: "Unauthorized" }, 401) };
+  return { caller: { userId, sb } };
+}
+
+/**
+ * Null when the caller may perform an admin-only write, otherwise the response
+ * to return. Authentication is not authorization: `getClaims` proves only that
+ * someone is signed in, and it hands back the Postgres role (`authenticated`),
+ * never an application one. The application role lives in `public.user_roles`
+ * and is read through the `has_role()` security-definer function.
+ */
+async function requireAdmin(caller: Caller, enginePath: string): Promise<Response | null> {
+  const { data, error } = await caller.sb.rpc("has_role", {
+    _user_id: caller.userId,
+    _role: "admin",
+  });
+
+  if (error) {
+    // Fail closed, but say which thing is broken. A missing function means the
+    // roles migration has not been applied to this project — an operator
+    // problem, and a bare 403 would send someone hunting a permissions bug
+    // that isn't there.
+    console.error("has_role RPC failed:", error.message);
+    return json({
+      error: "Role check unavailable",
+      detail:
+        "public.has_role() did not answer. Apply the user_roles migration to this project.",
+    }, 503);
+  }
+
+  if (data !== true) {
+    return json({
+      error: "Admin role required",
+      detail: `${enginePath} changes engine state for everyone, so writes are restricted to admins.`,
+    }, 403);
+  }
   return null;
 }
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const unauthorized = await requireUser(req);
-  if (unauthorized) return unauthorized;
+  const authed = await authenticate(req);
+  if ("error" in authed) return authed.error;
+  const caller = authed.caller;
 
   const base = Deno.env.get("JACKY_API_BASE")?.replace(/\/+$/, "");
   if (!base) {
@@ -159,6 +202,13 @@ serve(async (req) => {
   // the envelope, because the SDK itself can only issue POSTs.
   const method =
     envelope.method === "POST" || (!envelope.path && req.method === "POST") ? "POST" : "GET";
+
+  // Checked after the method is resolved, not before: the engine path alone
+  // does not say whether this call reads the switch or flips it.
+  if (method === "POST" && ADMIN_ONLY_WRITES.has(enginePath)) {
+    const denied = await requireAdmin(caller, enginePath);
+    if (denied) return denied;
+  }
 
   const headers: Record<string, string> = { Accept: "application/json" };
   const token = Deno.env.get("JACKY_API_TOKEN");
