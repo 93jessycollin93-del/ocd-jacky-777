@@ -62,6 +62,11 @@ const ALLOWED_PATTERNS = [/^\/api\/squads\/[A-Za-z0-9_-]{1,64}\/(ask|discuss)$/]
 // current mode is not sensitive, and dashboards show it to everybody.
 const ADMIN_ONLY_WRITES = new Set(["/api/control"]);
 
+/**
+ * Whether the engine path may be relayed at all. Expects an already-canonical
+ * `/api/...` path: checking a raw one would let a differently-spelled variant
+ * of a blocked path miss the allowlist and be forwarded anyway.
+ */
 function isAllowed(path: string): boolean {
   if (ALLOWED_EXACT.has(path)) return true;
   return ALLOWED_PATTERNS.some((re) => re.test(path));
@@ -83,6 +88,12 @@ function canonicalizePath(raw: string): string {
 const READ_TIMEOUT_MS = 8_000;
 const INFERENCE_TIMEOUT_MS = 60_000;
 
+/**
+ * JSON response carrying the CORS headers. Every response with a body goes
+ * through here — a bare `Response` omits them, and the browser then reports a
+ * CORS failure instead of the status and message actually sent. The only
+ * exception is the bodiless OPTIONS preflight, which sets them itself.
+ */
 function json(payload: unknown, status = 200): Response {
   return new Response(JSON.stringify(payload), {
     status,
