@@ -49,7 +49,7 @@ master switch — identically, because their auth layers differ.
 
 - **Eru** checks `user.role === 'admin'`, which Base44 supplies directly. It
   gates the whole path, so a non-admin cannot read the current mode either.
-- **Jackie** now gates **writes** on `has_role(uid, 'admin')`, backed by the
+- **Jackie** now gates **writes** on `has_role('admin')`, backed by the
   `user_roles` table and security-definer function added in
   `20260908000000_user_roles_and_has_role.sql`. `GET` stays open: the current
   mode is not sensitive and dashboards show it to everyone. This is the

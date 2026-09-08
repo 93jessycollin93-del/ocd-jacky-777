@@ -90,15 +90,20 @@ function json(payload: unknown, status = 200): Response {
   });
 }
 
-type Caller = {
-  userId: string;
-  sb: ReturnType<typeof createClient>;
-};
+type SupabaseClient = ReturnType<typeof createClient>;
 
-/** Resolves the caller, or the 401 to return instead. */
+/**
+ * Resolves a client bound to the caller's token, or the 401 to return instead.
+ *
+ * The subject is verified but not carried: `has_role()` reads `auth.uid()`
+ * itself, so nothing downstream needs to pass an identity around (and cannot
+ * pass the wrong one). It is still checked here — a token with no subject would
+ * leave `auth.uid()` NULL inside the function and deny, but as a confusing 403
+ * rather than the 401 this actually is.
+ */
 async function authenticate(
   req: Request,
-): Promise<{ error: Response } | { caller: Caller }> {
+): Promise<{ error: Response } | { sb: SupabaseClient }> {
   const auth = req.headers.get("Authorization");
   if (!auth?.startsWith("Bearer ")) {
     return { error: json({ error: "Unauthorized" }, 401) };
@@ -110,9 +115,10 @@ async function authenticate(
     { global: { headers: { Authorization: auth } } },
   );
   const { data, error } = await sb.auth.getClaims(auth.replace("Bearer ", ""));
-  const userId = data?.claims?.sub;
-  if (error || !userId) return { error: json({ error: "Unauthorized" }, 401) };
-  return { caller: { userId, sb } };
+  if (error || !data?.claims?.sub) {
+    return { error: json({ error: "Unauthorized" }, 401) };
+  }
+  return { sb };
 }
 
 /**
@@ -120,13 +126,11 @@ async function authenticate(
  * to return. Authentication is not authorization: `getClaims` proves only that
  * someone is signed in, and it hands back the Postgres role (`authenticated`),
  * never an application one. The application role lives in `public.user_roles`
- * and is read through the `has_role()` security-definer function.
+ * and is read through the `has_role()` security-definer function, which
+ * resolves the user from the request's own JWT rather than from an argument.
  */
-async function requireAdmin(caller: Caller, enginePath: string): Promise<Response | null> {
-  const { data, error } = await caller.sb.rpc("has_role", {
-    _user_id: caller.userId,
-    _role: "admin",
-  });
+async function requireAdmin(sb: SupabaseClient, enginePath: string): Promise<Response | null> {
+  const { data, error } = await sb.rpc("has_role", { _role: "admin" });
 
   if (error) {
     // Fail closed, but say which thing is broken. A missing function means the
@@ -155,7 +159,7 @@ serve(async (req) => {
 
   const authed = await authenticate(req);
   if ("error" in authed) return authed.error;
-  const caller = authed.caller;
+  const sb = authed.sb;
 
   const base = Deno.env.get("JACKY_API_BASE")?.replace(/\/+$/, "");
   if (!base) {
@@ -214,7 +218,7 @@ serve(async (req) => {
   // Checked after the method is resolved, not before: the engine path alone
   // does not say whether this call reads the switch or flips it.
   if (method === "POST" && ADMIN_ONLY_WRITES.has(enginePath)) {
-    const denied = await requireAdmin(caller, enginePath);
+    const denied = await requireAdmin(sb, enginePath);
     if (denied) return denied;
   }
 
