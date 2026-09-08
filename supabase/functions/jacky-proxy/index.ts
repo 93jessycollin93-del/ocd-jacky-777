@@ -56,16 +56,18 @@ const ALLOWED_EXACT = new Set([
 // Squad routes carry a name segment, so they need a pattern.
 const ALLOWED_PATTERNS = [/^\/api\/squads\/[A-Za-z0-9_-]{1,64}\/(ask|discuss)$/];
 
-// KNOWN GAP — `/api/control` is the engine's master on/off switch, so it should
-// require more than a signed-in caller. Eru's equivalent gates it on
-// `user.role === 'admin'`, which Base44 supplies directly. Supabase has no
-// app-level role here: `getClaims` returns the Postgres role
-// (`authenticated`), not an application one. Closing this properly needs the
-// `user_roles` table + `has_role()` security-definer function that
-// FLEET_PARITY_PLAN.md §4 already calls for — a migration, not a patch to this
-// file. Until that lands, treat `/api/control` as reachable by any signed-in
-// user and gate it in the UI rather than relying on this relay.
+// Writes to these paths need more than a signed-in caller. `/api/control` is
+// the engine's master on/off switch: flipping it pauses inference for everyone
+// sharing the engine, so being logged in is not enough. Reads still require
+// sign-in — authentication runs before any of this — but not the admin role:
+// the current mode is not sensitive, and dashboards show it to every user.
+const ADMIN_ONLY_WRITES = new Set(["/api/control"]);
 
+/**
+ * Whether the engine path may be relayed at all. Expects an already-canonical
+ * `/api/...` path: checking a raw one would let a differently-spelled variant
+ * of a blocked path miss the allowlist and be forwarded anyway.
+ */
 function isAllowed(path: string): boolean {
   if (ALLOWED_EXACT.has(path)) return true;
   return ALLOWED_PATTERNS.some((re) => re.test(path));
@@ -87,6 +89,12 @@ function canonicalizePath(raw: string): string {
 const READ_TIMEOUT_MS = 8_000;
 const INFERENCE_TIMEOUT_MS = 60_000;
 
+/**
+ * JSON response carrying the CORS headers. Every response with a body goes
+ * through here — a bare `Response` omits them, and the browser then reports a
+ * CORS failure instead of the status and message actually sent. The only
+ * exception is the bodiless OPTIONS preflight, which sets them itself.
+ */
 function json(payload: unknown, status = 200): Response {
   return new Response(JSON.stringify(payload), {
     status,
@@ -94,9 +102,24 @@ function json(payload: unknown, status = 200): Response {
   });
 }
 
-async function requireUser(req: Request): Promise<Response | null> {
+type SupabaseClient = ReturnType<typeof createClient>;
+
+/**
+ * Resolves a client bound to the caller's token, or the 401 to return instead.
+ *
+ * The subject is verified but not carried: `has_role()` reads `auth.uid()`
+ * itself, so nothing downstream needs to pass an identity around (and cannot
+ * pass the wrong one). It is still checked here — a token with no subject would
+ * leave `auth.uid()` NULL inside the function and deny, but as a confusing 403
+ * rather than the 401 this actually is.
+ */
+async function authenticate(
+  req: Request,
+): Promise<{ error: Response } | { sb: SupabaseClient }> {
   const auth = req.headers.get("Authorization");
-  if (!auth?.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
+  if (!auth?.startsWith("Bearer ")) {
+    return { error: json({ error: "Unauthorized" }, 401) };
+  }
 
   const sb = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -104,15 +127,51 @@ async function requireUser(req: Request): Promise<Response | null> {
     { global: { headers: { Authorization: auth } } },
   );
   const { data, error } = await sb.auth.getClaims(auth.replace("Bearer ", ""));
-  if (error || !data?.claims) return json({ error: "Unauthorized" }, 401);
+  if (error || !data?.claims?.sub) {
+    return { error: json({ error: "Unauthorized" }, 401) };
+  }
+  return { sb };
+}
+
+/**
+ * Null when the caller may perform an admin-only write, otherwise the response
+ * to return. Authentication is not authorization: `getClaims` proves only that
+ * someone is signed in, and it hands back the Postgres role (`authenticated`),
+ * never an application one. The application role lives in `public.user_roles`
+ * and is read through the `has_role()` security-definer function, which
+ * resolves the user from the request's own JWT rather than from an argument.
+ */
+async function requireAdmin(sb: SupabaseClient, enginePath: string): Promise<Response | null> {
+  const { data, error } = await sb.rpc("has_role", { _role: "admin" });
+
+  if (error) {
+    // Fail closed, but say which thing is broken. A missing function means the
+    // roles migration has not been applied to this project — an operator
+    // problem, and a bare 403 would send someone hunting a permissions bug
+    // that isn't there.
+    console.error("has_role RPC failed:", error.message);
+    return json({
+      error: "Role check unavailable",
+      detail:
+        "public.has_role() did not answer. Apply the user_roles migration to this project.",
+    }, 503);
+  }
+
+  if (data !== true) {
+    return json({
+      error: "Admin role required",
+      detail: `${enginePath} changes engine state for everyone, so writes are restricted to admins.`,
+    }, 403);
+  }
   return null;
 }
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const unauthorized = await requireUser(req);
-  if (unauthorized) return unauthorized;
+  const authed = await authenticate(req);
+  if ("error" in authed) return authed.error;
+  const sb = authed.sb;
 
   const base = Deno.env.get("JACKY_API_BASE")?.replace(/\/+$/, "");
   if (!base) {
@@ -157,8 +216,23 @@ serve(async (req) => {
 
   // The method the ENGINE should see. In SDK style this is always declared in
   // the envelope, because the SDK itself can only issue POSTs.
+  //
+  // Compared case-insensitively, matching eru's relay. A strict `=== "POST"`
+  // read `{ method: "post" }` as a GET, so the engine answered with the current
+  // state and the write silently did not happen — indistinguishable from
+  // success at the call site. Failing safe, but failing quietly.
   const method =
-    envelope.method === "POST" || (!envelope.path && req.method === "POST") ? "POST" : "GET";
+    String(envelope.method || "").toUpperCase() === "POST" ||
+    (!envelope.path && req.method === "POST")
+      ? "POST"
+      : "GET";
+
+  // Checked after the method is resolved, not before: the engine path alone
+  // does not say whether this call reads the switch or flips it.
+  if (method === "POST" && ADMIN_ONLY_WRITES.has(enginePath)) {
+    const denied = await requireAdmin(sb, enginePath);
+    if (denied) return denied;
+  }
 
   const headers: Record<string, string> = { Accept: "application/json" };
   const token = Deno.env.get("JACKY_API_TOKEN");
