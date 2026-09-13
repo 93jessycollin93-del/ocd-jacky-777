@@ -45,14 +45,25 @@ verified by checksum, not by inspection. The client's request allowlist
 (`/api/status`, `/api/metrics`, `/api/assessment`, `/api/ask`, `/api/control`,
 `/api/models`, `/api/bots`, `/api/squads/*`, `/api/ecps/*`) is likewise identical
 across all three relays, but the three don't gate `/api/control` — the engine's
-master switch — equally. Only **Eru** adds a real role check beyond plain auth
-(`user.role === 'admin'`, which Base44 supplies directly). **PC** applies the
-same `requireAuth` to `/api/control` as to every other allowlisted path — no
-extra gate, and `requireAuth` passes every caller through when
-`JACKIE_API_TOKEN` is unset, same as it does for `/api/shell/exec`. **Jackie**
-has the same shape of gap and documents it in the relay rather than faking a
-check that wouldn't hold — closing either one needs the RLS `has_role()` work
-below.
+master switch — identically, because their auth layers differ.
+
+- **Eru** checks `user.role === 'admin'`, which Base44 supplies directly. It
+  gates the whole path, so a non-admin cannot read the current mode either.
+- **Jackie** now gates **writes** on `has_role('admin')`, backed by the
+  `user_roles` table and security-definer function added in
+  `20260908000000_user_roles_and_has_role.sql`. `GET` stays available to any
+  *authenticated* caller — authentication runs before the method is resolved,
+  so an unauthenticated read still gets a 401; it is the admin requirement,
+  not the sign-in requirement, that writes add. Dashboards can therefore show
+  the current mode to every signed-in user. This is the narrower of the two
+  rules — the difference is deliberate, not drift.
+- **PC** applies the same `requireAuth` as every other allowlisted path, plus
+  lockdown, a rate limit, and a `jacky-control-write` audit event. It is
+  single-tenant — an authenticated caller *is* the owner — so there is no
+  second role to check. Worth noting separately: `requireAuth` passes every
+  caller through when `JACKIE_API_TOKEN` is unset, exactly as it does for
+  `/api/shell/exec`. That is a deployment-configuration risk across the whole
+  server, not something specific to this relay.
 
 > **Go live:** set `JACKY_API_BASE` (+ optional `JACKY_API_TOKEN`) in each app's
 > env/secrets. PC's App Commander adds a **Same-origin proxy** link mode (⚙,
@@ -146,7 +157,7 @@ tracker is worse than no tracker.
 | ECPS / Condenser suite UI | engine `/api/ecps/*` (client ready) | 🔶 | 🔶 | 🔶 | M/L |
 | Reinforcement Journal (emotion↔outcome) | `fobccc/src/pages/Journal.tsx` | ❌ | ❌ | ❌ | S/M |
 | Live on-chain Intel console (DexScreener) | `fobccc/src/pages/intel/*` | ❌ | ❌ | ❌ | M/L |
-| Supabase auth + RLS blueprint (`has_role()`) | `tikkerlive/supabase/migrations/*.sql` | — | — | 🔶 (extend existing; also closes the `/api/control` gap) | M |
+| Supabase auth + RLS blueprint (`has_role()`) | `tikkerlive/supabase/migrations/*.sql` | — | — | ✅ `user_roles` + `has_role()`; gates `/api/control` writes | M |
 
 `jackyClient` already exposes typed methods for the squad and ECPS endpoints
 (`squadAsk`, `squadDiscuss`, `ecpsCompress`, `ecpsDecompress`, `ecpsBenchmark`),
