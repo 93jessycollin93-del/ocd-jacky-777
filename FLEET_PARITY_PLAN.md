@@ -10,6 +10,13 @@ idiomatic to the platform it lives on so you can manipulate it there.
 | **PC** | `PC` (`jackies-pc`) | Vite/React 19, self-hosted | Express `server.ts` + Firebase + on-device AI + the `jacky` Flask engine |
 | **Eru** | `eru` | **base44.com** | Base44 entities + serverless functions + Base44 auth |
 | **Jackie** | `ocd-jacky-777` | **lovable.dev** | Supabase (Postgres + RLS + edge functions) + Lovable auth |
+| **Empath** | `CYBERNETIC_EMPATH` | *undecided — greenfield* | None yet; carries the shared layer only (see §6 tracker) |
+
+The fourth row is why the tracker has an "Empath" column. `CYBERNETIC_EMPATH` was an
+empty repo; it now holds the shared `fleet-ui` kit and `jackyClient` so anything built
+there starts consistent rather than being retrofitted. It has no app and no platform
+decision yet, so most parity rows read `todo` against it by definition rather than by
+omission.
 
 **Design tenets.** *Human simplicity on the surface, full depth underneath.* A clean
 shell and a single obvious way in (the **App Commander** launcher, already shipped to
@@ -118,11 +125,19 @@ auth blueprint).
 
 Each item is independently shippable; waves are sequence, not a single commit.
 
-- **Wave 0 — foundation (now).** App Commander shipped to all 3 ✅. Next: extract the
-  shared **theme/token kit** into each repo; stand up the **parity tracker** (§6).
-- **Wave 1 — real backend.** `jackyClient` shim in all 3 (+ platform proxy fn to dodge
-  CORS). Light up **real System Monitor**, **Ask Jackie w/ fallback chain**, **master
-  switch**. This is the biggest single unlock.
+- **Wave 0 — foundation.** App Commander shipped to all 3 ✅. Shared **theme/token kit**
+  extracted into all four repos as `src/fleet-ui/` ✅. **Parity tracker** stood up as
+  `PARITY_MATRIX.md` ✅.
+- **Wave 1 — real backend.** *Plumbing complete; consumers pending.*
+  - ✅ `jackyClient` shim, byte-identical in all four repos (zero imports, so it
+    ports unchanged). Typed wrappers for status/assessment/ask/control/squads/ecps.
+  - ✅ Platform relays, all speaking one contract: PC `/api/jacky` in `server.ts`,
+    Eru `base44/functions/jackyProxy`, Jackie `supabase/functions/jacky-proxy`.
+    Each keeps the engine token server-side and forwards only allowlisted paths.
+  - ✅ Platform bootstraps wiring the client to each relay's auth.
+  - ⬜ Re-point the panels: **real System Monitor**, **Ask Jackie w/ fallback chain**,
+    **master switch**. The unlock is available but not yet consumed — see
+    `PARITY_MATRIX.md` for the honest per-item state.
 - **Wave 2 — core app domains, platform-native.** AI/agents, security/vault, data/pods —
   ported as Base44 entities+functions (Eru) and Supabase tables+edge fns (Jackie), behind
   the shared shell. Jackie leans on its PC embed + Eru pages to move fast.
@@ -144,10 +159,22 @@ from the PC app roster in `FEATURE_AUDIT.md`.
 
 ## 7. Immediate next step
 
-Greenlight **Wave 1**: build the `jackyClient` shim (generalized from the App Commander) in
-PC, plus the Base44 `jackyProxy` function and the Supabase `jacky-proxy` edge function — so
-all three apps show **real** RTX-3090 telemetry and route real inference. That single unlock
-turns the most dashboards from demo into live, and everything else layers on top.
+Wave 1's plumbing is in. The next step is to **consume it** — and it is deliberately
+separate, because it is the first change in this effort that alters what a user sees:
+
+1. Point **MissionControl / SystemMonitor** at `jackyClient.telemetry()` and
+   `jackyClient.routing()` instead of their internal drift loops. Render the
+   `.eye-pill` link state and mark `simulated` readings with `.eye-simulated` —
+   the client tells you which is which, and a dashboard that lies is the specific
+   thing this work exists to end.
+2. Point **ModelRouter / ClaudeAssistant** at `jackyClient.ask()`, surfacing
+   `fallback_chain` and `route` so the local → free-cloud → paid waterfall is
+   visible rather than implied.
+3. Set `data-eye-theme` in one app, look at it, then the rest.
+
+Each needs someone able to see the result, which is why the plumbing landed inert
+rather than being switched on blind. Configure `JACKY_API_BASE` (and optionally
+`JACKY_API_TOKEN`) on any one platform to exercise the link end to end.
 
 ---
 *Companion docs: `FEATURE_AUDIT.md` (what to port + rankings), `app-commander.html` (the

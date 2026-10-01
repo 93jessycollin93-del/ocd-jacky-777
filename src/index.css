@@ -1,3 +1,8 @@
+/* Shared eYe design system, byte-identical across the four fleet repos.
+   First so app styles below win. Inert until <html data-eye-theme> is set —
+   see src/fleet-ui/README.md. */
+@import './fleet-ui/eye-theme.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

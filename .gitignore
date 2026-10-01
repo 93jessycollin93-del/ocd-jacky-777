@@ -22,3 +22,14 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Jackie local core (Python)
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Jackie's active memory — the database is local state, never source
+Jackie/memory/*.db
+Jackie/memory/*.db-journal
+Jackie/memory/*.db-wal
+Jackie/memory/*.db-shm
