@@ -43,6 +43,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "🛰️ Control", href: "/control" },
       { label: "🔑 API Key Vault", href: "/keys" },
       { label: "🧠 AI Providers", href: "/providers", title: "Groq, OpenRouter, Ollama and more" },
+      { label: "📦 Model Queue", href: "/models", title: "Compact on-device model download queue for offline Jackie" },
     ],
   },
   {
