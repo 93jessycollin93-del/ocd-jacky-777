@@ -76,12 +76,18 @@ export interface Creature {
   harvestLeft: number;
   /** World time when a corpse disappears. */
   despawnAt: number;
+  /** Seconds left on the red hit flash. Optional so older saves load. */
+  hurt?: number;
+  /** Knockback velocity (m/s), decays quickly. */
+  kx?: number;
+  kz?: number;
 }
 
 export function makeCreature(id: number, species: SpeciesId, x: number, z: number, heading = 0): Creature {
   return {
     id, species, x, z, heading, hp: SPECIES[species].hp, torpor: 0, state: "wander",
     tamed: false, tameProgress: 0, target: null, timer: 0, attackCooldown: 0, harvestLeft: 0, despawnAt: 0,
+    hurt: 0, kx: 0, kz: 0,
   };
 }
 
@@ -96,6 +102,8 @@ export interface CreatureContext {
   creatures: Creature[];
   /** True where a wall or solid block stands in the way. */
   blocked?: (x: number, z: number) => boolean;
+  /** True when something solid stands between two points, so neither can reach the other. */
+  losBlocked?: (ax: number, az: number, bx: number, bz: number) => boolean;
 }
 
 export interface CreatureEvent {
@@ -130,6 +138,26 @@ function stepToward(c: Creature, heading: number, speed: number, ctx: CreatureCo
   c.z = nz;
 }
 
+function applyKnockback(c: Creature, ctx: CreatureContext) {
+  const kx = c.kx ?? 0;
+  const kz = c.kz ?? 0;
+  if (Math.abs(kx) + Math.abs(kz) < 0.05) {
+    c.kx = 0;
+    c.kz = 0;
+    return;
+  }
+  const nx = c.x + kx * ctx.dt;
+  const nz = c.z + kz * ctx.dt;
+  const lim = WORLD_HALF * 0.95;
+  if (Math.abs(nx) < lim && Math.abs(nz) < lim && heightAt(nx, nz, ctx.seed) > WATER_LEVEL - 0.5 && !ctx.blocked?.(nx, nz)) {
+    c.x = nx;
+    c.z = nz;
+  }
+  const decay = Math.exp(-8 * ctx.dt);
+  c.kx = kx * decay;
+  c.kz = kz * decay;
+}
+
 function findCreature(ctx: CreatureContext, id: number) {
   return ctx.creatures.find((o) => o.id === id);
 }
@@ -139,9 +167,11 @@ export function updateCreature(c: Creature, ctx: CreatureContext): CreatureEvent
   const sp = SPECIES[c.species];
   const events: CreatureEvent[] = [];
   c.attackCooldown = Math.max(0, c.attackCooldown - ctx.dt);
+  c.hurt = Math.max(0, (c.hurt ?? 0) - ctx.dt);
 
   if (c.state === "dead") return events;
   if (ctx.player.mountId === c.id) return events; // the rider drives it
+  applyKnockback(c, ctx);
 
   if (c.state === "unconscious") {
     c.torpor = Math.max(0, c.torpor - KO_TORPOR_DECAY * ctx.dt);
@@ -240,6 +270,11 @@ function attackOrApproach(
     stepToward(c, heading, sp.speed, ctx);
     return;
   }
+  if (ctx.losBlocked?.(c.x, c.z, target.x, target.z)) {
+    // A wall is in the way: no biting through it. Scrabble sideways looking for a way round.
+    stepToward(c, heading + (c.id % 2 ? 1 : -1) * Math.PI * 0.5, sp.speed * 0.5, ctx);
+    return;
+  }
   c.heading = heading;
   if (c.attackCooldown > 0) return;
   c.attackCooldown = 1.1;
@@ -250,11 +285,30 @@ function attackOrApproach(
   }
 }
 
-/** Damage and knock-out applied by the player or a tame. Returns true if this hit killed it. */
-export function damageCreature(c: Creature, damage: number, torpor: number, time: number, attacker: "player" | number): boolean {
+/**
+ * Damage and knock-out applied by the player or a tame. Returns true if this hit killed it.
+ * `from` is where the blow came from; the creature is knocked away from it, small ones further.
+ */
+export function damageCreature(
+  c: Creature,
+  damage: number,
+  torpor: number,
+  time: number,
+  attacker: "player" | number,
+  from?: { x: number; z: number },
+): boolean {
   if (c.state === "dead") return false;
   const sp = SPECIES[c.species];
   c.hp -= damage;
+  c.hurt = 0.3;
+  if (from && damage > 0) {
+    const dx = c.x - from.x;
+    const dz = c.z - from.z;
+    const len = Math.hypot(dx, dz) || 1;
+    const push = Math.min(9, (2 + damage * 0.15) / Math.max(sp.size, 0.5));
+    c.kx = (c.kx ?? 0) + (dx / len) * push;
+    c.kz = (c.kz ?? 0) + (dz / len) * push;
+  }
   if (c.hp <= 0) {
     c.hp = 0;
     c.state = "dead";

@@ -11,6 +11,7 @@ import {
   serialize, step, toggleMount, primaryAction, type GameState, type Input,
 } from "@/survival/engine/game";
 import { isBlockItem } from "@/survival/engine/blocks";
+import type { AttackInput } from "@/survival/TouchControls";
 
 const MOUSE_SENSITIVITY = 0.0022;
 
@@ -47,14 +48,19 @@ function GameLoop({
 }: {
   game: MutableRefObject<GameState>;
   input: MutableRefObject<Input>;
-  attack: MutableRefObject<boolean>;
+  attack: MutableRefObject<AttackInput>;
   active: boolean;
 }) {
   useFrame((_, dt) => {
     const g = game.current;
     if (active) {
       step(g, input.current, Math.min(dt, 0.05));
-      if (attack.current) primaryAction(g);
+      // A quick click can start and end between two frames on a slow device; it still counts once.
+      const a = attack.current;
+      if (a.held || (a.queued && g.player.cooldown <= 0)) {
+        primaryAction(g);
+        a.queued = false;
+      }
     }
     drainSounds(g);
   });
@@ -79,7 +85,7 @@ function Game({ initial, onQuit }: { initial: GameState; onQuit: () => void }) {
   // `initial` is the live state object, so remember when this session started to tell Play from Resume.
   const startedAt = useRef(initial.time);
   const input = useRef<Input>({ ...NO_INPUT });
-  const attack = useRef(false);
+  const attack = useRef<AttackInput>({ held: false, queued: false });
   const container = useRef<HTMLDivElement>(null);
   const [touch] = useState(isTouchDevice);
   const [locked, setLocked] = useState(false);
@@ -118,7 +124,7 @@ function Game({ initial, onQuit }: { initial: GameState; onQuit: () => void }) {
 
   const pause = useCallback(() => {
     input.current = { ...NO_INPUT };
-    attack.current = false;
+    attack.current = { held: false, queued: false };
     setTouchPlaying(false);
     document.exitPointerLock?.();
     writeSave(game.current);
@@ -129,7 +135,7 @@ function Game({ initial, onQuit }: { initial: GameState; onQuit: () => void }) {
       panelRef.current = open;
       setPanelState(open);
       input.current = { ...NO_INPUT };
-      attack.current = false;
+      attack.current = { held: false, queued: false };
       if (open) document.exitPointerLock?.();
       else {
         setStorageId(null);
@@ -193,7 +199,7 @@ function Game({ initial, onQuit }: { initial: GameState; onQuit: () => void }) {
       setLocked(isLocked);
       if (!isLocked) {
         input.current = { ...NO_INPUT };
-        attack.current = false;
+        attack.current = { held: false, queued: false };
         writeSave(game.current);
       }
     };
@@ -205,7 +211,7 @@ function Game({ initial, onQuit }: { initial: GameState; onQuit: () => void }) {
     };
     const onMouseDown = (e: MouseEvent) => {
       if (document.pointerLockElement !== container.current) return;
-      if (e.button === 0) attack.current = true;
+      if (e.button === 0) attack.current = { held: true, queued: true };
       // Right click places the held block, Minecraft-style (left click does too, for touch parity).
       else if (e.button === 2) {
         const g = game.current;
@@ -217,7 +223,7 @@ function Game({ initial, onQuit }: { initial: GameState; onQuit: () => void }) {
       if (document.pointerLockElement === container.current) e.preventDefault();
     };
     const onMouseUp = (e: MouseEvent) => {
-      if (e.button === 0) attack.current = false;
+      if (e.button === 0) attack.current.held = false;
     };
     const onWheel = (e: WheelEvent) => {
       if (document.pointerLockElement !== container.current) return;

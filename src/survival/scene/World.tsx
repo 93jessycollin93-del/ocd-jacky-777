@@ -5,6 +5,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { Sky, Stars } from "@react-three/drei";
 import * as THREE from "three";
 import Blocks from "./Blocks";
+import { HeldItem, Particles } from "./FirstPerson";
 import { heightAt, WATER_LEVEL, WORLD_SIZE, type NodeKind } from "../engine/world";
 import { SPECIES, type Creature } from "../engine/creatures";
 import { ITEMS } from "../engine/items";
@@ -131,6 +132,7 @@ function CreatureModel({ creature, seed }: { creature: Creature; seed: number })
   const body = useRef<THREE.Group>(null);
   const tag = useRef<THREE.Mesh>(null);
   const last = useRef({ x: creature.x, z: creature.z, phase: 0 });
+  const flashing = useRef(false);
   const sp = SPECIES[creature.species];
   const biped = creature.species === "dodo" || creature.species === "compy" || creature.species === "raptor";
   const s = sp.size;
@@ -148,6 +150,15 @@ function CreatureModel({ creature, seed }: { creature: Creature; seed: number })
     const down = creature.state === "unconscious" || creature.state === "dead";
     b.rotation.z = THREE.MathUtils.damp(b.rotation.z, down ? Math.PI / 2 : 0, 6, dt);
     b.position.y = down ? 0 : Math.abs(Math.sin(last.current.phase)) * 0.08 * s;
+    // Flash red when hit.
+    const flash = Math.min(1, (creature.hurt ?? 0) / 0.3);
+    if (flash > 0 || flashing.current) {
+      flashing.current = flash > 0;
+      b.traverse((o) => {
+        const m = (o as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
+        if (m?.emissive) m.emissive.setRGB(flash * 0.9, 0, 0);
+      });
+    }
     if (tag.current) {
       tag.current.visible = creature.tamed || creature.state === "unconscious";
       const mat = tag.current.material as THREE.MeshBasicMaterial;
@@ -290,6 +301,25 @@ function StructureMesh({ s, ghost = false }: { s: Structure; ghost?: boolean }) 
       </group>
     );
   }
+  if (s.kind === "lootbag") {
+    return (
+      <group position={[s.x, s.y, s.z]}>
+        <mesh position={[0, 0.3, 0]} castShadow>
+          <sphereGeometry args={[0.32, 10, 8]} />
+          <meshStandardMaterial color="#7a5a34" roughness={1} />
+        </mesh>
+        <mesh position={[0, 0.66, 0]}>
+          <cylinderGeometry args={[0.06, 0.12, 0.14, 8]} />
+          <meshStandardMaterial color="#5c4024" />
+        </mesh>
+        {/* A faint beam so you can spot your things from a distance. */}
+        <mesh position={[0, 6, 0]}>
+          <cylinderGeometry args={[0.08, 0.08, 12, 6, 1, true]} />
+          <meshBasicMaterial color="#fde68a" transparent opacity={0.35} depthWrite={false} />
+        </mesh>
+      </group>
+    );
+  }
   if (s.kind === "forge") {
     return (
       <group position={[s.x, s.y, s.z]} rotation-y={s.rot}>
@@ -359,12 +389,22 @@ function FirstPersonCamera({ game }: { game: GameRef }) {
   useEffect(() => {
     camera.rotation.order = "YXZ";
   }, [camera]);
-  useFrame(() => {
+  const bob = useRef({ x: 0, z: 0, phase: 0, amount: 0 });
+  useFrame((_, dt) => {
     const p = game.current.player;
     const mount = p.mountId ? game.current.creatures.find((c) => c.id === p.mountId) : undefined;
     const lift = mount ? SPECIES[mount.species].size * 1.6 + 0.6 : p.dead ? 0.3 : EYE_HEIGHT;
-    camera.position.set(p.x, p.y + lift, p.z);
-    camera.rotation.set(p.pitch, p.yaw + Math.PI, p.dead ? 0.6 : 0);
+    // Head bob while walking on the ground: a gentle bounce that follows your stride.
+    const b = bob.current;
+    const moved = Math.hypot(p.x - b.x, p.z - b.z);
+    b.x = p.x;
+    b.z = p.z;
+    const walking = p.onGround && !p.dead && moved > 0.001 && moved < 1;
+    b.phase += moved * 2.2;
+    b.amount = THREE.MathUtils.damp(b.amount, walking ? 1 : 0, 10, dt);
+    const bobY = Math.abs(Math.sin(b.phase)) * 0.06 * b.amount;
+    camera.position.set(p.x, p.y + lift + bobY, p.z);
+    camera.rotation.set(p.pitch, p.yaw + Math.PI, p.dead ? 0.6 : Math.sin(b.phase) * 0.006 * b.amount);
   });
   return null;
 }
@@ -442,6 +482,8 @@ export default function World({ game }: { game: GameRef }) {
       <Structures game={game} />
       <PlacementGhost game={game} />
       <Blocks game={game} />
+      <Particles game={game} />
+      <HeldItem game={game} />
     </>
   );
 }

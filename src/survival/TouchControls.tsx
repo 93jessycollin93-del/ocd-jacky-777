@@ -3,6 +3,12 @@
 import { useRef, useState, type MutableRefObject, type ReactNode, type TouchEvent } from "react";
 import type { GameState, Input } from "./engine/game";
 
+/** The attack button / mouse button: held down, plus a press that hasn't been acted on yet. */
+export interface AttackInput {
+  held: boolean;
+  queued: boolean;
+}
+
 const STICK_RADIUS = 50;
 const DEAD_ZONE = 12;
 const LOOK_SENSITIVITY = 0.006;
@@ -52,7 +58,7 @@ export function TouchControls({
 }: {
   game: MutableRefObject<GameState>;
   input: MutableRefObject<Input>;
-  attack: MutableRefObject<boolean>;
+  attack: MutableRefObject<AttackInput>;
   onUse: () => void;
   onRide: () => void;
   onEat: () => void;
@@ -161,8 +167,8 @@ export function TouchControls({
         </ActionButton>
         <ActionButton
           label="Attack or use held item"
-          onPress={() => (attack.current = true)}
-          onRelease={() => (attack.current = false)}
+          onPress={() => (attack.current = { held: true, queued: true })}
+          onRelease={() => (attack.current.held = false)}
           className="h-20 w-20 border-amber-300/60 text-3xl"
         >
           ✊

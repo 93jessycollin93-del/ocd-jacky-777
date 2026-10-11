@@ -48,6 +48,10 @@ export function promptFor(state: GameState): string | null {
       return `${c.name} (${c.state}) · E: ${c.state === "follow" ? "stay" : "follow"}${sp.rideSpeed && !p.mountId ? " · R: ride" : ""}`;
     }
   }
+  if (near?.kind === "structure" && near.structure.kind === "lootbag") {
+    const n = Object.values(near.structure.items ?? {}).reduce((a, k) => a + (k ?? 0), 0);
+    return `Your dropped things (${n} items) · E or Click: pick up`;
+  }
   if (near?.kind === "structure" && near.structure.kind === "storage") {
     const stored = Object.values(near.structure.items ?? {}).reduce((a, n) => a + (n ?? 0), 0);
     return `E: open Storage Box (${stored} items) · Click: pick up`;

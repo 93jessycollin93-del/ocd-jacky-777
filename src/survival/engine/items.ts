@@ -7,7 +7,8 @@ export type ItemId =
   | "campfire" | "foundation" | "wall" | "bed" | "storage"
   | "plank" | "cobblestone" | "thatch_block" | "torch"
   | "metal_ore" | "metal_ingot" | "metal_pick" | "metal_hatchet" | "metal_sword" | "forge" | "metal_block"
-  | "dirt" | "sand" | "glass" | "stone_brick" | "log" | "door" | "stone_shovel";
+  | "dirt" | "sand" | "glass" | "stone_brick" | "log" | "door" | "stone_shovel"
+  | "lootbag";
 
 export type ItemKind = "resource" | "tool" | "consumable" | "structure" | "block";
 
@@ -93,6 +94,8 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   stone_brick: { id: "stone_brick", name: "Stone Bricks", kind: "block", icon: "◼️" },
   log: { id: "log", name: "Log", kind: "block", icon: "🌲" },
   door: { id: "door", name: "Door", kind: "block", icon: "🚪" },
+  // Never crafted or carried: the bag your things drop into when you die.
+  lootbag: { id: "lootbag", name: "Dropped Items", kind: "structure", icon: "💼" },
   stone_shovel: {
     id: "stone_shovel", name: "Stone Shovel", kind: "tool", icon: "🛠️",
     tool: { damage: 10, torpor: 0, reach: 2.8, cooldown: 0.45, harvest: { ground: 4, bush: 1.5, corpse: 0.5 } },

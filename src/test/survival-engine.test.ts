@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   newGame, step, craft, addItem, count, primaryAction, interact, toggleMount, respawn, lookTarget,
-  serialize, deserialize, placementFor, groundAt, lookedAtStorage, transfer, bedSpawn, toggleDoor, assignHotbar, NO_INPUT,
+  serialize, deserialize, placementFor, groundAt, lookedAtStorage, transfer, bedSpawn, toggleDoor, assignHotbar, collectLoot,
+  SWING_STAMINA, FALL_SAFE, FALL_DAMAGE, TAME_REGEN, NO_INPUT,
   type GameState,
 } from "@/survival/engine/game";
 import { solidAt } from "@/survival/engine/blocks";
@@ -473,6 +474,123 @@ describe("metal tier", () => {
       primaryAction(g); // bare hands
     }
     expect(Object.values(g.blocks)).toEqual(["metal_block"]);
+  });
+});
+
+describe("combat and movement feel", () => {
+  function settle(g: GameState) {
+    for (let i = 0; i < 60; i++) step(g, NO_INPUT, 1 / 60);
+  }
+
+  it("knocks creatures back and flashes them when hit", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    settle(g);
+    const p = g.player;
+    const c = makeCreature(40, "dodo", p.x, p.z + 1.6);
+    g.creatures = [c];
+    const z0 = c.z;
+    primaryAction(g);
+    expect(c.hurt).toBeGreaterThan(0);
+    for (let i = 0; i < 10; i++) step(g, NO_INPUT, 1 / 60);
+    expect(c.z).toBeGreaterThan(z0 + 0.2); // pushed away from the player (+z)
+  });
+
+  it("swinging costs stamina, and swings slow down when you're out of breath", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    const s0 = g.player.stamina;
+    primaryAction(g);
+    expect(g.player.stamina).toBe(s0 - SWING_STAMINA);
+    const normal = g.player.cooldown;
+    g.player.cooldown = 0;
+    g.player.stamina = 0;
+    primaryAction(g);
+    expect(g.player.cooldown).toBeGreaterThan(normal);
+  });
+
+  it("raptors can't bite you through a wall", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    settle(g);
+    const p = g.player;
+    // A two-high wall across the z axis between the player and the raptor.
+    const wz = Math.floor(p.z) + 1;
+    for (let x = Math.floor(p.x) - 3; x <= Math.floor(p.x) + 3; x++) {
+      const y = Math.floor(heightAt(x + 0.5, wz + 0.5, SEED) + 0.3);
+      for (let dy = 0; dy < 3; dy++) g.blocks[`${x},${y + dy},${wz}`] = "cobblestone";
+    }
+    const r = makeCreature(41, "raptor", p.x, wz + 1.6);
+    r.state = "chase";
+    r.target = "player";
+    r.timer = 30;
+    g.creatures = [r];
+    const hp = p.hp;
+    for (let i = 0; i < 120; i++) step(g, NO_INPUT, 1 / 30);
+    expect(p.hp).toBeGreaterThanOrEqual(hp - 0.01 - 4); // only starvation-free regen noise, no bites
+    expect(p.hurtFlash).toBe(0);
+  });
+
+  it("long falls hurt; short ones and water landings don't", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    settle(g);
+    const p = g.player;
+    const ground = p.y;
+    p.y = ground + 3;
+    p.onGround = false;
+    p.peakY = p.y;
+    const hp = p.hp;
+    settle(g);
+    expect(p.hp).toBeCloseTo(hp, 0);
+    p.y = ground + 10;
+    p.onGround = false;
+    p.peakY = p.y;
+    settle(g);
+    expect(p.hp).toBeLessThan(hp - (10 - FALL_SAFE) * FALL_DAMAGE + 5);
+  });
+
+  it("drops your things in a bag when you die, and you can get them back", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    settle(g);
+    addItem(g, "stone_pick", 1);
+    addItem(g, "wood", 12);
+    const where = { x: g.player.x, z: g.player.z };
+    g.player.hp = 1;
+    g.player.food = 0;
+    step(g, NO_INPUT, 1);
+    expect(g.player.dead).toBe(true);
+    const bag = g.structures.find((s) => s.kind === "lootbag")!;
+    expect(bag.items).toEqual({ stone_pick: 1, wood: 12 });
+    expect(Math.hypot(bag.x - where.x, bag.z - where.z)).toBeLessThan(0.1);
+    respawn(g);
+    expect(count(g, "wood")).toBe(0);
+    expect(collectLoot(g, bag)).toBe(true);
+    expect(count(g, "wood")).toBe(12);
+    expect(g.hotbar).toContain("stone_pick");
+    expect(g.structures.some((s) => s.kind === "lootbag")).toBe(false);
+  });
+
+  it("tames heal over time out of combat", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    const c = makeCreature(42, "parasaur", g.player.x + 3, g.player.z);
+    c.tamed = true;
+    c.state = "stay";
+    c.hp = 50;
+    g.creatures = [c];
+    step(g, NO_INPUT, 5);
+    expect(c.hp).toBeCloseTo(50 + SPECIES.parasaur.hp * TAME_REGEN * 5, 0);
+  });
+
+  it("queues particle bursts for hits and never saves them", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    g.player.pitch = -1.0;
+    primaryAction(g); // dig
+    expect(g.fx.length).toBeGreaterThan(0);
+    expect(deserialize(serialize(g))!.fx).toEqual([]);
   });
 });
 

@@ -7,7 +7,7 @@ import {
 import { HAND, ITEMS, RECIPES, isEquippable, type Cost, type ItemId, type Recipe, type ToolStats } from "./items";
 import { mulberry32 } from "./noise";
 import {
-  BLOCKS, blockSupport, bodyBlocked, cellKey, doorPartner, hitsToBreak, isBlockItem, isDoor, raycastBlocks, solidAt,
+  BLOCKS, BLOCK_COLORS, blockSupport, bodyBlocked, cellKey, doorPartner, hitsToBreak, isBlockItem, isDoor, raycastBlocks, solidAt,
   PLAYER_HEIGHT, PLAYER_RADIUS, type BlockHit, type BlockMap, type PlaceableBlock,
 } from "./blocks";
 import {
@@ -26,9 +26,23 @@ const WALK_SPEED = 5;
 const SPRINT_SPEED = 8.5;
 const SWIM_SPEED = 3;
 const FOOD_DRAIN = 0.07;
+/** Falls up to this many metres are free; each metre beyond costs FALL_DAMAGE health. */
+export const FALL_SAFE = 4;
+export const FALL_DAMAGE = 9;
+/** Share of a tame's health it regains per second out of combat. */
+export const TAME_REGEN = 0.01;
 const WATER_DRAIN = 0.11;
 
-export type StructureKind = "campfire" | "foundation" | "wall" | "bed" | "storage" | "forge";
+export type StructureKind = "campfire" | "foundation" | "wall" | "bed" | "storage" | "forge" | "lootbag";
+
+/** A burst of particles for the scene to show; like sfx, queued per frame and never saved. */
+export interface Fx {
+  x: number;
+  y: number;
+  z: number;
+  color: string;
+  count: number;
+}
 
 export type Sfx =
   | "swing" | "hit" | "harvest" | "kill" | "hurt" | "eat" | "drink" | "craft" | "place" | "tame" | "level" | "death";
@@ -65,6 +79,15 @@ export interface Player {
   mountId: number | null;
   cooldown: number;
   hurtFlash: number;
+  /** The last damage was a fall (for the death message). */
+  fallDeath?: boolean;
+  /** Seconds left on the held-item swing animation. */
+  swing?: number;
+  /** Knockback velocity from being hit (m/s). */
+  kx?: number;
+  kz?: number;
+  /** Highest point since last standing on something, for fall damage. */
+  peakY?: number;
 }
 
 export interface LogEntry {
@@ -98,6 +121,8 @@ export interface GameState {
   stats: { tamed: number; kills: number; crafted: number };
   /** Sounds to play this frame; the page drains it. Not saved. */
   sfx: Sfx[];
+  /** Particle bursts for the scene; drained every frame. Not saved. */
+  fx: Fx[];
 }
 
 export interface Input {
@@ -136,6 +161,7 @@ export function newGame(seed = Math.floor(Math.random() * 1e9)): GameState {
     blockDamage: null,
     stats: { tamed: 0, kills: 0, crafted: 0 },
     sfx: [],
+    fx: [],
   };
   const rng = mulberry32(seed ^ 0xc0ffee);
   for (const sp of Object.values(SPECIES)) {
@@ -150,6 +176,7 @@ function freshPlayer(x: number, z: number, seed: number): Player {
     x, z, y: heightAt(x, z, seed) + 0.5, vy: 0, yaw: Math.atan2(-x, -z), pitch: 0,
     hp: 100, maxHp: 100, stamina: 100, maxStamina: 100, food: 80, water: 80,
     xp: 0, level: 1, dead: false, onGround: false, swimming: false, mountId: null, cooldown: 0, hurtFlash: 0,
+    swing: 0, kx: 0, kz: 0,
   };
 }
 
@@ -162,6 +189,10 @@ function spawnCreature(state: GameState, species: SpeciesId, rng: () => number) 
 
 export function sfx(state: GameState, name: Sfx) {
   if (state.sfx.length < 8) state.sfx.push(name);
+}
+
+export function burst(state: GameState, x: number, y: number, z: number, color: string, count = 8) {
+  if (state.fx.length < 16) state.fx.push({ x, y, z, color, count });
 }
 
 export function log(state: GameState, text: string) {
@@ -369,8 +400,10 @@ export function placeBlock(state: GameState, id: PlaceableBlock): boolean {
   for (const c of cells) state.blocks[cellKey(c[0], c[1], c[2])] = id;
   state.blockVersion++;
   state.player.cooldown = 0.18;
+  state.player.swing = 0.2;
   gainXp(state, 0.5);
   sfx(state, "place");
+  burst(state, cell[0] + 0.5, cell[1] + 0.1, cell[2] + 0.5, BLOCK_COLORS[id], 5);
   return true;
 }
 
@@ -380,12 +413,15 @@ function hitBlock(state: GameState, hit: BlockHit, tool: ToolStats): boolean {
   const def = BLOCKS[block];
   const needed = hitsToBreak(block, tool.harvest[def.breakAs] ?? 0.5);
   const hits = (state.blockDamage?.key === key ? state.blockDamage.hits : 0) + 1;
+  const [bx, by, bz] = hit.cell;
   if (hits < needed) {
     state.blockDamage = { key, hits };
     sfx(state, "hit");
+    burst(state, bx + 0.5, by + 0.5, bz + 0.5, BLOCK_COLORS[block], 4);
     return true;
   }
   state.blockDamage = null;
+  burst(state, bx + 0.5, by + 0.5, bz + 0.5, BLOCK_COLORS[block], 14);
   if (isDoor(block)) {
     const other = doorPartner(state.blocks, hit.cell[0], hit.cell[1], hit.cell[2]);
     if (other) delete state.blocks[cellKey(other[0], other[1], other[2])];
@@ -403,13 +439,15 @@ function dig(state: GameState, hit: BlockHit, tool: ToolStats): boolean {
   const key = `ground:${x},${z}`;
   const needed = Math.max(1, Math.ceil(2 / Math.max(tool.harvest.ground ?? 0.5, 0.25)));
   const hits = (state.blockDamage?.key === key ? state.blockDamage.hits : 0) + 1;
+  const sandy = heightAt(x + 0.5, z + 0.5, state.seed) < 2.2;
+  burst(state, x + 0.5, hit.cell[1] + 0.2, z + 0.5, sandy ? BLOCK_COLORS.sand : BLOCK_COLORS.dirt, hits < needed ? 4 : 10);
   if (hits < needed) {
     state.blockDamage = { key, hits };
     sfx(state, "hit");
     return true;
   }
   state.blockDamage = null;
-  addItem(state, heightAt(x + 0.5, z + 0.5, state.seed) < 2.2 ? "sand" : "dirt", 1);
+  addItem(state, sandy ? "sand" : "dirt", 1);
   sfx(state, "harvest");
   return true;
 }
@@ -430,10 +468,19 @@ export function toggleDoor(state: GameState, cell: [number, number, number]): st
   return next === "door" ? "Door closed" : "Door opened";
 }
 
+export const SWING_STAMINA = 2;
+
 function swing(state: GameState): boolean {
   const p = state.player;
   const tool = toolStats(state);
-  p.cooldown = tool.cooldown;
+  // Swinging costs a little stamina; when you're out of breath, swings come slower.
+  if (p.stamina >= SWING_STAMINA) {
+    p.stamina -= SWING_STAMINA;
+    p.cooldown = tool.cooldown;
+  } else {
+    p.cooldown = tool.cooldown * 1.8;
+  }
+  p.swing = 0.25;
   const target = lookTarget(state, tool.reach + (p.mountId ? 1.5 : 0));
   const block = blockTarget(state, Math.max(tool.reach, 3.5) + 1);
   if (block?.block && (!target || block.dist <= target.dist + 0.5)) return hitBlock(state, block, tool);
@@ -451,8 +498,9 @@ function swing(state: GameState): boolean {
     if (c.tamed) return false;
     const mount = p.mountId ? state.creatures.find((m) => m.id === p.mountId) : undefined;
     const damage = mount ? SPECIES[mount.species].damage + tool.damage * 0.5 : tool.damage;
-    const killed = damageCreature(c, damage, tool.torpor, state.time, "player");
+    const killed = damageCreature(c, damage, tool.torpor, state.time, "player", p);
     sfx(state, killed ? "kill" : "hit");
+    burst(state, c.x, heightAt(c.x, c.z, state.seed) + SPECIES[c.species].size, c.z, killed ? "#7a1010" : "#c0392b", killed ? 16 : 6);
     if (killed) onKilled(state, c);
     else if (c.state === "unconscious") log(state, `${SPECIES[c.species].name} is knocked out. Feed it (E) to tame.`);
     return true;
@@ -460,6 +508,7 @@ function swing(state: GameState): boolean {
 
   if (target.kind === "structure") {
     const s = target.structure;
+    if (s.kind === "lootbag") return collectLoot(state, s);
     state.structures = state.structures.filter((o) => o.id !== s.id);
     state.structureVersion++;
     addItem(state, s.kind, 1);
@@ -478,6 +527,8 @@ function onKilled(state: GameState, c: Creature) {
   gainXp(state, sp.xp);
   log(state, `Killed a ${sp.name}. Hit the body to harvest meat and hide.`);
 }
+
+const NODE_COLORS: Record<ResourceNode["kind"], string> = { tree: "#6b4a2b", rock: "#8a8680", bush: "#3d7a35", ore: "#e0913a" };
 
 function harvestNode(state: GameState, node: ResourceNode, tool: ToolStats): boolean {
   const mult = tool.harvest[node.kind] ?? 0;
@@ -503,6 +554,7 @@ function harvestNode(state: GameState, node: ResourceNode, tool: ToolStats): boo
   }
   state.nextId++;
   sfx(state, "harvest");
+  burst(state, node.x, node.y + (node.kind === "tree" ? 1.5 : 0.6), node.z, NODE_COLORS[node.kind], 6);
   node.hp -= 10 * mult;
   gainXp(state, 0.5);
   if (node.hp <= 0) {
@@ -529,6 +581,7 @@ function consume(state: GameState, id: ItemId): boolean {
   const r = ITEMS[id].restores;
   if (!r || !removeItem(state, id)) return false;
   p.cooldown = 0.4;
+  p.swing = 0.3;
   p.hp = clamp(p.hp + (r.hp ?? 0), 0, p.maxHp);
   p.food = clamp(p.food + (r.food ?? 0), 0, 100);
   p.water = clamp(p.water + (r.water ?? 0), 0, 100);
@@ -586,6 +639,10 @@ export function interact(state: GameState): string | null {
   const door = blockTarget(state, 3.5);
   if (door && isDoor(door.block ?? undefined)) return toggleDoor(state, door.cell);
   const target = lookTarget(state, 3.5);
+  if (target?.kind === "structure" && target.structure.kind === "lootbag") {
+    collectLoot(state, target.structure);
+    return "You got your things back.";
+  }
   if (target?.kind === "creature") {
     const c = target.creature;
     const sp = SPECIES[c.species];
@@ -720,8 +777,8 @@ export function respawn(state: GameState) {
   log(
     state,
     bed
-      ? "You wake in your sleeping bag. Anything you were carrying is gone."
-      : "You wash up on the beach again. Your tames and base are where you left them.",
+      ? "You wake in your sleeping bag. What you carried is in a bag where you fell."
+      : "You wash up on the beach again. What you carried is in a bag where you fell.",
   );
 }
 
@@ -775,8 +832,14 @@ export function movePlayer(state: GameState, input: Input, dt: number) {
   const vx = ((mz * sin + mx * cos) / len) * speed;
   const vz = ((mz * cos - mx * sin) / len) * speed;
   const lim = WORLD_HALF - 2;
-  const nx = clamp(p.x + vx * dt, -lim, lim);
-  const nz = clamp(p.z + vz * dt, -lim, lim);
+  // Knockback from being hit slides you on top of whatever you were doing, then fades.
+  const kx = p.kx ?? 0;
+  const kz = p.kz ?? 0;
+  const knockDecay = Math.exp(-7 * dt);
+  p.kx = Math.abs(kx) < 0.05 ? 0 : kx * knockDecay;
+  p.kz = Math.abs(kz) < 0.05 ? 0 : kz * knockDecay;
+  const nx = clamp(p.x + (vx + kx) * dt, -lim, lim);
+  const nz = clamp(p.z + (vz + kz) * dt, -lim, lim);
   if (!blockedByWall(state, nx, p.z, p.y) && !bodyBlocked(state.blocks, nx, p.y, p.z)) p.x = nx;
   if (!blockedByWall(state, p.x, nz, p.y) && !bodyBlocked(state.blocks, p.x, p.y, nz)) p.z = nz;
 
@@ -784,6 +847,7 @@ export function movePlayer(state: GameState, input: Input, dt: number) {
   const swimDepth = WATER_LEVEL - 1.3;
   p.swimming = ground < swimDepth && p.y <= WATER_LEVEL;
   if (p.swimming) {
+    p.peakY = p.y; // water breaks your fall
     p.vy = 0;
     p.y += (swimDepth - p.y) * Math.min(1, dt * 4);
     if (input.jump) p.y = Math.min(WATER_LEVEL - 0.6, p.y + 3 * dt);
@@ -800,10 +864,14 @@ export function movePlayer(state: GameState, input: Input, dt: number) {
       p.y -= p.vy * dt; // bumped your head on a block
       p.vy = 0;
     }
+    if (!p.onGround) p.peakY = Math.max(p.peakY ?? p.y, p.y);
     if (p.y <= ground) {
+      const fell = (p.peakY ?? ground) - ground;
       p.y = ground;
       p.vy = 0;
+      if (!p.onGround && fell > FALL_SAFE && !mount) hurtPlayer(state, (fell - FALL_SAFE) * FALL_DAMAGE, false, undefined, true);
       p.onGround = true;
+      p.peakY = ground;
     } else if (p.onGround && p.y - ground < 0.6 && p.vy <= 0) {
       p.y = ground; // walk down slopes instead of bouncing off them
       p.vy = 0;
@@ -829,6 +897,7 @@ export function step(state: GameState, input: Input, dt: number) {
   }
   p.cooldown = Math.max(0, p.cooldown - dt);
   p.hurtFlash = Math.max(0, p.hurtFlash - dt);
+  p.swing = Math.max(0, (p.swing ?? 0) - dt);
 
   movePlayer(state, input, dt);
 
@@ -849,6 +918,17 @@ export function step(state: GameState, input: Input, dt: number) {
       const y = heightAt(x, z, state.seed);
       return solidAt(state.blocks, x, y + 0.5, z) || solidAt(state.blocks, x, y + 1.2, z) || blockedByWall(state, x, z, y);
     },
+    losBlocked: (ax: number, az: number, bx: number, bz: number) => {
+      const len = Math.hypot(bx - ax, bz - az);
+      const steps = Math.ceil(len / 0.4);
+      for (let i = 1; i < steps; i++) {
+        const x = ax + ((bx - ax) * i) / steps;
+        const z = az + ((bz - az) * i) / steps;
+        const y = heightAt(x, z, state.seed);
+        if (solidAt(state.blocks, x, y + 0.9, z) || blockedByWall(state, x, z, y)) return true;
+      }
+      return false;
+    },
   };
   for (const c of state.creatures) {
     for (const ev of updateCreature(c, ctx)) {
@@ -856,16 +936,16 @@ export function step(state: GameState, input: Input, dt: number) {
         const mount = p.mountId ? state.creatures.find((m) => m.id === p.mountId) : undefined;
         if (mount) {
           // Your mount takes the hit first.
-          if (damageCreature(mount, ev.amount ?? 0, 0, state.time, ev.creatureId)) {
+          if (damageCreature(mount, ev.amount ?? 0, 0, state.time, ev.creatureId, c)) {
             p.mountId = null;
             log(state, `${mount.name ?? SPECIES[mount.species].name} was killed!`);
           }
         } else {
-          hurtPlayer(state, ev.amount ?? 0, false);
+          hurtPlayer(state, ev.amount ?? 0, false, c);
         }
       } else if (ev.type === "hit-creature" && ev.targetId != null) {
         const foe = state.creatures.find((o) => o.id === ev.targetId);
-        if (foe && damageCreature(foe, ev.amount ?? 0, 0, state.time, ev.creatureId)) {
+        if (foe && damageCreature(foe, ev.amount ?? 0, 0, state.time, ev.creatureId, c)) {
           if (foe.tamed) log(state, `${foe.name} was killed!`);
           else gainXp(state, SPECIES[foe.species].xp * 0.5);
         }
@@ -873,6 +953,13 @@ export function step(state: GameState, input: Input, dt: number) {
         log(state, `The ${SPECIES[c.species].name} woke up!`);
       }
     }
+  }
+
+  // Tames slowly heal when nothing is fighting them.
+  for (const c of state.creatures) {
+    if (!c.tamed || c.state === "dead" || typeof c.target === "number") continue;
+    const max = SPECIES[c.species].hp;
+    if (c.hp < max) c.hp = Math.min(max, c.hp + max * TAME_REGEN * dt);
   }
 
   // Corpses rot away; wild populations refill out of sight.
@@ -896,21 +983,55 @@ export function step(state: GameState, input: Input, dt: number) {
   if (regrew) state.nodeVersion++;
 }
 
-function hurtPlayer(state: GameState, amount: number, silent: boolean) {
+function hurtPlayer(state: GameState, amount: number, silent: boolean, from?: { x: number; z: number }, fall = false) {
   const p = state.player;
   if (p.dead || amount <= 0) return;
   p.hp -= amount;
+  p.fallDeath = fall;
   if (!silent) {
     p.hurtFlash = 0.35;
     sfx(state, "hurt");
+  }
+  if (from) {
+    const dx = p.x - from.x;
+    const dz = p.z - from.z;
+    const len = Math.hypot(dx, dz) || 1;
+    const push = Math.min(10, 3 + amount * 0.25);
+    p.kx = (p.kx ?? 0) + (dx / len) * push;
+    p.kz = (p.kz ?? 0) + (dz / len) * push;
+    if (p.onGround) p.vy = Math.max(p.vy, 3); // a little hop sells the hit
   }
   if (p.hp <= 0) {
     p.hp = 0;
     p.dead = true;
     sfx(state, "death");
     if (p.mountId) p.mountId = null;
-    log(state, p.food <= 0 ? "You starved." : p.water <= 0 ? "You died of thirst." : "You were killed.");
+    log(state, p.food <= 0 ? "You starved." : p.water <= 0 ? "You died of thirst." : p.fallDeath ? "You fell to your death." : "You were killed.");
+    dropLoot(state);
   }
+}
+
+/** On death, everything you carry goes into a bag where you fell, to walk back for. */
+function dropLoot(state: GameState) {
+  const p = state.player;
+  const items = Object.fromEntries(Object.entries(state.inventory).filter(([, n]) => (n ?? 0) > 0));
+  if (!Object.keys(items).length) return;
+  const y = Math.max(groundAt(state, p.x, p.z), blockSupport(state.blocks, p.x, p.y, p.z), WATER_LEVEL);
+  state.structures.push({ id: state.nextId++, kind: "lootbag", x: p.x, y, z: p.z, rot: 0, items });
+  state.structureVersion++;
+  state.inventory = {};
+  state.hotbar = Array(HOTBAR_SIZE).fill(null);
+  log(state, "Your things are in a bag where you fell (💼 on the compass).");
+}
+
+export function collectLoot(state: GameState, bag: Structure): boolean {
+  if (bag.kind !== "lootbag") return false;
+  for (const [id, n] of Object.entries(bag.items ?? {}) as [ItemId, number][]) addItem(state, id, n);
+  state.structures = state.structures.filter((s) => s.id !== bag.id);
+  state.structureVersion++;
+  sfx(state, "craft");
+  log(state, "You got your things back.");
+  return true;
 }
 
 /** 0 = midnight, 0.5 = noon. */
@@ -928,7 +1049,7 @@ export const SAVE_KEY = "primal-isle-save-v1";
 
 export function serialize(state: GameState): string {
   // Nodes regrow from the seed; only store the ones that are currently chopped down.
-  const { nodes, sfx: _sfx, ...rest } = state;
+  const { nodes, sfx: _sfx, fx: _fx, ...rest } = state;
   const depleted = nodes.filter((n) => n.respawnAt || n.hp < n.maxHp).map((n) => [n.id, n.hp, n.respawnAt]);
   return JSON.stringify({ ...rest, depleted });
 }
@@ -953,6 +1074,7 @@ export function deserialize(json: string): GameState | null {
       structureVersion: 0,
       blockVersion: 0,
       sfx: [],
+      fx: [],
     } as GameState;
   } catch {
     return null;

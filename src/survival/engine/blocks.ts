@@ -40,6 +40,13 @@ export const BLOCKS: Record<BlockId, BlockDef> = {
   door_open: { id: "door_open", hardness: 3, breakAs: "tree", solid: false, drop: "door" },
 };
 
+/** Colour of the chips that fly off a block when you hit it. */
+export const BLOCK_COLORS: Record<BlockId, string> = {
+  plank: "#a87842", cobblestone: "#808080", thatch_block: "#d6b452", torch: "#ffb347", metal_block: "#b0b6be",
+  dirt: "#86603f", sand: "#dbcf9e", glass: "#c8e1f0", stone_brick: "#8c8c8c", log: "#684e2e",
+  door: "#96683a", door_open: "#96683a",
+};
+
 export const isDoor = (b: BlockId | undefined): b is "door" | "door_open" => b === "door" || b === "door_open";
 
 /** The other half of a two-high door, if there is one. */

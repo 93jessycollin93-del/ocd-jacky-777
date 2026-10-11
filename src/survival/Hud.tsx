@@ -38,6 +38,12 @@ function Compass({ state }: { state: GameState }) {
   }));
   const bed = bedSpawn(state);
   if (bed) marks.push({ label: `🛏️ ${Math.round(Math.hypot(bed.x - p.x, bed.z - p.z))}m`, deg: bearingOf(bed.x - p.x, bed.z - p.z) });
+  for (const bag of state.structures.filter((s) => s.kind === "lootbag")) {
+    marks.push({
+      label: `💼 ${Math.round(Math.hypot(bag.x - p.x, bag.z - p.z))}m`,
+      deg: bearingOf(bag.x - p.x, bag.z - p.z),
+    });
+  }
   return (
     <div className="absolute left-1/2 top-3 h-6 w-64 -translate-x-1/2 overflow-hidden rounded-full bg-black/40 text-[11px] backdrop-blur-sm">
       {marks.map((m) => {
@@ -45,7 +51,7 @@ function Compass({ state }: { state: GameState }) {
         if (Math.abs(off) > 75) return null;
         return (
           <span
-            key={m.label}
+            key={`${m.label}@${m.deg.toFixed(1)}`}
             className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap ${m.strong ? "font-bold text-amber-300" : "text-white/75"}`}
             style={{ left: `${50 + (off / 75) * 50}%` }}
           >
