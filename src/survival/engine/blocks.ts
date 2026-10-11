@@ -3,7 +3,7 @@
 import type { ItemId } from "./items";
 import { heightAt } from "./world";
 
-export type BlockId = "plank" | "cobblestone" | "thatch_block" | "torch";
+export type BlockId = "plank" | "cobblestone" | "thatch_block" | "torch" | "metal_block";
 
 /** "x,y,z" of the cell's minimum corner; the block fills [x, x+1) × [y, y+1) × [z, z+1). */
 export type BlockMap = Record<string, BlockId>;
@@ -23,6 +23,7 @@ export const BLOCKS: Record<BlockId, BlockDef> = {
   cobblestone: { id: "cobblestone", hardness: 5, breakAs: "rock", solid: true },
   thatch_block: { id: "thatch_block", hardness: 1, breakAs: "bush", solid: true },
   torch: { id: "torch", hardness: 1, breakAs: "bush", solid: false },
+  metal_block: { id: "metal_block", hardness: 18, breakAs: "rock", solid: true },
 };
 
 export const isBlockItem = (id: ItemId | null | undefined): id is BlockId => !!id && id in BLOCKS;

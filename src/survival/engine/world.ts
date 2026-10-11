@@ -5,7 +5,7 @@ export const WORLD_SIZE = 400;
 export const WORLD_HALF = WORLD_SIZE / 2;
 export const WATER_LEVEL = 0;
 
-export type NodeKind = "tree" | "rock" | "bush";
+export type NodeKind = "tree" | "rock" | "bush" | "ore";
 
 export interface ResourceNode {
   id: number;
@@ -19,9 +19,9 @@ export interface ResourceNode {
   respawnAt: number;
 }
 
-export const NODE_HP: Record<NodeKind, number> = { tree: 60, rock: 80, bush: 20 };
+export const NODE_HP: Record<NodeKind, number> = { tree: 60, rock: 80, bush: 20, ore: 90 };
 export const NODE_RESPAWN_SECONDS = 180;
-export const NODE_RADIUS: Record<NodeKind, number> = { tree: 0.6, rock: 1.1, bush: 0.7 };
+export const NODE_RADIUS: Record<NodeKind, number> = { tree: 0.6, rock: 1.1, bush: 0.7, ore: 1.1 };
 
 /** Terrain height at a world position. An island: hills in the middle, beaches, then ocean. */
 export function heightAt(x: number, z: number, seed: number): number {
@@ -65,7 +65,8 @@ export function generateNodes(seed: number): ResourceNode[] {
       const roll = rng();
       let kind: NodeKind | null = null;
       if (y > 2.5 && y < 20 && forest > 0.52 && roll < 0.75) kind = "tree";
-      else if ((y > 14 && roll < 0.35) || roll < 0.04) kind = "rock";
+      // Metal ore is a share of the mountain rocks, so adding it didn't move any other node.
+      else if ((y > 14 && roll < 0.35) || roll < 0.04) kind = y > 14 && roll < 0.1 ? "ore" : "rock";
       else if (y < 14 && roll < 0.14) kind = "bush";
       if (!kind) continue;
       nodes.push({ id: id++, kind, x, y, z, hp: NODE_HP[kind], maxHp: NODE_HP[kind], respawnAt: 0 });

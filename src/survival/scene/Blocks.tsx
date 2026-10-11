@@ -58,6 +58,16 @@ function pixelTexture(kind: BlockId): THREE.Texture {
         px(x, y, shade(base, strand ? -40 : (rng() - 0.5) * 30));
       }
     }
+  } else if (kind === "metal_block") {
+    const base: [number, number, number] = [176, 182, 190];
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const rim = x === 0 || y === 0 || x === size - 1 || y === size - 1;
+        const rivet = (x === 2 || x === size - 3) && (y === 2 || y === size - 3);
+        const sheen = (x + y) % 9 === 0 ? 18 : 0;
+        px(x, y, rivet ? shade(base, -70) : rim ? shade(base, -40) : shade(base, sheen + (rng() - 0.5) * 10));
+      }
+    }
   } else {
     // torch: transparent, stick + flame
     ctx.clearRect(0, 0, size, size);

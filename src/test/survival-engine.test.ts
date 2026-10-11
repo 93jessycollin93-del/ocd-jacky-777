@@ -34,9 +34,9 @@ describe("island generation", () => {
     expect(h).toBeLessThan(6);
   });
 
-  it("generates all three resource kinds above water", () => {
+  it("generates every resource kind above water", () => {
     const nodes = generateNodes(SEED);
-    expect(new Set(nodes.map((n) => n.kind))).toEqual(new Set(["tree", "rock", "bush"]));
+    expect(new Set(nodes.map((n) => n.kind))).toEqual(new Set(["tree", "rock", "bush", "ore"]));
     expect(nodes.every((n) => n.y >= 1)).toBe(true);
   });
 });
@@ -284,6 +284,84 @@ describe("blocks", () => {
     const g = newGame(SEED);
     g.blocks["1,2,3"] = "torch";
     expect(deserialize(serialize(g))!.blocks).toEqual({ "1,2,3": "torch" });
+  });
+});
+
+describe("metal tier", () => {
+  function oreAhead(g: GameState) {
+    isolate(g);
+    const p = g.player;
+    g.nodes = [{ id: 1, kind: "ore", x: p.x, z: p.z + 1.5, y: p.y, hp: 90, maxHp: 90, respawnAt: 0 }];
+  }
+
+  it("puts metal ore up in the mountains", () => {
+    const ore = generateNodes(SEED).filter((n) => n.kind === "ore");
+    expect(ore.length).toBeGreaterThan(5);
+    expect(ore.every((n) => n.y > 14)).toBe(true);
+  });
+
+  it("needs a pick to mine ore", () => {
+    const g = newGame(SEED);
+    oreAhead(g);
+    primaryAction(g);
+    expect(count(g, "metal_ore")).toBe(0);
+    addItem(g, "stone_pick", 1);
+    g.selected = g.hotbar.indexOf("stone_pick");
+    g.player.cooldown = 0;
+    primaryAction(g);
+    expect(count(g, "metal_ore")).toBeGreaterThan(0);
+  });
+
+  it("smelts ore into ingots at a forge, using wood as fuel", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    addItem(g, "forge", 1);
+    g.selected = g.hotbar.indexOf("forge");
+    expect(primaryAction(g)).toBe(true);
+    g.player.yaw = Math.PI; // turn away so E doesn't target the forge itself
+    addItem(g, "metal_ore", 5);
+    expect(interact(g)).toBe("Smelting needs wood for fuel");
+    addItem(g, "wood", 10);
+    expect(interact(g)).toBe("Smelted 2 metal ingots");
+    expect(count(g, "metal_ingot")).toBe(2);
+    expect(count(g, "metal_ore")).toBe(1);
+  });
+
+  it("metal tools are gated by level and much stronger", () => {
+    const g = newGame(SEED);
+    addItem(g, "metal_ingot", 20);
+    addItem(g, "wood", 20);
+    addItem(g, "hide", 20);
+    expect(craft(g, "metal_pick")).toBe(false); // level 1
+    g.player.level = 4;
+    expect(craft(g, "metal_pick")).toBe(true);
+    expect(craft(g, "metal_sword")).toBe(true);
+    expect(craft(g, "metal_block")).toBe(true);
+  });
+
+  it("a metal pick breaks cobblestone in one hit; metal blocks are tough", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    g.player.pitch = -1.2;
+    addItem(g, "cobblestone", 1);
+    g.selected = g.hotbar.indexOf("cobblestone");
+    primaryAction(g);
+    addItem(g, "metal_pick", 1);
+    g.selected = g.hotbar.indexOf("metal_pick");
+    g.player.cooldown = 0;
+    primaryAction(g);
+    expect(g.blocks).toEqual({});
+
+    addItem(g, "metal_block", 1);
+    g.selected = g.hotbar.indexOf("metal_block");
+    g.player.cooldown = 0;
+    primaryAction(g);
+    g.selected = g.hotbar.indexOf(null);
+    for (let i = 0; i < 10; i++) {
+      g.player.cooldown = 0;
+      primaryAction(g); // bare hands
+    }
+    expect(Object.values(g.blocks)).toEqual(["metal_block"]);
   });
 });
 

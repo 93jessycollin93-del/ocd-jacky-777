@@ -28,7 +28,7 @@ const SWIM_SPEED = 3;
 const FOOD_DRAIN = 0.07;
 const WATER_DRAIN = 0.11;
 
-export type StructureKind = "campfire" | "foundation" | "wall" | "bed" | "storage";
+export type StructureKind = "campfire" | "foundation" | "wall" | "bed" | "storage" | "forge";
 
 export type Sfx =
   | "swing" | "hit" | "harvest" | "kill" | "hurt" | "eat" | "drink" | "craft" | "place" | "tame" | "level" | "death";
@@ -218,9 +218,15 @@ export function nearCampfire(state: GameState, range = 4) {
   return state.structures.some((s) => s.kind === "campfire" && Math.hypot(s.x - p.x, s.z - p.z) < range);
 }
 
+export function nearForge(state: GameState, range = 4) {
+  const p = state.player;
+  return state.structures.some((s) => s.kind === "forge" && Math.hypot(s.x - p.x, s.z - p.z) < range);
+}
+
 export function canCraft(state: GameState, recipe: Recipe): { ok: boolean; reason?: string } {
   if ((recipe.level ?? 1) > state.player.level) return { ok: false, reason: `Needs level ${recipe.level}` };
   if (recipe.needsCampfire && !nearCampfire(state)) return { ok: false, reason: "Stand near a campfire" };
+  if (recipe.needsForge && !nearForge(state)) return { ok: false, reason: "Stand near a forge" };
   if (!hasCost(state, recipe.cost)) return { ok: false, reason: "Missing materials" };
   return { ok: true };
 }
@@ -434,6 +440,9 @@ function harvestNode(state: GameState, node: ResourceNode, tool: ToolStats): boo
   if (node.kind === "tree") {
     addItem(state, "wood", Math.round((handed ? 1 : 2) * mult));
     addItem(state, "thatch", Math.round((handed ? 2 : 1) * (handed ? 1 : 0.6) + rng()));
+  } else if (node.kind === "ore") {
+    addItem(state, "metal_ore", Math.max(1, Math.round(mult * (0.6 + rng() * 0.6))));
+    addItem(state, "stone", Math.round(rng() * mult));
   } else if (node.kind === "rock") {
     addItem(state, "stone", Math.round((handed ? 1 : 1.5) * mult));
     addItem(state, "flint", Math.round((handed ? 0.4 : 0.8) * mult * rng() + (handed ? 0 : 0.3)));
@@ -482,7 +491,7 @@ function consume(state: GameState, id: ItemId): boolean {
 /** Where a structure would go: snapped to the building grid, walls on the cell edge you face. */
 export function placementFor(state: GameState, kind: StructureKind): Structure {
   const p = state.player;
-  const free = kind === "campfire" || kind === "bed" || kind === "storage";
+  const free = kind === "campfire" || kind === "bed" || kind === "storage" || kind === "forge";
   const ahead = free ? 2.5 : GRID * 0.9;
   const tx = p.x + Math.sin(p.yaw) * ahead;
   const tz = p.z + Math.cos(p.yaw) * ahead;
@@ -566,6 +575,15 @@ export function interact(state: GameState): string | null {
       return `Cooked ${cooked} meat`;
     }
     return "Cooking needs wood";
+  }
+  if (nearForge(state, 3) && count(state, "metal_ore") > 0) {
+    let smelted = 0;
+    while (smelted < 5 && craft(state, "metal_ingot", true)) smelted++;
+    if (smelted) {
+      sfx(state, "craft");
+      return `Smelted ${smelted} metal ingot${smelted > 1 ? "s" : ""}`;
+    }
+    return count(state, "metal_ore") < 2 ? "Smelting needs 2 ore per ingot" : "Smelting needs wood for fuel";
   }
   if (canDrink(state)) {
     p.water = Math.min(100, p.water + 20);

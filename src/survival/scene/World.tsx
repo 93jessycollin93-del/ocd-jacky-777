@@ -70,13 +70,15 @@ const NODE_PARTS: { kind: NodeKind; geometry: THREE.BufferGeometry; color: strin
   { kind: "tree", geometry: new THREE.ConeGeometry(2, 5, 7), color: "#2f5d2a", y: 5.5, scale: 1 },
   { kind: "rock", geometry: new THREE.DodecahedronGeometry(1.1, 0), color: "#8a8680", y: 0.5, scale: 1 },
   { kind: "bush", geometry: new THREE.IcosahedronGeometry(0.8, 0), color: "#3d7a35", y: 0.5, scale: 1 },
+  { kind: "ore", geometry: new THREE.DodecahedronGeometry(1.1, 0), color: "#5f5048", y: 0.5, scale: 1 },
+  { kind: "ore", geometry: new THREE.OctahedronGeometry(0.55, 0), color: "#e0913a", y: 1.45, scale: 1 },
 ];
 
 function Nodes({ game }: { game: GameRef }) {
   const refs = useRef<(THREE.InstancedMesh | null)[]>([]);
   const lastVersion = useRef(-1);
   const counts = useMemo(() => {
-    const byKind: Record<NodeKind, number> = { tree: 0, rock: 0, bush: 0 };
+    const byKind: Record<NodeKind, number> = { tree: 0, rock: 0, bush: 0, ore: 0 };
     for (const n of game.current.nodes) byKind[n.kind]++;
     return byKind;
   }, [game]);
@@ -284,6 +286,24 @@ function StructureMesh({ s, ghost = false }: { s: Structure; ghost?: boolean }) 
         <mesh position={[0, 0.82, 0]}>
           <boxGeometry args={[1.26, 0.06, 0.86]} />
           {mat ?? <meshStandardMaterial color="#6b4423" roughness={1} />}
+        </mesh>
+      </group>
+    );
+  }
+  if (s.kind === "forge") {
+    return (
+      <group position={[s.x, s.y, s.z]} rotation-y={s.rot}>
+        <mesh position={[0, 0.6, 0]} castShadow receiveShadow>
+          <boxGeometry args={[1.4, 1.2, 1.2]} />
+          {mat ?? <meshStandardMaterial color="#6f6a64" roughness={1} flatShading />}
+        </mesh>
+        <mesh position={[0, 0.45, 0.61]}>
+          <boxGeometry args={[0.6, 0.45, 0.02]} />
+          {mat ?? <meshStandardMaterial color="#ff7a1a" emissive="#ff4d00" emissiveIntensity={2.5} />}
+        </mesh>
+        <mesh position={[0.35, 1.55, -0.25]} castShadow>
+          <boxGeometry args={[0.35, 0.8, 0.35]} />
+          {mat ?? <meshStandardMaterial color="#57524c" roughness={1} />}
         </mesh>
       </group>
     );

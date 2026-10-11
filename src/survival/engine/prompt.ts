@@ -2,7 +2,7 @@
 import { SPECIES } from "./creatures";
 import { ITEMS, type ItemId } from "./items";
 import { BLOCKS, cellKey, hitsToBreak, isBlockItem } from "./blocks";
-import { blockTarget, canDrink, count, equipped, lookTarget, nearCampfire, toolStats, type GameState } from "./game";
+import { blockTarget, canDrink, count, equipped, lookTarget, nearCampfire, nearForge, toolStats, type GameState } from "./game";
 
 /** The hint under the crosshair for whatever you're looking at. */
 export function promptFor(state: GameState): string | null {
@@ -47,9 +47,14 @@ export function promptFor(state: GameState): string | null {
     const sp = SPECIES[c.species];
     return `${sp.name} · HP ${Math.ceil(c.hp)}/${sp.hp} · KO ${Math.round((c.torpor / sp.maxTorpor) * 100)}%`;
   }
-  if (reachTarget?.kind === "node") return `Click: harvest ${reachTarget.node.kind}`;
+  if (reachTarget?.kind === "node") {
+    const kind = reachTarget.node.kind;
+    if (kind === "ore") return (tool.harvest.ore ?? 0) > 0 ? "Metal ore · Click: mine" : "Metal ore · needs a pick to mine";
+    return `Click: harvest ${kind}`;
+  }
   if (reachTarget?.kind === "structure") return `Click: pick up ${ITEMS[reachTarget.structure.kind].name}`;
   if (nearCampfire(state, 3) && count(state, "raw_meat") > 0) return "E: cook meat";
+  if (nearForge(state, 3) && count(state, "metal_ore") > 0) return "E: smelt ore (2 ore + 1 wood → ingot)";
   if (canDrink(state)) return "E: drink";
   if (p.mountId) return "R: dismount";
   return null;
