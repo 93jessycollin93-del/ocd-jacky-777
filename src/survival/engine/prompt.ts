@@ -22,6 +22,11 @@ export function promptFor(state: GameState): string | null {
       return `${c.name} (${c.state}) · E: ${c.state === "follow" ? "stay" : "follow"}${sp.rideSpeed && !p.mountId ? " · R: ride" : ""}`;
     }
   }
+  if (near?.kind === "structure" && near.structure.kind === "storage") {
+    const stored = Object.values(near.structure.items ?? {}).reduce((a, n) => a + (n ?? 0), 0);
+    return `E: open Storage Box (${stored} items) · Click: pick up`;
+  }
+  if (near?.kind === "structure" && near.structure.kind === "bed") return "Your respawn point · Click: pick up";
   const reachTarget = lookTarget(state, toolStats(state).reach);
   if (reachTarget?.kind === "creature" && !reachTarget.creature.tamed) {
     const c = reachTarget.creature;

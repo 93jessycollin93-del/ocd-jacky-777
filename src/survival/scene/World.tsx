@@ -259,6 +259,34 @@ function StructureMesh({ s, ghost = false }: { s: Structure; ghost?: boolean }) 
       </group>
     );
   }
+  if (s.kind === "bed") {
+    return (
+      <group position={[s.x, s.y, s.z]} rotation-y={s.rot}>
+        <mesh position={[0, 0.08, 0]} receiveShadow>
+          <boxGeometry args={[0.9, 0.16, 2]} />
+          {mat ?? <meshStandardMaterial color="#8b5a2b" roughness={1} />}
+        </mesh>
+        <mesh position={[0, 0.2, 0.75]}>
+          <boxGeometry args={[0.7, 0.14, 0.35]} />
+          {mat ?? <meshStandardMaterial color="#e8dcc0" roughness={1} />}
+        </mesh>
+      </group>
+    );
+  }
+  if (s.kind === "storage") {
+    return (
+      <group position={[s.x, s.y, s.z]} rotation-y={s.rot}>
+        <mesh position={[0, 0.4, 0]} castShadow receiveShadow>
+          <boxGeometry args={[1.2, 0.8, 0.8]} />
+          {mat ?? <meshStandardMaterial color="#9c6b38" roughness={1} />}
+        </mesh>
+        <mesh position={[0, 0.82, 0]}>
+          <boxGeometry args={[1.26, 0.06, 0.86]} />
+          {mat ?? <meshStandardMaterial color="#6b4423" roughness={1} />}
+        </mesh>
+      </group>
+    );
+  }
   if (s.kind === "foundation") {
     return (
       <mesh position={[s.x, s.y - 0.5, s.z]} receiveShadow castShadow>

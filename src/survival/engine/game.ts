@@ -24,7 +24,10 @@ const SWIM_SPEED = 3;
 const FOOD_DRAIN = 0.07;
 const WATER_DRAIN = 0.11;
 
-export type StructureKind = "campfire" | "foundation" | "wall";
+export type StructureKind = "campfire" | "foundation" | "wall" | "bed" | "storage";
+
+export type Sfx =
+  | "swing" | "hit" | "harvest" | "kill" | "hurt" | "eat" | "drink" | "craft" | "place" | "tame" | "level" | "death";
 
 export interface Structure {
   id: number;
@@ -33,6 +36,8 @@ export interface Structure {
   y: number;
   z: number;
   rot: number;
+  /** Storage boxes only. */
+  items?: Partial<Record<ItemId, number>>;
 }
 
 export interface Player {
@@ -82,6 +87,8 @@ export interface GameState {
   nodeVersion: number;
   structureVersion: number;
   stats: { tamed: number; kills: number; crafted: number };
+  /** Sounds to play this frame; the page drains it. Not saved. */
+  sfx: Sfx[];
 }
 
 export interface Input {
@@ -116,12 +123,13 @@ export function newGame(seed = Math.floor(Math.random() * 1e9)): GameState {
     nodeVersion: 0,
     structureVersion: 0,
     stats: { tamed: 0, kills: 0, crafted: 0 },
+    sfx: [],
   };
   const rng = mulberry32(seed ^ 0xc0ffee);
   for (const sp of Object.values(SPECIES)) {
     for (let i = 0; i < sp.population; i++) spawnCreature(state, sp.id, rng);
   }
-  log(state, "You wake on a beach with nothing. Punch a tree (left click) to start.");
+  log(state, "You wake on a beach with nothing. Punch a tree to start gathering.");
   return state;
 }
 
@@ -138,6 +146,10 @@ function spawnCreature(state: GameState, species: SpeciesId, rng: () => number) 
   const maxH = species === "dodo" ? 10 : 18;
   const p = randomLandPoint(state.seed, rng, avoid, 1.5, maxH);
   state.creatures.push(makeCreature(state.nextId++, species, p.x, p.z, rng() * Math.PI * 2));
+}
+
+export function sfx(state: GameState, name: Sfx) {
+  if (state.sfx.length < 8) state.sfx.push(name);
 }
 
 export function log(state: GameState, text: string) {
@@ -201,14 +213,17 @@ export function canCraft(state: GameState, recipe: Recipe): { ok: boolean; reaso
   return { ok: true };
 }
 
-export function craft(state: GameState, recipeId: string): boolean {
+export function craft(state: GameState, recipeId: string, quiet = false): boolean {
   const recipe = RECIPES.find((r) => r.id === recipeId);
   if (!recipe || !canCraft(state, recipe).ok) return false;
   spend(state, recipe.cost);
   addItem(state, recipe.output, recipe.count);
   state.stats.crafted++;
   gainXp(state, 4);
-  log(state, `Crafted ${ITEMS[recipe.output].name}`);
+  if (!quiet) {
+    log(state, `Crafted ${ITEMS[recipe.output].name}`);
+    sfx(state, "craft");
+  }
   return true;
 }
 
@@ -226,6 +241,7 @@ export function gainXp(state: GameState, xp: number) {
     p.maxStamina += 10;
     p.hp = p.maxHp;
     log(state, `Level ${p.level}! Health and stamina increased.`);
+    sfx(state, "level");
   }
 }
 
@@ -265,7 +281,7 @@ export function lookTarget(state: GameState, reach: number): Target | null {
   }
   for (const s of state.structures) {
     if (s.kind === "foundation") continue;
-    consider(s.x, s.z, s.kind === "wall" ? 1.2 : 0.8, (dist) => ({ kind: "structure", structure: s, dist }));
+    consider(s.x, s.z, s.kind === "wall" ? 1.2 : s.kind === "campfire" ? 0.8 : 1, (dist) => ({ kind: "structure", structure: s, dist }));
   }
   return best;
 }
@@ -287,7 +303,10 @@ function swing(state: GameState): boolean {
   const tool = toolStats(state);
   p.cooldown = tool.cooldown;
   const target = lookTarget(state, tool.reach + (p.mountId ? 1.5 : 0));
-  if (!target) return false;
+  if (!target) {
+    sfx(state, "swing");
+    return false;
+  }
 
   if (target.kind === "node") return harvestNode(state, target.node, tool);
 
@@ -298,6 +317,7 @@ function swing(state: GameState): boolean {
     const mount = p.mountId ? state.creatures.find((m) => m.id === p.mountId) : undefined;
     const damage = mount ? SPECIES[mount.species].damage + tool.damage * 0.5 : tool.damage;
     const killed = damageCreature(c, damage, tool.torpor, state.time, "player");
+    sfx(state, killed ? "kill" : "hit");
     if (killed) onKilled(state, c);
     else if (c.state === "unconscious") log(state, `${SPECIES[c.species].name} is knocked out. Feed it (E) to tame.`);
     return true;
@@ -308,7 +328,10 @@ function swing(state: GameState): boolean {
     state.structures = state.structures.filter((o) => o.id !== s.id);
     state.structureVersion++;
     addItem(state, s.kind, 1);
+    // A picked-up box empties into your pockets rather than destroying what's inside.
+    for (const [id, n] of Object.entries(s.items ?? {}) as [ItemId, number][]) addItem(state, id, n);
     log(state, `Picked up ${ITEMS[s.kind].name}`);
+    sfx(state, "place");
     return true;
   }
   return false;
@@ -341,6 +364,7 @@ function harvestNode(state: GameState, node: ResourceNode, tool: ToolStats): boo
     if (rng() < 0.35) addItem(state, "narcoberry", 1);
   }
   state.nextId++;
+  sfx(state, "harvest");
   node.hp -= 10 * mult;
   gainXp(state, 0.5);
   if (node.hp <= 0) {
@@ -358,6 +382,7 @@ function carve(state: GameState, c: Creature, tool: ToolStats): boolean {
     const meatShare = sp.drops.raw_meat / (sp.drops.raw_meat + sp.drops.hide);
     addItem(state, (c.harvestLeft + c.id) % 10 < meatShare * 10 ? "raw_meat" : "hide", 1);
   }
+  sfx(state, "harvest");
   return true;
 }
 
@@ -371,17 +396,19 @@ function consume(state: GameState, id: ItemId): boolean {
   p.water = clamp(p.water + (r.water ?? 0), 0, 100);
   p.stamina = clamp(p.stamina + (r.stamina ?? 0), 0, p.maxStamina);
   if ((r.hp ?? 0) < 0) log(state, "Raw meat makes you feel sick. Cook it at a campfire.");
+  sfx(state, "eat");
   return true;
 }
 
 /** Where a structure would go: snapped to the building grid, walls on the cell edge you face. */
 export function placementFor(state: GameState, kind: StructureKind): Structure {
   const p = state.player;
-  const ahead = kind === "campfire" ? 2.5 : GRID * 0.9;
+  const free = kind === "campfire" || kind === "bed" || kind === "storage";
+  const ahead = free ? 2.5 : GRID * 0.9;
   const tx = p.x + Math.sin(p.yaw) * ahead;
   const tz = p.z + Math.cos(p.yaw) * ahead;
   const rot = Math.round(p.yaw / (Math.PI / 2)) * (Math.PI / 2);
-  if (kind === "campfire") {
+  if (free) {
     return { id: 0, kind, x: tx, z: tz, y: groundAt(state, tx, tz), rot };
   }
   if (kind === "foundation") {
@@ -405,10 +432,12 @@ function place(state: GameState, kind: StructureKind): boolean {
   if (clash) return false;
   if (heightAt(s.x, s.z, state.seed) < WATER_LEVEL - 1 && kind !== "foundation") return false;
   if (!removeItem(state, kind)) return false;
-  state.structures.push({ ...s, id: state.nextId++ });
+  state.structures.push({ ...s, id: state.nextId++, ...(kind === "storage" ? { items: {} } : {}) });
   state.structureVersion++;
   state.player.cooldown = 0.3;
   gainXp(state, 2);
+  sfx(state, "place");
+  if (kind === "bed") log(state, "Sleeping bag placed. You'll respawn here.");
   return true;
 }
 
@@ -430,8 +459,10 @@ export function interact(state: GameState): string | null {
           gainXp(state, sp.xp * 1.5);
           const msg = `Tamed ${c.name}!${sp.rideSpeed ? " Press R to ride." : ""}`;
           log(state, msg);
+          sfx(state, "tame");
           return msg;
         }
+        sfx(state, "eat");
         return `Fed ${sp.name} (${Math.round(c.tameProgress * 100)}%)`;
       }
       if (removeItem(state, "narcoberry")) {
@@ -450,12 +481,16 @@ export function interact(state: GameState): string | null {
   }
   if (nearCampfire(state, 3) && count(state, "raw_meat") > 0) {
     let cooked = 0;
-    while (cooked < 5 && craft(state, "cooked_meat")) cooked++;
-    if (cooked) return `Cooked ${cooked} meat`;
+    while (cooked < 5 && craft(state, "cooked_meat", true)) cooked++;
+    if (cooked) {
+      sfx(state, "craft");
+      return `Cooked ${cooked} meat`;
+    }
     return "Cooking needs wood";
   }
   if (canDrink(state)) {
     p.water = Math.min(100, p.water + 20);
+    sfx(state, "drink");
     return "You drink";
   }
   return null;
@@ -491,17 +526,54 @@ export function toggleMount(state: GameState): boolean {
   return true;
 }
 
+/** The storage box under the crosshair, if any. */
+export function lookedAtStorage(state: GameState): Structure | null {
+  const t = lookTarget(state, 3.5);
+  return t?.kind === "structure" && t.structure.kind === "storage" ? t.structure : null;
+}
+
+/** Move every one of an item between your inventory and a box. */
+export function transfer(state: GameState, boxId: number, id: ItemId, direction: "deposit" | "withdraw"): boolean {
+  const box = state.structures.find((s) => s.id === boxId && s.kind === "storage");
+  if (!box) return false;
+  box.items ??= {};
+  if (direction === "deposit") {
+    const n = count(state, id);
+    if (n <= 0 || !removeItem(state, id, n)) return false;
+    box.items[id] = (box.items[id] ?? 0) + n;
+  } else {
+    const n = box.items[id] ?? 0;
+    if (n <= 0) return false;
+    delete box.items[id];
+    addItem(state, id, n);
+  }
+  return true;
+}
+
+/** Your most recently placed sleeping bag, if you've placed one. */
+export function bedSpawn(state: GameState): Structure | null {
+  const beds = state.structures.filter((s) => s.kind === "bed");
+  return beds[beds.length - 1] ?? null;
+}
+
 export function respawn(state: GameState) {
-  const spawn = spawnPoint(state.seed);
+  const bed = bedSpawn(state);
+  const spawn = bed ? { x: bed.x + 0.8, z: bed.z } : spawnPoint(state.seed);
   const keepLevel = state.player.level;
   state.player = freshPlayer(spawn.x, spawn.z, state.seed);
+  if (bed) state.player.y = groundAt(state, spawn.x, spawn.z);
   state.player.level = keepLevel;
   state.player.maxHp = 100 + (keepLevel - 1) * 10;
   state.player.maxStamina = 100 + (keepLevel - 1) * 10;
   state.player.hp = state.player.maxHp;
   state.inventory = {};
   state.hotbar = Array(HOTBAR_SIZE).fill(null);
-  log(state, "You wash up on the beach again. Your tames and base are where you left them.");
+  log(
+    state,
+    bed
+      ? "You wake in your sleeping bag. Anything you were carrying is gone."
+      : "You wash up on the beach again. Your tames and base are where you left them.",
+  );
 }
 
 // ---------------------------------------------------------------- simulation
@@ -671,10 +743,14 @@ function hurtPlayer(state: GameState, amount: number, silent: boolean) {
   const p = state.player;
   if (p.dead || amount <= 0) return;
   p.hp -= amount;
-  if (!silent) p.hurtFlash = 0.35;
+  if (!silent) {
+    p.hurtFlash = 0.35;
+    sfx(state, "hurt");
+  }
   if (p.hp <= 0) {
     p.hp = 0;
     p.dead = true;
+    sfx(state, "death");
     if (p.mountId) p.mountId = null;
     log(state, p.food <= 0 ? "You starved." : p.water <= 0 ? "You died of thirst." : "You were killed.");
   }
@@ -695,7 +771,7 @@ export const SAVE_KEY = "primal-isle-save-v1";
 
 export function serialize(state: GameState): string {
   // Nodes regrow from the seed; only store the ones that are currently chopped down.
-  const { nodes, ...rest } = state;
+  const { nodes, sfx: _sfx, ...rest } = state;
   const depleted = nodes.filter((n) => n.respawnAt || n.hp < n.maxHp).map((n) => [n.id, n.hp, n.respawnAt]);
   return JSON.stringify({ ...rest, depleted });
 }
@@ -711,7 +787,7 @@ export function deserialize(json: string): GameState | null {
       if (n) Object.assign(n, { hp, respawnAt });
     }
     delete data.depleted;
-    return { ...data, nodes, nodeVersion: 0, structureVersion: 0 } as GameState;
+    return { ...data, nodes, nodeVersion: 0, structureVersion: 0, sfx: [] } as GameState;
   } catch {
     return null;
   }

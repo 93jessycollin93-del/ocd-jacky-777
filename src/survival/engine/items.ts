@@ -4,7 +4,7 @@ export type ItemId =
   | "wood" | "thatch" | "stone" | "flint" | "fiber" | "berries" | "narcoberry"
   | "raw_meat" | "cooked_meat" | "hide"
   | "stone_pick" | "stone_hatchet" | "spear" | "club" | "bandage"
-  | "campfire" | "foundation" | "wall";
+  | "campfire" | "foundation" | "wall" | "bed" | "storage";
 
 export type ItemKind = "resource" | "tool" | "consumable" | "structure";
 
@@ -61,6 +61,8 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   campfire: { id: "campfire", name: "Campfire", kind: "structure", icon: "🔥" },
   foundation: { id: "foundation", name: "Thatch Foundation", kind: "structure", icon: "🟧" },
   wall: { id: "wall", name: "Thatch Wall", kind: "structure", icon: "🧱" },
+  bed: { id: "bed", name: "Sleeping Bag", kind: "structure", icon: "🛏️" },
+  storage: { id: "storage", name: "Storage Box", kind: "structure", icon: "📦" },
 };
 
 export type Cost = Partial<Record<ItemId, number>>;
@@ -84,6 +86,8 @@ export const RECIPES: Recipe[] = [
   { id: "campfire", output: "campfire", count: 1, cost: { thatch: 12, flint: 1, stone: 16, wood: 2 } },
   { id: "foundation", output: "foundation", count: 1, cost: { wood: 15, thatch: 10, fiber: 6 }, level: 2 },
   { id: "wall", output: "wall", count: 1, cost: { wood: 8, thatch: 6, fiber: 4 }, level: 2 },
+  { id: "bed", output: "bed", count: 1, cost: { fiber: 15, hide: 6, thatch: 10 } },
+  { id: "storage", output: "storage", count: 1, cost: { wood: 25, thatch: 15, fiber: 10 }, level: 2 },
   { id: "cooked_meat", output: "cooked_meat", count: 1, cost: { raw_meat: 1, wood: 1 }, needsCampfire: true },
 ];
 

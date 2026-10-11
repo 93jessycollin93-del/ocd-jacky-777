@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   newGame, step, craft, addItem, count, primaryAction, interact, toggleMount, respawn, lookTarget,
-  serialize, deserialize, placementFor, groundAt, NO_INPUT, type GameState,
+  serialize, deserialize, placementFor, groundAt, lookedAtStorage, transfer, bedSpawn, NO_INPUT, type GameState,
 } from "@/survival/engine/game";
 import { SPECIES, makeCreature, damageCreature, feedCreature } from "@/survival/engine/creatures";
 import { heightAt, spawnPoint, generateNodes, WATER_LEVEL, WORLD_HALF } from "@/survival/engine/world";
@@ -132,6 +132,69 @@ describe("building", () => {
     g.player.yaw = Math.PI; // look away so E doesn't target the fire itself
     expect(interact(g)).toBe("Cooked 3 meat");
     expect(count(g, "cooked_meat")).toBe(3);
+  });
+});
+
+describe("sleeping bag and storage", () => {
+  function placeAhead(g: GameState, kind: "bed" | "storage") {
+    addItem(g, kind, 1);
+    g.selected = g.hotbar.indexOf(kind);
+    g.player.cooldown = 0;
+    expect(primaryAction(g)).toBe(true);
+    return g.structures[g.structures.length - 1];
+  }
+
+  it("respawns you at your sleeping bag instead of the beach", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    const bed = placeAhead(g, "bed");
+    expect(bedSpawn(g)).toBe(bed);
+    g.player.dead = true;
+    respawn(g);
+    expect(Math.hypot(g.player.x - bed.x, g.player.z - bed.z)).toBeLessThan(1.5);
+    expect(g.player.dead).toBe(false);
+  });
+
+  it("stores and returns items, and keeps them through death", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    const box = placeAhead(g, "storage");
+    expect(lookedAtStorage(g)?.id).toBe(box.id);
+    addItem(g, "stone", 12);
+    expect(transfer(g, box.id, "stone", "deposit")).toBe(true);
+    expect(count(g, "stone")).toBe(0);
+    expect(box.items?.stone).toBe(12);
+    respawn(g);
+    expect(box.items?.stone).toBe(12);
+    expect(transfer(g, box.id, "stone", "withdraw")).toBe(true);
+    expect(count(g, "stone")).toBe(12);
+    expect(transfer(g, box.id, "stone", "withdraw")).toBe(false);
+  });
+
+  it("picking up a box gives you the box and everything in it", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    const box = placeAhead(g, "storage");
+    addItem(g, "hide", 3);
+    transfer(g, box.id, "hide", "deposit");
+    g.selected = g.hotbar.indexOf(null);
+    g.player.cooldown = 0;
+    primaryAction(g); // punch it
+    expect(g.structures).toHaveLength(0);
+    expect(count(g, "storage")).toBe(1);
+    expect(count(g, "hide")).toBe(3);
+  });
+});
+
+describe("sound events", () => {
+  it("queues sounds for actions and never saves them", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    primaryAction(g); // swing at nothing
+    expect(g.sfx).toContain("swing");
+    const back = deserialize(serialize(g))!;
+    expect(back.sfx).toEqual([]);
+    expect(JSON.parse(serialize(g)).sfx).toBeUndefined();
   });
 });
 
