@@ -20,6 +20,8 @@ export interface Species {
   /** Foods it accepts while unconscious, best first, with how much tame progress each gives. */
   tameFoods: Partial<Record<ItemId, number>>;
   drops: { raw_meat: number; hide: number };
+  /** Chance a hit on the player opens a wound: light and heavy (arterial) bleeding. */
+  bleed?: { light: number; heavy: number };
   xp: number;
   size: number;
   color: string;
@@ -36,21 +38,25 @@ export const SPECIES: Record<SpeciesId, Species> = {
     id: "compy", name: "Compsognathus", hp: 30, speed: 6.5, damage: 4, attackRange: 1.3, aggroRange: 12,
     temperament: "aggressive", maxTorpor: 20, tameFoods: { raw_meat: 0.34 },
     drops: { raw_meat: 1, hide: 1 }, xp: 10, size: 0.45, color: "#6f8f3a", population: 8,
+    bleed: { light: 0.25, heavy: 0 },
   },
   parasaur: {
     id: "parasaur", name: "Parasaurolophus", hp: 200, speed: 5, rideSpeed: 11, damage: 8, attackRange: 2.4, aggroRange: 0,
     temperament: "skittish", maxTorpor: 120, tameFoods: { berries: 0.08 },
     drops: { raw_meat: 8, hide: 5 }, xp: 30, size: 1.6, color: "#3f7fa6", population: 8,
+    bleed: { light: 0.1, heavy: 0 },
   },
   raptor: {
     id: "raptor", name: "Raptor", hp: 150, speed: 8.5, rideSpeed: 13, damage: 14, attackRange: 2, aggroRange: 20,
     temperament: "aggressive", maxTorpor: 90, tameFoods: { raw_meat: 0.12, cooked_meat: 0.06 },
     drops: { raw_meat: 5, hide: 4 }, xp: 40, size: 1.1, color: "#b5651d", population: 6,
+    bleed: { light: 0.35, heavy: 0.15 },
   },
   trike: {
     id: "trike", name: "Triceratops", hp: 375, speed: 3.8, rideSpeed: 9, damage: 22, attackRange: 3, aggroRange: 0,
     temperament: "territorial", maxTorpor: 200, tameFoods: { berries: 0.05 },
     drops: { raw_meat: 12, hide: 8 }, xp: 60, size: 2, color: "#5d6b3a", population: 6,
+    bleed: { light: 0.2, heavy: 0.25 },
   },
 };
 

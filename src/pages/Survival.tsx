@@ -7,7 +7,7 @@ import { Hud } from "@/survival/Hud";
 import { TouchControls } from "@/survival/TouchControls";
 import { isMuted, playSfx, setMuted, unlockAudio } from "@/survival/sound";
 import {
-  HOTBAR_SIZE, NO_INPUT, SAVE_KEY, count, deserialize, equipped, interact, log, lookedAtStorage, newGame, placeBlock,
+  HOTBAR_SIZE, NO_INPUT, SAVE_KEY, count, deserialize, equipped, interact, log, lookedAtStorage, lookTarget, newGame, placeBlock,
   serialize, step, toggleMount, primaryAction, type GameState, type Input,
 } from "@/survival/engine/game";
 import { isBlockItem } from "@/survival/engine/blocks";
@@ -154,6 +154,11 @@ function Game({ initial, onQuit }: { initial: GameState; onQuit: () => void }) {
       setPanel(true);
       return;
     }
+    const looking = lookTarget(g, 3.5);
+    if (looking?.kind === "structure" && looking.structure.kind === "workbench") {
+      setPanel(true); // the workbench is where you craft and repair
+      return;
+    }
     const msg = interact(g);
     if (msg && !g.log.some((l) => l.text === msg)) log(g, msg);
   }, [setPanel]);
@@ -244,6 +249,12 @@ function Game({ initial, onQuit }: { initial: GameState; onQuit: () => void }) {
     };
     const onKeyDown = (e: KeyboardEvent) => {
       const g = game.current;
+      // Typing in the recipe search box shouldn't close the bag or trigger shortcuts.
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
+        if (e.code === "Escape" || e.code === "Tab") el.blur();
+        if (e.code !== "Tab") return;
+      }
       if (e.code === "Tab" || e.code === "KeyI" || e.code === "KeyC") {
         e.preventDefault();
         if (!e.repeat) setPanel(!panelRef.current);
@@ -351,7 +362,7 @@ function Controls({ touch }: { touch: boolean }) {
         ["Left side", "Drag to move · push to the edge to sprint"],
         ["Right side", "Drag to look"],
         ["✊", "Hold to use what's in your hand: punch, harvest, break blocks, attack, eat, place blocks"],
-        ["Use", "Feed a knocked-out dino · open a box · cook · drink · tame follow/stay"],
+        ["Use", "Feed a knocked-out dino · open a box or workbench · cook · drink · tame follow/stay"],
         ["🦖 / 🍖 / 🎒", "Ride a tame / quick eat / bag & crafting"],
         ["Hotbar", "Tap a slot to hold that item"],
       ]
@@ -362,7 +373,7 @@ function Controls({ touch }: { touch: boolean }) {
         ["Right click", "Place the held block"],
         ["1–8 / wheel", "Choose hotbar slot"],
         ["Tab / C / I", "Inventory & crafting"],
-        ["E", "Feed a knocked-out dino · open a box · cook · drink · tame follow/stay"],
+        ["E", "Feed a knocked-out dino · open a box or workbench · cook · drink · tame follow/stay"],
         ["R", "Ride / dismount a tame"],
         ["Q / M", "Quick eat / mute"],
         ["Esc", "Pause"],

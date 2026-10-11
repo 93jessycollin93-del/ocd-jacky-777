@@ -301,6 +301,31 @@ function StructureMesh({ s, ghost = false }: { s: Structure; ghost?: boolean }) 
       </group>
     );
   }
+  if (s.kind === "workbench") {
+    return (
+      <group position={[s.x, s.y, s.z]} rotation-y={s.rot}>
+        <mesh position={[0, 0.85, 0]} castShadow receiveShadow>
+          <boxGeometry args={[1.6, 0.12, 0.8]} />
+          {mat ?? <meshStandardMaterial color="#a0703c" roughness={1} />}
+        </mesh>
+        {[[-0.7, -0.32], [0.7, -0.32], [-0.7, 0.32], [0.7, 0.32]].map(([lx, lz]) => (
+          <mesh key={`${lx},${lz}`} position={[lx, 0.4, lz]} castShadow>
+            <boxGeometry args={[0.1, 0.8, 0.1]} />
+            {mat ?? <meshStandardMaterial color="#6b4423" roughness={1} />}
+          </mesh>
+        ))}
+        {/* a vice and a saw on top so it reads as a workbench */}
+        <mesh position={[-0.5, 1.0, 0]}>
+          <boxGeometry args={[0.18, 0.18, 0.25]} />
+          {mat ?? <meshStandardMaterial color="#6f6a64" />}
+        </mesh>
+        <mesh position={[0.35, 0.93, 0.1]} rotation-y={0.3}>
+          <boxGeometry args={[0.6, 0.02, 0.14]} />
+          {mat ?? <meshStandardMaterial color="#c9ced6" metalness={0.6} roughness={0.4} />}
+        </mesh>
+      </group>
+    );
+  }
   if (s.kind === "lootbag") {
     return (
       <group position={[s.x, s.y, s.z]}>

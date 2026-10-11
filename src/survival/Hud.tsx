@@ -1,9 +1,11 @@
 // Primal Isle on-screen UI: vitals, compass, hotbar, prompts, crafting/inventory, storage, tames, death screen.
 import type { MutableRefObject } from "react";
-import { ITEMS, RECIPES, isEquippable, type ItemId } from "./engine/items";
+import { ITEMS, RECIPES } from "./engine/items";
 import {
-  assignHotbar, bedSpawn, canCraft, count, craft, isNight, respawn, timeOfDay, transfer, xpForLevel, type GameState,
+  bedSpawn, count, craftBlocker, encumbrance, isNight, maxDurability, respawn, timeOfDay, toolDurability, xpForLevel,
+  type GameState,
 } from "./engine/game";
+import { BagPanel } from "./BagPanel";
 import { promptFor } from "./engine/prompt";
 
 function Bar({ label, value, max, color, compact }: { label: string; value: number; max: number; color: string; compact?: boolean }) {
@@ -64,19 +66,37 @@ function Compass({ state }: { state: GameState }) {
   );
 }
 
-function ItemTile({ id, n, onClick, hint }: { id: ItemId; n: number; onClick?: () => void; hint?: string }) {
+/** Injuries, healing, load and crafting at a glance. */
+function StatusBadges({ g }: { g: GameState }) {
+  const p = g.player;
+  const load = encumbrance(g);
+  const job = g.craftQueue[0];
+  const recipe = job && RECIPES.find((r) => r.id === job.recipeId);
+  const badges: { icon: string; text: string; tone: string }[] = [];
+  if (p.bleeding === 2) badges.push({ icon: "🩸", text: "Heavy bleeding · tourniquet", tone: "text-red-400" });
+  else if (p.bleeding === 1) badges.push({ icon: "🩸", text: "Bleeding · bandage", tone: "text-red-300" });
+  if (p.fracture) badges.push({ icon: "🦴", text: "Broken leg · splint", tone: "text-orange-300" });
+  if (p.regen) badges.push({ icon: "💊", text: `Healing +${Math.ceil(p.regen.left)}`, tone: "text-green-300" });
+  if (load.level !== "ok") {
+    badges.push({ icon: "🎒", text: load.level === "heavy" ? "Heavy load" : "Overloaded", tone: load.level === "heavy" ? "text-yellow-300" : "text-red-400" });
+  }
+  if (recipe) {
+    const blocked = craftBlocker(g);
+    badges.push({
+      icon: "⚒️",
+      text: blocked ? `${ITEMS[recipe.output].name}: paused` : `${ITEMS[recipe.output].name} ${Math.ceil(job.left)}s${g.craftQueue.length > 1 ? ` (+${g.craftQueue.length - 1})` : ""}`,
+      tone: blocked ? "text-amber-300" : "text-white/80",
+    });
+  }
+  if (!badges.length) return null;
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={!onClick}
-      title={hint ? `${ITEMS[id].name} — ${hint}` : ITEMS[id].name}
-      className="flex flex-col items-center rounded border border-white/10 bg-black/40 p-1.5 text-[10px] enabled:hover:border-amber-300"
-    >
-      <span className="text-xl">{ITEMS[id].icon}</span>
-      <span className="w-full truncate text-center">{ITEMS[id].name}</span>
-      <span className="text-white/70">×{n}</span>
-    </button>
+    <div className="space-y-0.5 pt-1">
+      {badges.map((b) => (
+        <div key={b.text} className={`text-[11px] ${b.tone}`}>
+          {b.icon} {b.text}
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -101,7 +121,6 @@ export function Hud({
   const prompt = promptFor(g);
   const tames = g.creatures.filter((c) => c.tamed && c.state !== "dead");
   const box = storageId == null ? null : g.structures.find((s) => s.id === storageId) ?? null;
-  const inventory = Object.keys(g.inventory) as ItemId[];
 
   return (
     <div className="pointer-events-none absolute inset-0 select-none font-sans text-white">
@@ -141,6 +160,7 @@ export function Hud({
         <Bar label="Stamina" value={p.stamina} max={p.maxStamina} color="#facc15" compact={touch} />
         <Bar label="Food" value={p.food} max={100} color="#f97316" compact={touch} />
         <Bar label="Water" value={p.water} max={100} color="#38bdf8" compact={touch} />
+        <StatusBadges g={g} />
       </div>
 
       {/* hotbar: click/tap a slot to select it */}
@@ -160,6 +180,17 @@ export function Hud({
             <span className="absolute left-1 top-0 text-[9px] text-white/60">{i + 1}</span>
             {id && <span title={ITEMS[id].name}>{ITEMS[id].icon}</span>}
             {id && count(g, id) > 1 && <span className="absolute bottom-0 right-1 text-[10px]">{count(g, id)}</span>}
+            {id && maxDurability(id) !== undefined && (
+              <span className="absolute bottom-0.5 left-1 right-1 h-0.5 overflow-hidden rounded bg-black/70">
+                <span
+                  className="block h-full"
+                  style={{
+                    width: `${((toolDurability(g, id) ?? 0) / (maxDurability(id) ?? 1)) * 100}%`,
+                    background: (toolDurability(g, id) ?? 0) / (maxDurability(id) ?? 1) > 0.2 ? "#4ade80" : "#ef4444",
+                  }}
+                />
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -177,96 +208,7 @@ export function Hud({
       )}
 
       {panel && !p.dead && (
-        <div className="pointer-events-auto absolute inset-0 flex items-center justify-center bg-black/50 p-3">
-          <div className="grid max-h-[88vh] w-full max-w-3xl gap-4 overflow-y-auto rounded-xl border border-white/15 bg-zinc-900/95 p-4 md:grid-cols-2">
-            <div>
-              <h2 className="mb-2 text-sm font-semibold">Inventory</h2>
-              {inventory.length === 0 ? (
-                <p className="text-xs text-white/60">Empty. Punch trees and bushes to gather.</p>
-              ) : (
-                <div className="grid grid-cols-4 gap-1.5">
-                  {inventory.map((id) => (
-                    <ItemTile
-                      key={id}
-                      id={id}
-                      n={count(g, id)}
-                      hint={box ? "store all" : isEquippable(id) ? `put in hotbar slot ${g.selected + 1}` : undefined}
-                      onClick={
-                        box
-                          ? () => { transfer(g, box.id, id, "deposit"); onChange(); }
-                          : isEquippable(id)
-                            ? () => { assignHotbar(g, id, g.selected); onChange(); }
-                            : undefined
-                      }
-                    />
-                  ))}
-                </div>
-              )}
-              <p className="mt-3 text-[11px] text-white/50">
-                {box
-                  ? "Tap an item to store all of it. Boxes keep their contents when you die."
-                  : `Tap a tool, food or block to put it in hotbar slot ${g.selected + 1} (pick the slot first with 1–8 or a tap).`}
-              </p>
-            </div>
-
-            {box ? (
-              <div>
-                <h2 className="mb-2 text-sm font-semibold">📦 Storage Box</h2>
-                {Object.keys(box.items ?? {}).length === 0 ? (
-                  <p className="text-xs text-white/60">Empty.</p>
-                ) : (
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {(Object.entries(box.items ?? {}) as [ItemId, number][]).map(([id, n]) => (
-                      <ItemTile key={id} id={id} n={n} hint="take all" onClick={() => { transfer(g, box.id, id, "withdraw"); onChange(); }} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div>
-                <h2 className="mb-2 text-sm font-semibold">Crafting</h2>
-                <div className="space-y-1.5">
-                  {RECIPES.map((r) => {
-                    const check = canCraft(g, r);
-                    return (
-                      <button
-                        key={r.id}
-                        type="button"
-                        disabled={!check.ok}
-                        onClick={() => {
-                          craft(g, r.id);
-                          onChange();
-                        }}
-                        className="flex w-full items-center gap-2 rounded border border-white/10 bg-black/40 p-2 text-left text-xs enabled:hover:border-amber-300 disabled:opacity-45"
-                      >
-                        <span className="text-xl">{ITEMS[r.output].icon}</span>
-                        <span className="flex-1">
-                          <span className="block font-medium">{ITEMS[r.output].name}</span>
-                          <span className="block text-[10px] text-white/65">
-                            {Object.entries(r.cost).map(([id, n]) => (
-                              <span key={id} className={count(g, id as ItemId) >= (n ?? 0) ? "" : "text-red-400"}>
-                                {ITEMS[id as ItemId].icon}{count(g, id as ItemId)}/{n}{" "}
-                              </span>
-                            ))}
-                          </span>
-                        </span>
-                        {!check.ok && <span className="text-[10px] text-white/50">{check.reason}</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            <button
-              type="button"
-              onClick={() => setPanel(false)}
-              className="rounded border border-white/20 py-2 text-xs hover:bg-white/10 md:col-span-2"
-            >
-              Close{touch ? "" : " (Tab)"}
-            </button>
-          </div>
-        </div>
+        <BagPanel g={g} box={box} onChange={onChange} onClose={() => setPanel(false)} touch={touch} />
       )}
 
       {p.dead && (

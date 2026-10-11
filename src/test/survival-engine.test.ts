@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   newGame, step, craft, addItem, count, primaryAction, interact, toggleMount, respawn, lookTarget,
   serialize, deserialize, placementFor, groundAt, lookedAtStorage, transfer, bedSpawn, toggleDoor, assignHotbar, collectLoot,
+  carryWeight, encumbrance, toolDurability, repairTool, queueCraft, cancelCraft, craftBlocker,
   SWING_STAMINA, FALL_SAFE, FALL_DAMAGE, TAME_REGEN, NO_INPUT,
   type GameState,
 } from "@/survival/engine/game";
@@ -79,14 +80,16 @@ describe("gathering and crafting", () => {
     expect(g.nodes[0].hp).toBe(20);
   });
 
-  it("crafts a pick, spends materials, and puts it on the hotbar", () => {
+  it("crafts a pick from wood, stone and cordage, and puts it on the hotbar", () => {
     const g = newGame(SEED);
     addItem(g, "wood", 2);
-    addItem(g, "thatch", 10);
-    addItem(g, "stone", 1);
+    addItem(g, "stone", 2);
+    addItem(g, "fiber", 3);
+    expect(craft(g, "stone_pick")).toBe(false); // no cordage yet
+    expect(craft(g, "cordage")).toBe(true);
     expect(craft(g, "stone_pick")).toBe(true);
     expect(count(g, "stone_pick")).toBe(1);
-    expect(count(g, "thatch")).toBe(0);
+    expect(count(g, "cordage")).toBe(0);
     expect(count(g, "wood")).toBe(1);
     expect(g.hotbar).toContain("stone_pick");
   });
@@ -384,17 +387,19 @@ describe("digging, new blocks and doors", () => {
     expect(assignHotbar(g, "wood", 3)).toBe(false); // resources don't go on the bar
   });
 
-  it("crafts logs, stone bricks and doors", () => {
+  it("crafts logs by hand; stone bricks and doors need a workbench", () => {
     const g = newGame(SEED);
     addItem(g, "wood", 10);
     addItem(g, "stone", 6);
-    addItem(g, "flint", 1);
+    addItem(g, "cordage", 2);
     expect(craft(g, "log")).toBe(true);
+    expect(craft(g, "stone_brick")).toBe(false); // no workbench
+    for (let i = 0; i < 3; i++) craft(g, "plank");
+    expect(count(g, "plank")).toBe(6);
+    expect(craft(g, "door")).toBe(false); // no workbench
+    g.structures.push({ id: 88, kind: "workbench", x: g.player.x + 1, y: g.player.y, z: g.player.z, rot: 0 });
     expect(craft(g, "stone_brick")).toBe(true);
     expect(count(g, "stone_brick")).toBe(2);
-    expect(craft(g, "plank")).toBe(true);
-    expect(craft(g, "door")).toBe(false); // needs 6 planks
-    for (let i = 0; i < 2; i++) craft(g, "plank");
     expect(craft(g, "door")).toBe(true);
   });
 });
@@ -443,7 +448,8 @@ describe("metal tier", () => {
     const g = newGame(SEED);
     addItem(g, "metal_ingot", 20);
     addItem(g, "wood", 20);
-    addItem(g, "hide", 20);
+    addItem(g, "leather", 5);
+    g.structures.push({ id: 89, kind: "workbench", x: g.player.x + 1, y: g.player.y, z: g.player.z, rot: 0 });
     expect(craft(g, "metal_pick")).toBe(false); // level 1
     g.player.level = 4;
     expect(craft(g, "metal_pick")).toBe(true);
@@ -591,6 +597,189 @@ describe("combat and movement feel", () => {
     primaryAction(g); // dig
     expect(g.fx.length).toBeGreaterThan(0);
     expect(deserialize(serialize(g))!.fx).toEqual([]);
+  });
+});
+
+describe("realism: weight, wear, injuries", () => {
+  function settle(g: GameState) {
+    for (let i = 0; i < 60; i++) step(g, NO_INPUT, 1 / 60);
+  }
+  const walk = (g: GameState, seconds: number) => {
+    const z0 = g.player.z;
+    for (let i = 0; i < seconds * 30; i++) step(g, { ...NO_INPUT, forward: true }, 1 / 30);
+    return Math.abs(g.player.z - z0);
+  };
+
+  it("gives every item a real weight and a description", () => {
+    for (const def of Object.values(ITEMS)) {
+      expect(def.weight, def.id).toBeGreaterThanOrEqual(0);
+      expect(def.desc.length, def.id).toBeGreaterThan(10);
+    }
+    for (const r of RECIPES) expect(r.time, r.id).toBeGreaterThan(0);
+  });
+
+  it("carrying too much slows you down", () => {
+    const light = newGame(SEED);
+    isolate(light);
+    settle(light);
+    const heavy = newGame(SEED);
+    isolate(heavy);
+    settle(heavy);
+    addItem(heavy, "stone", 100); // 80 kg against a 60 kg capacity
+    expect(carryWeight(heavy)).toBeCloseTo(80);
+    expect(encumbrance(heavy).level).toBe("heavy");
+    expect(walk(heavy, 2)).toBeLessThan(walk(light, 2) * 0.8);
+    addItem(heavy, "stone", 50);
+    expect(encumbrance(heavy).level).toBe("overloaded");
+    expect(encumbrance(heavy).canSprint).toBe(false);
+  });
+
+  it("tools wear out with use, break, and can be repaired at a workbench", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    g.player.pitch = -1.0; // dig, so every swing lands
+    addItem(g, "stone_shovel", 1);
+    g.selected = g.hotbar.indexOf("stone_shovel");
+    const max = ITEMS.stone_shovel.durability!;
+    for (let i = 0; i < 10; i++) {
+      g.player.cooldown = 0;
+      primaryAction(g);
+    }
+    expect(toolDurability(g, "stone_shovel")).toBe(max - 10);
+    // Repair: needs a workbench and a share of the materials.
+    expect(repairTool(g, "stone_shovel").ok).toBe(false);
+    // Behind you (you face +z), so swings still land on the ground ahead rather than the bench.
+    g.structures.push({ id: 90, kind: "workbench", x: g.player.x, y: g.player.y, z: g.player.z - 2, rot: 0 });
+    addItem(g, "wood", 2);
+    addItem(g, "stone", 2);
+    addItem(g, "cordage", 1);
+    expect(repairTool(g, "stone_shovel").ok).toBe(true);
+    expect(toolDurability(g, "stone_shovel")).toBe(max);
+    // Break it.
+    g.durability.stone_shovel = 1;
+    g.player.cooldown = 0;
+    primaryAction(g);
+    expect(count(g, "stone_shovel")).toBe(0);
+    expect(g.log.some((l) => l.text.includes("broke"))).toBe(true);
+  });
+
+  it("crafting takes time in a queue, pauses away from its station, and can be cancelled", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    addItem(g, "fiber", 6);
+    expect(queueCraft(g, "cordage").ok).toBe(true);
+    expect(queueCraft(g, "cordage").ok).toBe(true);
+    expect(count(g, "fiber")).toBe(0); // materials taken up front
+    step(g, NO_INPUT, 1);
+    expect(count(g, "cordage")).toBe(0);
+    step(g, NO_INPUT, 1);
+    expect(count(g, "cordage")).toBe(1);
+    cancelCraft(g, g.craftQueue[0].id);
+    expect(count(g, "fiber")).toBe(3); // refunded
+    expect(g.craftQueue).toHaveLength(0);
+
+    // Station recipes only progress while you're at the station.
+    addItem(g, "raw_meat", 1);
+    addItem(g, "wood", 1);
+    const fire = { id: 91, kind: "campfire" as const, x: g.player.x + 1, y: g.player.y, z: g.player.z, rot: 0 };
+    g.structures.push(fire);
+    expect(queueCraft(g, "cooked_meat").ok).toBe(true);
+    g.player.x += 30;
+    step(g, NO_INPUT, 5);
+    expect(count(g, "cooked_meat")).toBe(0);
+    expect(craftBlocker(g)).toContain("Campfire");
+    g.player.x -= 30;
+    step(g, NO_INPUT, 5);
+    expect(count(g, "cooked_meat")).toBe(1);
+  });
+
+  it("raptor bites can make you bleed; a bandage stops light bleeding, a tourniquet heavy", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    settle(g);
+    const p = g.player;
+    g.creatures = [makeCreature(60, "raptor", p.x + 1, p.z)];
+    g.creatures[0].state = "chase";
+    g.creatures[0].target = "player";
+    g.creatures[0].timer = 99;
+    for (let i = 0; i < 300 && !p.bleeding && !p.dead; i++) step(g, NO_INPUT, 1 / 30);
+    expect(p.bleeding).toBeGreaterThan(0);
+    g.creatures = [];
+
+    p.bleeding = 1;
+    p.hp = 50;
+    step(g, NO_INPUT, 2);
+    expect(p.hp).toBeLessThan(50); // bleeding drains health and stops natural healing
+    addItem(g, "bandage", 1);
+    g.selected = g.hotbar.indexOf("bandage");
+    g.player.cooldown = 0;
+    primaryAction(g);
+    expect(p.bleeding).toBe(0);
+
+    p.bleeding = 2;
+    addItem(g, "bandage", 1);
+    g.selected = g.hotbar.indexOf("bandage");
+    g.player.cooldown = 0;
+    primaryAction(g);
+    expect(p.bleeding).toBe(2); // a bandage can't stop arterial bleeding
+    addItem(g, "tourniquet", 2);
+    g.selected = g.hotbar.indexOf("tourniquet");
+    g.player.cooldown = 0;
+    primaryAction(g);
+    expect(p.bleeding).toBe(0);
+    g.player.cooldown = 0;
+    expect(primaryAction(g)).toBe(false); // nothing to treat: not wasted
+    expect(count(g, "tourniquet")).toBe(1);
+  });
+
+  it("a long fall breaks your leg; a splint sets it", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    settle(g);
+    const p = g.player;
+    p.maxHp = p.hp = 500; // survive the drop
+    p.y += 9;
+    p.onGround = false;
+    p.peakY = p.y;
+    settle(g);
+    expect(p.fracture).toBe(true);
+    const limping = walk(g, 1);
+    addItem(g, "splint", 1);
+    g.selected = g.hotbar.indexOf("splint");
+    g.player.cooldown = 0;
+    primaryAction(g);
+    expect(p.fracture).toBe(false);
+    expect(walk(g, 1)).toBeGreaterThan(limping * 1.3);
+  });
+
+  it("herbal salve heals over time", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    g.player.hp = 30;
+    g.player.food = g.player.water = 10; // no natural regen
+    addItem(g, "salve", 1);
+    g.selected = g.hotbar.indexOf("salve");
+    primaryAction(g);
+    step(g, NO_INPUT, 10);
+    expect(g.player.hp).toBeGreaterThan(45);
+    expect(g.player.hp).toBeLessThan(55);
+    step(g, NO_INPUT, 15);
+    expect(g.player.hp).toBeCloseTo(70, 0);
+    expect(g.player.regen).toBeNull();
+  });
+
+  it("injuries and the craft queue survive save and load", () => {
+    const g = newGame(SEED);
+    g.player.bleeding = 2;
+    g.player.fracture = true;
+    addItem(g, "fiber", 3);
+    queueCraft(g, "cordage");
+    g.durability.stone_pick = 40;
+    const back = deserialize(serialize(g))!;
+    expect(back.player.bleeding).toBe(2);
+    expect(back.player.fracture).toBe(true);
+    expect(back.craftQueue).toHaveLength(1);
+    expect(back.durability.stone_pick).toBe(40);
   });
 });
 

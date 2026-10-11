@@ -36,6 +36,9 @@ function ActionButton({
       }}
       onTouchEnd={(e) => {
         e.stopPropagation();
+        // Stop the browser's follow-up "ghost" click: after 🎒 or ⏸ opens a menu, that click would
+        // land on whatever button the menu put under your finger (crafting or resuming by accident).
+        if (e.cancelable) e.preventDefault();
         onRelease?.();
       }}
       onTouchCancel={() => onRelease?.()}
