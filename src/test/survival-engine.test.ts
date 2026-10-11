@@ -186,6 +186,107 @@ describe("sleeping bag and storage", () => {
   });
 });
 
+describe("blocks", () => {
+  /** Stand on flat-ish ground, looking straight down at your feet's neighbour. */
+  function lookDown(g: GameState) {
+    isolate(g);
+    g.player.pitch = -1.2;
+  }
+
+  it("places a block on the ground in front of you and breaks it back", () => {
+    const g = newGame(SEED);
+    lookDown(g);
+    addItem(g, "cobblestone", 3);
+    g.selected = g.hotbar.indexOf("cobblestone");
+    expect(primaryAction(g)).toBe(true);
+    expect(Object.values(g.blocks)).toEqual(["cobblestone"]);
+    expect(count(g, "cobblestone")).toBe(2);
+
+    // Break it with bare hands: cobblestone takes several hits.
+    g.selected = g.hotbar.indexOf(null);
+    let hits = 0;
+    while (Object.keys(g.blocks).length && hits < 20) {
+      g.player.cooldown = 0;
+      primaryAction(g);
+      hits++;
+    }
+    expect(hits).toBeGreaterThan(1);
+    expect(g.blocks).toEqual({});
+    expect(count(g, "cobblestone")).toBe(3);
+  });
+
+  it("stacks blocks on the face you're looking at", () => {
+    const g = newGame(SEED);
+    lookDown(g);
+    addItem(g, "plank", 2);
+    g.selected = g.hotbar.indexOf("plank");
+    primaryAction(g);
+    g.player.cooldown = 0;
+    primaryAction(g);
+    const cells = Object.keys(g.blocks).map((k) => k.split(",").map(Number));
+    expect(cells).toHaveLength(2);
+    const [a, b] = cells;
+    // The second block goes on whichever face of the first one you were looking at.
+    expect(Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) + Math.abs(a[2] - b[2])).toBe(1);
+  });
+
+  it("won't place a solid block inside you", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    const p = g.player;
+    for (let i = 0; i < 60; i++) step(g, NO_INPUT, 1 / 60); // land first: new games start you just above the sand
+    expect(p.onGround).toBe(true);
+    g.player.pitch = -Math.PI / 2 + 0.01; // straight down at your own feet
+    addItem(g, "plank", 1);
+    g.selected = g.hotbar.indexOf("plank");
+    expect(primaryAction(g)).toBe(false);
+    expect(count(g, "plank")).toBe(1);
+    expect(p.dead).toBe(false);
+  });
+
+  it("you can stand on blocks, and they stop you walking", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    const p = g.player;
+    const fx = Math.floor(p.x);
+    const fz = Math.floor(p.z);
+    const base = Math.floor(heightAt(fx + 0.5, fz + 0.5, SEED) + 0.3);
+    // A pillar under the player, and a wall one cell ahead (+z).
+    g.blocks[`${fx},${base},${fz}`] = "cobblestone";
+    for (let y = base; y < base + 4; y++) g.blocks[`${fx},${y + 1},${fz + 1}`] = "cobblestone";
+    p.x = fx + 0.5;
+    p.z = fz + 0.5;
+    p.y = base + 1;
+    p.vy = 0;
+    for (let i = 0; i < 60; i++) step(g, { ...NO_INPUT, forward: true }, 1 / 60);
+    expect(p.y).toBeCloseTo(base + 1, 1);
+    expect(p.z).toBeLessThan(fz + 1); // the wall held
+  });
+
+  it("dinosaurs can't walk through solid blocks", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    const p = g.player;
+    const c = makeCreature(50, "dodo", p.x, p.z + 3);
+    g.creatures = [c];
+    const ahead = { x: c.x + Math.sin(0) * 0.5, z: c.z + Math.cos(0) * 0.5 };
+    const y = Math.floor(heightAt(ahead.x, ahead.z, SEED) + 0.5);
+    g.blocks[`${Math.floor(ahead.x)},${y},${Math.floor(ahead.z)}`] = "plank";
+    g.blocks[`${Math.floor(ahead.x)},${y + 1},${Math.floor(ahead.z)}`] = "plank";
+    c.heading = 0;
+    c.timer = 10;
+    const z0 = c.z;
+    step(g, NO_INPUT, 0.2);
+    expect(c.z).toBe(z0);
+  });
+
+  it("saves and loads blocks", () => {
+    const g = newGame(SEED);
+    g.blocks["1,2,3"] = "torch";
+    expect(deserialize(serialize(g))!.blocks).toEqual({ "1,2,3": "torch" });
+  });
+});
+
 describe("sound events", () => {
   it("queues sounds for actions and never saves them", () => {
     const g = newGame(SEED);

@@ -7,6 +7,10 @@ import {
 import { HAND, ITEMS, RECIPES, isEquippable, type Cost, type ItemId, type Recipe, type ToolStats } from "./items";
 import { mulberry32 } from "./noise";
 import {
+  BLOCKS, blockSupport, bodyBlocked, cellKey, hitsToBreak, isBlockItem, raycastBlocks, solidAt,
+  PLAYER_HEIGHT, PLAYER_RADIUS, type BlockHit, type BlockId, type BlockMap,
+} from "./blocks";
+import {
   generateNodes, heightAt, randomLandPoint, spawnPoint,
   NODE_RADIUS, NODE_RESPAWN_SECONDS, WATER_LEVEL, WORLD_HALF, type ResourceNode,
 } from "./world";
@@ -86,6 +90,11 @@ export interface GameState {
   /** Bumped whenever nodes appear/disappear so the scene can rebuild instance buffers. */
   nodeVersion: number;
   structureVersion: number;
+  /** Placed building blocks, keyed "x,y,z". */
+  blocks: BlockMap;
+  blockVersion: number;
+  /** The block you're part-way through breaking. */
+  blockDamage: { key: string; hits: number } | null;
   stats: { tamed: number; kills: number; crafted: number };
   /** Sounds to play this frame; the page drains it. Not saved. */
   sfx: Sfx[];
@@ -122,6 +131,9 @@ export function newGame(seed = Math.floor(Math.random() * 1e9)): GameState {
     nextId: 1,
     nodeVersion: 0,
     structureVersion: 0,
+    blocks: {},
+    blockVersion: 0,
+    blockDamage: null,
     stats: { tamed: 0, kills: 0, crafted: 0 },
     sfx: [],
   };
@@ -295,7 +307,72 @@ export function primaryAction(state: GameState): boolean {
   const id = equipped(state);
   if (id && ITEMS[id].kind === "consumable") return consume(state, id);
   if (id && ITEMS[id].kind === "structure") return place(state, id as StructureKind);
+  if (isBlockItem(id)) return placeBlock(state, id);
   return swing(state);
+}
+
+export const BLOCK_REACH = 5;
+
+/** Eye position and look direction, including pitch. */
+export function eyeRay(state: GameState) {
+  const p = state.player;
+  const mount = p.mountId ? state.creatures.find((c) => c.id === p.mountId) : undefined;
+  const lift = mount ? SPECIES[mount.species].size * 1.6 + 0.6 : EYE_HEIGHT;
+  const cp = Math.cos(p.pitch);
+  return {
+    origin: { x: p.x, y: p.y + lift, z: p.z },
+    dir: { x: Math.sin(p.yaw) * cp, y: Math.sin(p.pitch), z: Math.cos(p.yaw) * cp },
+  };
+}
+
+/** The block (or patch of ground) under the crosshair, within building reach. */
+export function blockTarget(state: GameState, reach = BLOCK_REACH): BlockHit | null {
+  const { origin, dir } = eyeRay(state);
+  return raycastBlocks(state.blocks, state.seed, origin, dir, reach);
+}
+
+function cellOverlapsPlayer(state: GameState, [cx, cy, cz]: [number, number, number]) {
+  const p = state.player;
+  return (
+    cx < p.x + PLAYER_RADIUS && cx + 1 > p.x - PLAYER_RADIUS &&
+    cz < p.z + PLAYER_RADIUS && cz + 1 > p.z - PLAYER_RADIUS &&
+    cy < p.y + PLAYER_HEIGHT && cy + 1 > p.y
+  );
+}
+
+export function placeBlock(state: GameState, id: BlockId): boolean {
+  const hit = blockTarget(state);
+  if (!hit) return false;
+  const cell = hit.place;
+  const key = cellKey(cell[0], cell[1], cell[2]);
+  if (state.blocks[key]) return false;
+  if (BLOCKS[id].solid && cellOverlapsPlayer(state, cell)) return false;
+  if (!removeItem(state, id)) return false;
+  state.blocks[key] = id;
+  state.blockVersion++;
+  state.player.cooldown = 0.18;
+  gainXp(state, 0.5);
+  sfx(state, "place");
+  return true;
+}
+
+function hitBlock(state: GameState, hit: BlockHit, tool: ToolStats): boolean {
+  const block = hit.block!;
+  const key = cellKey(hit.cell[0], hit.cell[1], hit.cell[2]);
+  const def = BLOCKS[block];
+  const needed = hitsToBreak(block, tool.harvest[def.breakAs] ?? 0.5);
+  const hits = (state.blockDamage?.key === key ? state.blockDamage.hits : 0) + 1;
+  if (hits < needed) {
+    state.blockDamage = { key, hits };
+    sfx(state, "hit");
+    return true;
+  }
+  state.blockDamage = null;
+  delete state.blocks[key];
+  state.blockVersion++;
+  addItem(state, block, 1);
+  sfx(state, "harvest");
+  return true;
 }
 
 function swing(state: GameState): boolean {
@@ -303,6 +380,8 @@ function swing(state: GameState): boolean {
   const tool = toolStats(state);
   p.cooldown = tool.cooldown;
   const target = lookTarget(state, tool.reach + (p.mountId ? 1.5 : 0));
+  const block = blockTarget(state, Math.max(tool.reach, 3.5) + 1);
+  if (block?.block && (!target || block.dist <= target.dist + 0.5)) return hitBlock(state, block, tool);
   if (!target) {
     sfx(state, "swing");
     return false;
@@ -628,10 +707,10 @@ export function movePlayer(state: GameState, input: Input, dt: number) {
   const lim = WORLD_HALF - 2;
   const nx = clamp(p.x + vx * dt, -lim, lim);
   const nz = clamp(p.z + vz * dt, -lim, lim);
-  if (!blockedByWall(state, nx, p.z, p.y)) p.x = nx;
-  if (!blockedByWall(state, p.x, nz, p.y)) p.z = nz;
+  if (!blockedByWall(state, nx, p.z, p.y) && !bodyBlocked(state.blocks, nx, p.y, p.z)) p.x = nx;
+  if (!blockedByWall(state, p.x, nz, p.y) && !bodyBlocked(state.blocks, p.x, p.y, nz)) p.z = nz;
 
-  const ground = groundAt(state, p.x, p.z);
+  const ground = Math.max(groundAt(state, p.x, p.z), blockSupport(state.blocks, p.x, p.y, p.z));
   const swimDepth = WATER_LEVEL - 1.3;
   p.swimming = ground < swimDepth && p.y <= WATER_LEVEL;
   if (p.swimming) {
@@ -647,6 +726,10 @@ export function movePlayer(state: GameState, input: Input, dt: number) {
     }
     p.vy -= GRAVITY * dt;
     p.y += p.vy * dt;
+    if (p.vy > 0 && bodyBlocked(state.blocks, p.x, p.y, p.z)) {
+      p.y -= p.vy * dt; // bumped your head on a block
+      p.vy = 0;
+    }
     if (p.y <= ground) {
       p.y = ground;
       p.vy = 0;
@@ -692,6 +775,10 @@ export function step(state: GameState, input: Input, dt: number) {
     seed: state.seed, time: state.time, dt, rng,
     player: { x: p.x, z: p.z, dead: p.dead, mountId: p.mountId },
     creatures: state.creatures,
+    blocked: (x: number, z: number) => {
+      const y = heightAt(x, z, state.seed);
+      return solidAt(state.blocks, x, y + 0.5, z) || solidAt(state.blocks, x, y + 1.2, z) || blockedByWall(state, x, z, y);
+    },
   };
   for (const c of state.creatures) {
     for (const ev of updateCreature(c, ctx)) {
@@ -787,7 +874,16 @@ export function deserialize(json: string): GameState | null {
       if (n) Object.assign(n, { hp, respawnAt });
     }
     delete data.depleted;
-    return { ...data, nodes, nodeVersion: 0, structureVersion: 0, sfx: [] } as GameState;
+    return {
+      ...data,
+      blocks: data.blocks ?? {},
+      blockDamage: null,
+      nodes,
+      nodeVersion: 0,
+      structureVersion: 0,
+      blockVersion: 0,
+      sfx: [],
+    } as GameState;
   } catch {
     return null;
   }

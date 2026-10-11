@@ -4,9 +4,10 @@ export type ItemId =
   | "wood" | "thatch" | "stone" | "flint" | "fiber" | "berries" | "narcoberry"
   | "raw_meat" | "cooked_meat" | "hide"
   | "stone_pick" | "stone_hatchet" | "spear" | "club" | "bandage"
-  | "campfire" | "foundation" | "wall" | "bed" | "storage";
+  | "campfire" | "foundation" | "wall" | "bed" | "storage"
+  | "plank" | "cobblestone" | "thatch_block" | "torch";
 
-export type ItemKind = "resource" | "tool" | "consumable" | "structure";
+export type ItemKind = "resource" | "tool" | "consumable" | "structure" | "block";
 
 export interface ToolStats {
   damage: number;
@@ -36,7 +37,7 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   stone: { id: "stone", name: "Stone", kind: "resource", icon: "🪨" },
   flint: { id: "flint", name: "Flint", kind: "resource", icon: "🔺" },
   fiber: { id: "fiber", name: "Fiber", kind: "resource", icon: "🧵" },
-  hide: { id: "hide", name: "Hide", kind: "resource", icon: "🟫" },
+  hide: { id: "hide", name: "Hide", kind: "resource", icon: "🟤" },
   berries: { id: "berries", name: "Wild Berries", kind: "consumable", icon: "🫐", restores: { food: 6, water: 2 } },
   narcoberry: { id: "narcoberry", name: "Sleepberries", kind: "resource", icon: "🍇" },
   raw_meat: { id: "raw_meat", name: "Raw Meat", kind: "consumable", icon: "🥩", restores: { food: 10, hp: -4 } },
@@ -63,6 +64,10 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   wall: { id: "wall", name: "Thatch Wall", kind: "structure", icon: "🧱" },
   bed: { id: "bed", name: "Sleeping Bag", kind: "structure", icon: "🛏️" },
   storage: { id: "storage", name: "Storage Box", kind: "structure", icon: "📦" },
+  plank: { id: "plank", name: "Wood Planks", kind: "block", icon: "🟫" },
+  cobblestone: { id: "cobblestone", name: "Cobblestone", kind: "block", icon: "⬜" },
+  thatch_block: { id: "thatch_block", name: "Thatch Block", kind: "block", icon: "🟨" },
+  torch: { id: "torch", name: "Torch", kind: "block", icon: "🕯️" },
 };
 
 export type Cost = Partial<Record<ItemId, number>>;
@@ -88,6 +93,10 @@ export const RECIPES: Recipe[] = [
   { id: "wall", output: "wall", count: 1, cost: { wood: 8, thatch: 6, fiber: 4 }, level: 2 },
   { id: "bed", output: "bed", count: 1, cost: { fiber: 15, hide: 6, thatch: 10 } },
   { id: "storage", output: "storage", count: 1, cost: { wood: 25, thatch: 15, fiber: 10 }, level: 2 },
+  { id: "plank", output: "plank", count: 2, cost: { wood: 1 } },
+  { id: "cobblestone", output: "cobblestone", count: 1, cost: { stone: 2 } },
+  { id: "thatch_block", output: "thatch_block", count: 1, cost: { thatch: 4 } },
+  { id: "torch", output: "torch", count: 4, cost: { wood: 1, fiber: 2, flint: 1 } },
   { id: "cooked_meat", output: "cooked_meat", count: 1, cost: { raw_meat: 1, wood: 1 }, needsCampfire: true },
 ];
 

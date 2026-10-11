@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "rea
 import { useFrame, useThree } from "@react-three/fiber";
 import { Sky, Stars } from "@react-three/drei";
 import * as THREE from "three";
+import Blocks from "./Blocks";
 import { heightAt, WATER_LEVEL, WORLD_SIZE, type NodeKind } from "../engine/world";
 import { SPECIES, type Creature } from "../engine/creatures";
 import { ITEMS } from "../engine/items";
@@ -420,6 +421,7 @@ export default function World({ game }: { game: GameRef }) {
       <Creatures game={game} />
       <Structures game={game} />
       <PlacementGhost game={game} />
+      <Blocks game={game} />
     </>
   );
 }

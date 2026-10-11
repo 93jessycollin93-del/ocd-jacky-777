@@ -94,6 +94,8 @@ export interface CreatureContext {
   rng: () => number;
   player: { x: number; z: number; dead: boolean; mountId: number | null };
   creatures: Creature[];
+  /** True where a wall or solid block stands in the way. */
+  blocked?: (x: number, z: number) => boolean;
 }
 
 export interface CreatureEvent {
@@ -116,8 +118,11 @@ function stepToward(c: Creature, heading: number, speed: number, ctx: CreatureCo
   const nx = c.x + Math.sin(heading) * speed * ctx.dt;
   const nz = c.z + Math.cos(heading) * speed * ctx.dt;
   const lim = WORLD_HALF * 0.95;
-  if (Math.abs(nx) > lim || Math.abs(nz) > lim || heightAt(nx, nz, ctx.seed) < WATER_LEVEL + 0.3) {
-    // Turn away from the shore instead of walking into the sea.
+  if (
+    Math.abs(nx) > lim || Math.abs(nz) > lim || heightAt(nx, nz, ctx.seed) < WATER_LEVEL + 0.3 ||
+    ctx.blocked?.(nx, nz)
+  ) {
+    // Turn away from the shore (or your walls) instead of walking through them.
     c.heading += Math.PI * (0.5 + ctx.rng());
     return;
   }

@@ -7,9 +7,10 @@ import { Hud } from "@/survival/Hud";
 import { TouchControls } from "@/survival/TouchControls";
 import { isMuted, playSfx, setMuted, unlockAudio } from "@/survival/sound";
 import {
-  HOTBAR_SIZE, NO_INPUT, SAVE_KEY, count, deserialize, interact, log, lookedAtStorage, newGame, serialize, step,
-  toggleMount, primaryAction, type GameState, type Input,
+  HOTBAR_SIZE, NO_INPUT, SAVE_KEY, count, deserialize, equipped, interact, log, lookedAtStorage, newGame, placeBlock,
+  serialize, step, toggleMount, primaryAction, type GameState, type Input,
 } from "@/survival/engine/game";
+import { isBlockItem } from "@/survival/engine/blocks";
 
 const MOUSE_SENSITIVITY = 0.0022;
 
@@ -203,7 +204,17 @@ function Game({ initial, onQuit }: { initial: GameState; onQuit: () => void }) {
       p.pitch = Math.max(-1.45, Math.min(1.45, p.pitch - e.movementY * MOUSE_SENSITIVITY));
     };
     const onMouseDown = (e: MouseEvent) => {
-      if (e.button === 0 && document.pointerLockElement === container.current) attack.current = true;
+      if (document.pointerLockElement !== container.current) return;
+      if (e.button === 0) attack.current = true;
+      // Right click places the held block, Minecraft-style (left click does too, for touch parity).
+      else if (e.button === 2) {
+        const g = game.current;
+        const held = equipped(g);
+        if (isBlockItem(held) && g.player.cooldown <= 0) placeBlock(g, held);
+      }
+    };
+    const onContextMenu = (e: MouseEvent) => {
+      if (document.pointerLockElement === container.current) e.preventDefault();
     };
     const onMouseUp = (e: MouseEvent) => {
       if (e.button === 0) attack.current = false;
@@ -254,6 +265,7 @@ function Game({ initial, onQuit }: { initial: GameState; onQuit: () => void }) {
     document.addEventListener("mousemove", onMouseMove);
     document.addEventListener("mousedown", onMouseDown);
     document.addEventListener("mouseup", onMouseUp);
+    document.addEventListener("contextmenu", onContextMenu);
     document.addEventListener("wheel", onWheel, { passive: true });
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
@@ -262,6 +274,7 @@ function Game({ initial, onQuit }: { initial: GameState; onQuit: () => void }) {
       document.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("mousedown", onMouseDown);
       document.removeEventListener("mouseup", onMouseUp);
+      document.removeEventListener("contextmenu", onContextMenu);
       document.removeEventListener("wheel", onWheel);
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
@@ -331,7 +344,7 @@ function Controls({ touch }: { touch: boolean }) {
     ? [
         ["Left side", "Drag to move · push to the edge to sprint"],
         ["Right side", "Drag to look"],
-        ["✊", "Hold to use what's in your hand: punch, harvest, attack, eat, build"],
+        ["✊", "Hold to use what's in your hand: punch, harvest, break blocks, attack, eat, place blocks"],
         ["Use", "Feed a knocked-out dino · open a box · cook · drink · tame follow/stay"],
         ["🦖 / 🍖 / 🎒", "Ride a tame / quick eat / bag & crafting"],
         ["Hotbar", "Tap a slot to hold that item"],
@@ -339,7 +352,8 @@ function Controls({ touch }: { touch: boolean }) {
     : [
         ["WASD / Mouse", "Move / look"],
         ["Shift / Space", "Sprint / jump (or swim up)"],
-        ["Left click", "Use held item: punch, harvest, attack, eat, build"],
+        ["Left click", "Use held item: punch, harvest, break blocks, attack, eat, build"],
+        ["Right click", "Place the held block"],
         ["1–8 / wheel", "Choose hotbar slot"],
         ["Tab / C / I", "Inventory & crafting"],
         ["E", "Feed a knocked-out dino · open a box · cook · drink · tame follow/stay"],

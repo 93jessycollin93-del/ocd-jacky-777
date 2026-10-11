@@ -1,7 +1,8 @@
 // The hint shown under the crosshair.
 import { SPECIES } from "./creatures";
 import { ITEMS, type ItemId } from "./items";
-import { canDrink, count, equipped, lookTarget, nearCampfire, toolStats, type GameState } from "./game";
+import { BLOCKS, cellKey, hitsToBreak, isBlockItem } from "./blocks";
+import { blockTarget, canDrink, count, equipped, lookTarget, nearCampfire, toolStats, type GameState } from "./game";
 
 /** The hint under the crosshair for whatever you're looking at. */
 export function promptFor(state: GameState): string | null {
@@ -9,7 +10,20 @@ export function promptFor(state: GameState): string | null {
   if (p.dead) return null;
   const id = equipped(state);
   if (id && ITEMS[id].kind === "structure") return `Click: place ${ITEMS[id].name} · switch slot to cancel`;
+  if (isBlockItem(id)) {
+    return blockTarget(state)
+      ? `Click: place ${ITEMS[id].name} (${count(state, id)} left)`
+      : `Aim at the ground or a block to place ${ITEMS[id].name}`;
+  }
   const near = lookTarget(state, 3.5);
+  const tool = toolStats(state);
+  const hit = blockTarget(state, Math.max(tool.reach, 3.5) + 1);
+  if (hit?.block && (!near || hit.dist <= near.dist + 0.5)) {
+    const key = cellKey(hit.cell[0], hit.cell[1], hit.cell[2]);
+    const needed = hitsToBreak(hit.block, tool.harvest[BLOCKS[hit.block].breakAs] ?? 0.5);
+    const done = state.blockDamage?.key === key ? state.blockDamage.hits : 0;
+    return `${ITEMS[hit.block].name} · Click: break${done ? ` (${done}/${needed})` : needed > 1 ? ` (${needed} hits)` : ""}`;
+  }
   if (near?.kind === "creature") {
     const c = near.creature;
     const sp = SPECIES[c.species];
