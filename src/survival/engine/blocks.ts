@@ -3,7 +3,12 @@
 import type { ItemId } from "./items";
 import { heightAt } from "./world";
 
-export type BlockId = "plank" | "cobblestone" | "thatch_block" | "torch" | "metal_block";
+export type BlockId =
+  | "plank" | "cobblestone" | "thatch_block" | "torch" | "metal_block"
+  | "dirt" | "sand" | "glass" | "stone_brick" | "log" | "door" | "door_open";
+
+/** Blocks you can hold and place (an open door is only ever a door you've opened). */
+export type PlaceableBlock = Exclude<BlockId, "door_open">;
 
 /** "x,y,z" of the cell's minimum corner; the block fills [x, x+1) × [y, y+1) × [z, z+1). */
 export type BlockMap = Record<string, BlockId>;
@@ -13,9 +18,11 @@ export interface BlockDef {
   /** Hits with a 1× tool to break it. */
   hardness: number;
   /** Which tool multiplier applies when breaking it. */
-  breakAs: "tree" | "rock" | "bush";
-  /** Solid blocks stop the player and creatures; torches don't. */
+  breakAs: "tree" | "rock" | "bush" | "ground";
+  /** Solid blocks stop the player and creatures; torches and open doors don't. */
   solid: boolean;
+  /** What breaking it gives back, when that isn't the block itself. */
+  drop?: PlaceableBlock;
 }
 
 export const BLOCKS: Record<BlockId, BlockDef> = {
@@ -24,9 +31,26 @@ export const BLOCKS: Record<BlockId, BlockDef> = {
   thatch_block: { id: "thatch_block", hardness: 1, breakAs: "bush", solid: true },
   torch: { id: "torch", hardness: 1, breakAs: "bush", solid: false },
   metal_block: { id: "metal_block", hardness: 18, breakAs: "rock", solid: true },
+  dirt: { id: "dirt", hardness: 1.5, breakAs: "ground", solid: true },
+  sand: { id: "sand", hardness: 1.5, breakAs: "ground", solid: true },
+  glass: { id: "glass", hardness: 1, breakAs: "rock", solid: true },
+  stone_brick: { id: "stone_brick", hardness: 6, breakAs: "rock", solid: true },
+  log: { id: "log", hardness: 4, breakAs: "tree", solid: true },
+  door: { id: "door", hardness: 3, breakAs: "tree", solid: true },
+  door_open: { id: "door_open", hardness: 3, breakAs: "tree", solid: false, drop: "door" },
 };
 
-export const isBlockItem = (id: ItemId | null | undefined): id is BlockId => !!id && id in BLOCKS;
+export const isDoor = (b: BlockId | undefined): b is "door" | "door_open" => b === "door" || b === "door_open";
+
+/** The other half of a two-high door, if there is one. */
+export function doorPartner(blocks: BlockMap, x: number, y: number, z: number): [number, number, number] | null {
+  if (isDoor(blocks[cellKey(x, y + 1, z)])) return [x, y + 1, z];
+  if (isDoor(blocks[cellKey(x, y - 1, z)])) return [x, y - 1, z];
+  return null;
+}
+
+// "door_open" is never an item, so any item id found in BLOCKS is a placeable block.
+export const isBlockItem = (id: ItemId | null | undefined): id is PlaceableBlock & ItemId => !!id && id in BLOCKS;
 
 export const cellKey = (x: number, y: number, z: number) => `${x},${y},${z}`;
 

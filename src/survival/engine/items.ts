@@ -6,7 +6,8 @@ export type ItemId =
   | "stone_pick" | "stone_hatchet" | "spear" | "club" | "bandage"
   | "campfire" | "foundation" | "wall" | "bed" | "storage"
   | "plank" | "cobblestone" | "thatch_block" | "torch"
-  | "metal_ore" | "metal_ingot" | "metal_pick" | "metal_hatchet" | "metal_sword" | "forge" | "metal_block";
+  | "metal_ore" | "metal_ingot" | "metal_pick" | "metal_hatchet" | "metal_sword" | "forge" | "metal_block"
+  | "dirt" | "sand" | "glass" | "stone_brick" | "log" | "door" | "stone_shovel";
 
 export type ItemKind = "resource" | "tool" | "consumable" | "structure" | "block";
 
@@ -17,7 +18,8 @@ export interface ToolStats {
   reach: number;
   cooldown: number;
   /** Harvest multipliers per node kind. */
-  harvest: Partial<Record<"tree" | "rock" | "bush" | "ore" | "corpse", number>>;
+  /** Harvest multipliers; "ground" is digging dirt and sand. */
+  harvest: Partial<Record<"tree" | "rock" | "bush" | "ore" | "ground" | "corpse", number>>;
 }
 
 export interface ItemDef {
@@ -30,7 +32,7 @@ export interface ItemDef {
   restores?: { hp?: number; food?: number; water?: number; stamina?: number };
 }
 
-export const HAND: ToolStats = { damage: 8, torpor: 0, reach: 2.6, cooldown: 0.5, harvest: { tree: 1, rock: 1, bush: 1, corpse: 0.5 } };
+export const HAND: ToolStats = { damage: 8, torpor: 0, reach: 2.6, cooldown: 0.5, harvest: { tree: 1, rock: 1, bush: 1, ground: 1, corpse: 0.5 } };
 
 export const ITEMS: Record<ItemId, ItemDef> = {
   wood: { id: "wood", name: "Wood", kind: "resource", icon: "🪵" },
@@ -46,7 +48,7 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   bandage: { id: "bandage", name: "Bandage", kind: "consumable", icon: "🩹", restores: { hp: 35 } },
   stone_pick: {
     id: "stone_pick", name: "Stone Pick", kind: "tool", icon: "⛏️",
-    tool: { damage: 14, torpor: 0, reach: 2.8, cooldown: 0.6, harvest: { rock: 3, ore: 1.5, tree: 1.5, bush: 1, corpse: 1 } },
+    tool: { damage: 14, torpor: 0, reach: 2.8, cooldown: 0.6, harvest: { rock: 3, ore: 1.5, tree: 1.5, bush: 1, ground: 1.5, corpse: 1 } },
   },
   stone_hatchet: {
     id: "stone_hatchet", name: "Stone Hatchet", kind: "tool", icon: "🪓",
@@ -73,7 +75,7 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   metal_ingot: { id: "metal_ingot", name: "Metal Ingot", kind: "resource", icon: "🔩" },
   metal_pick: {
     id: "metal_pick", name: "Metal Pick", kind: "tool", icon: "⚒️",
-    tool: { damage: 24, torpor: 0, reach: 3, cooldown: 0.5, harvest: { rock: 6, ore: 3, tree: 2, bush: 1.5, corpse: 1.5 } },
+    tool: { damage: 24, torpor: 0, reach: 3, cooldown: 0.5, harvest: { rock: 6, ore: 3, tree: 2, bush: 1.5, ground: 2, corpse: 1.5 } },
   },
   metal_hatchet: {
     id: "metal_hatchet", name: "Metal Hatchet", kind: "tool", icon: "🪓",
@@ -85,6 +87,16 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   },
   forge: { id: "forge", name: "Forge", kind: "structure", icon: "🏭" },
   metal_block: { id: "metal_block", name: "Metal Block", kind: "block", icon: "🔲" },
+  dirt: { id: "dirt", name: "Dirt", kind: "block", icon: "🌱" },
+  sand: { id: "sand", name: "Sand", kind: "block", icon: "🏖️" },
+  glass: { id: "glass", name: "Glass", kind: "block", icon: "🪟" },
+  stone_brick: { id: "stone_brick", name: "Stone Bricks", kind: "block", icon: "◼️" },
+  log: { id: "log", name: "Log", kind: "block", icon: "🌲" },
+  door: { id: "door", name: "Door", kind: "block", icon: "🚪" },
+  stone_shovel: {
+    id: "stone_shovel", name: "Stone Shovel", kind: "tool", icon: "🛠️",
+    tool: { damage: 10, torpor: 0, reach: 2.8, cooldown: 0.45, harvest: { ground: 4, bush: 1.5, corpse: 0.5 } },
+  },
 };
 
 export type Cost = Partial<Record<ItemId, number>>;
@@ -116,6 +128,11 @@ export const RECIPES: Recipe[] = [
   { id: "cobblestone", output: "cobblestone", count: 1, cost: { stone: 2 } },
   { id: "thatch_block", output: "thatch_block", count: 1, cost: { thatch: 4 } },
   { id: "torch", output: "torch", count: 4, cost: { wood: 1, fiber: 2, flint: 1 } },
+  { id: "stone_shovel", output: "stone_shovel", count: 1, cost: { wood: 2, stone: 2, fiber: 4 } },
+  { id: "log", output: "log", count: 1, cost: { wood: 3 } },
+  { id: "stone_brick", output: "stone_brick", count: 2, cost: { stone: 3 } },
+  { id: "glass", output: "glass", count: 1, cost: { sand: 2, wood: 1 }, needsCampfire: true },
+  { id: "door", output: "door", count: 1, cost: { plank: 6, flint: 1 } },
   { id: "cooked_meat", output: "cooked_meat", count: 1, cost: { raw_meat: 1, wood: 1 }, needsCampfire: true },
   { id: "forge", output: "forge", count: 1, cost: { stone: 30, flint: 6, wood: 10, hide: 3 }, level: 3 },
   { id: "metal_ingot", output: "metal_ingot", count: 1, cost: { metal_ore: 2, wood: 1 }, needsForge: true },

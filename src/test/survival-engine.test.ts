@@ -1,8 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
   newGame, step, craft, addItem, count, primaryAction, interact, toggleMount, respawn, lookTarget,
-  serialize, deserialize, placementFor, groundAt, lookedAtStorage, transfer, bedSpawn, NO_INPUT, type GameState,
+  serialize, deserialize, placementFor, groundAt, lookedAtStorage, transfer, bedSpawn, toggleDoor, assignHotbar, NO_INPUT,
+  type GameState,
 } from "@/survival/engine/game";
+import { solidAt } from "@/survival/engine/blocks";
 import { SPECIES, makeCreature, damageCreature, feedCreature } from "@/survival/engine/creatures";
 import { heightAt, spawnPoint, generateNodes, WATER_LEVEL, WORLD_HALF } from "@/survival/engine/world";
 import { RECIPES, ITEMS } from "@/survival/engine/items";
@@ -284,6 +286,115 @@ describe("blocks", () => {
     const g = newGame(SEED);
     g.blocks["1,2,3"] = "torch";
     expect(deserialize(serialize(g))!.blocks).toEqual({ "1,2,3": "torch" });
+  });
+});
+
+describe("digging, new blocks and doors", () => {
+  function settle(g: GameState) {
+    for (let i = 0; i < 60; i++) step(g, NO_INPUT, 1 / 60);
+  }
+
+  it("digs dirt inland and sand on the beach; a shovel digs faster", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    settle(g);
+    g.player.pitch = -1.0;
+    const swings = () => {
+      let n = 0;
+      const before = count(g, "dirt") + count(g, "sand");
+      while (count(g, "dirt") + count(g, "sand") === before && n < 10) {
+        g.player.cooldown = 0;
+        primaryAction(g);
+        n++;
+      }
+      return n;
+    };
+    expect(swings()).toBe(2); // bare hands
+    // The spawn is a beach, so that was sand.
+    expect(count(g, "sand")).toBe(1);
+    addItem(g, "stone_shovel", 1);
+    g.selected = g.hotbar.indexOf("stone_shovel");
+    expect(swings()).toBe(1);
+  });
+
+  it("smelts sand into glass at a campfire", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    addItem(g, "sand", 4);
+    addItem(g, "wood", 2);
+    expect(craft(g, "glass")).toBe(false);
+    g.structures.push({ id: 77, kind: "campfire", x: g.player.x + 1, y: g.player.y, z: g.player.z, rot: 0 });
+    expect(craft(g, "glass")).toBe(true);
+    expect(count(g, "glass")).toBe(1);
+  });
+
+  it("doors are two blocks tall, open with E, and break as one", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    settle(g);
+    g.player.pitch = -0.9;
+    addItem(g, "door", 1);
+    g.selected = g.hotbar.indexOf("door");
+    expect(primaryAction(g)).toBe(true);
+    const cells = Object.keys(g.blocks);
+    expect(cells).toHaveLength(2);
+    expect(Object.values(g.blocks)).toEqual(["door", "door"]);
+
+    g.player.pitch = -0.4; // look at the door rather than the ground
+    expect(interact(g)).toBe("Door opened");
+    expect(Object.values(g.blocks)).toEqual(["door_open", "door_open"]);
+    const [x, y, z] = cells[0].split(",").map(Number);
+    expect(solidAt(g.blocks, x + 0.5, y + 0.5, z + 0.5)).toBe(false);
+    expect(interact(g)).toBe("Door closed");
+
+    g.selected = g.hotbar.indexOf(null);
+    for (let i = 0; i < 6 && Object.keys(g.blocks).length; i++) {
+      g.player.cooldown = 0;
+      primaryAction(g);
+    }
+    expect(g.blocks).toEqual({});
+    expect(count(g, "door")).toBe(1);
+  });
+
+  it("won't close a door on you", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    settle(g);
+    const p = g.player;
+    const x = Math.floor(p.x);
+    const z = Math.floor(p.z);
+    const y = Math.floor(p.y);
+    g.blocks[`${x},${y},${z}`] = "door_open";
+    g.blocks[`${x},${y + 1},${z}`] = "door_open";
+    expect(toggleDoor(g, [x, y, z])).toBe("Step out of the doorway to close it");
+    expect(g.blocks[`${x},${y},${z}`]).toBe("door_open");
+  });
+
+  it("lets you choose what goes in each hotbar slot", () => {
+    const g = newGame(SEED);
+    addItem(g, "plank", 5);
+    addItem(g, "dirt", 5);
+    addItem(g, "wood", 5);
+    expect(g.hotbar.slice(0, 2)).toEqual(["plank", "dirt"]);
+    expect(assignHotbar(g, "dirt", 0)).toBe(true);
+    expect(g.hotbar.slice(0, 2)).toEqual(["dirt", "plank"]); // swapped, not duplicated
+    expect(assignHotbar(g, "dirt", 5)).toBe(true);
+    expect(g.hotbar.filter((h) => h === "dirt")).toHaveLength(1);
+    expect(assignHotbar(g, "wood", 3)).toBe(false); // resources don't go on the bar
+  });
+
+  it("crafts logs, stone bricks and doors", () => {
+    const g = newGame(SEED);
+    addItem(g, "wood", 10);
+    addItem(g, "stone", 6);
+    addItem(g, "flint", 1);
+    expect(craft(g, "log")).toBe(true);
+    expect(craft(g, "stone_brick")).toBe(true);
+    expect(count(g, "stone_brick")).toBe(2);
+    expect(craft(g, "plank")).toBe(true);
+    expect(craft(g, "door")).toBe(false); // needs 6 planks
+    for (let i = 0; i < 2; i++) craft(g, "plank");
+    expect(craft(g, "door")).toBe(true);
   });
 });
 

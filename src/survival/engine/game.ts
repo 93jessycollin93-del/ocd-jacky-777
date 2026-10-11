@@ -7,8 +7,8 @@ import {
 import { HAND, ITEMS, RECIPES, isEquippable, type Cost, type ItemId, type Recipe, type ToolStats } from "./items";
 import { mulberry32 } from "./noise";
 import {
-  BLOCKS, blockSupport, bodyBlocked, cellKey, hitsToBreak, isBlockItem, raycastBlocks, solidAt,
-  PLAYER_HEIGHT, PLAYER_RADIUS, type BlockHit, type BlockId, type BlockMap,
+  BLOCKS, blockSupport, bodyBlocked, cellKey, doorPartner, hitsToBreak, isBlockItem, isDoor, raycastBlocks, solidAt,
+  PLAYER_HEIGHT, PLAYER_RADIUS, type BlockHit, type BlockMap, type PlaceableBlock,
 } from "./blocks";
 import {
   generateNodes, heightAt, randomLandPoint, spawnPoint,
@@ -182,6 +182,15 @@ export function addItem(state: GameState, id: ItemId, n: number) {
   }
 }
 
+/** Put an item in a hotbar slot (moving it if it's already elsewhere on the bar). */
+export function assignHotbar(state: GameState, id: ItemId, slot: number): boolean {
+  if (!isEquippable(id) || count(state, id) <= 0 || slot < 0 || slot >= HOTBAR_SIZE) return false;
+  const from = state.hotbar.indexOf(id);
+  if (from >= 0) state.hotbar[from] = state.hotbar[slot] ?? null;
+  state.hotbar[slot] = id;
+  return true;
+}
+
 export function hasCost(state: GameState, cost: Cost) {
   return (Object.entries(cost) as [ItemId, number][]).every(([id, n]) => count(state, id) >= n);
 }
@@ -346,15 +355,18 @@ function cellOverlapsPlayer(state: GameState, [cx, cy, cz]: [number, number, num
   );
 }
 
-export function placeBlock(state: GameState, id: BlockId): boolean {
+export function placeBlock(state: GameState, id: PlaceableBlock): boolean {
   const hit = blockTarget(state);
   if (!hit) return false;
   const cell = hit.place;
-  const key = cellKey(cell[0], cell[1], cell[2]);
-  if (state.blocks[key]) return false;
-  if (BLOCKS[id].solid && cellOverlapsPlayer(state, cell)) return false;
+  // Doors are two blocks tall: they need the cell above free as well.
+  const cells: [number, number, number][] = id === "door" ? [cell, [cell[0], cell[1] + 1, cell[2]]] : [cell];
+  for (const c of cells) {
+    if (state.blocks[cellKey(c[0], c[1], c[2])]) return false;
+    if (BLOCKS[id].solid && cellOverlapsPlayer(state, c)) return false;
+  }
   if (!removeItem(state, id)) return false;
-  state.blocks[key] = id;
+  for (const c of cells) state.blocks[cellKey(c[0], c[1], c[2])] = id;
   state.blockVersion++;
   state.player.cooldown = 0.18;
   gainXp(state, 0.5);
@@ -374,11 +386,48 @@ function hitBlock(state: GameState, hit: BlockHit, tool: ToolStats): boolean {
     return true;
   }
   state.blockDamage = null;
+  if (isDoor(block)) {
+    const other = doorPartner(state.blocks, hit.cell[0], hit.cell[1], hit.cell[2]);
+    if (other) delete state.blocks[cellKey(other[0], other[1], other[2])];
+  }
   delete state.blocks[key];
   state.blockVersion++;
-  addItem(state, block, 1);
+  addItem(state, def.drop ?? (block as PlaceableBlock), 1);
   sfx(state, "harvest");
   return true;
+}
+
+/** Hitting bare ground digs up dirt, or sand on the beach. The island itself doesn't change. */
+function dig(state: GameState, hit: BlockHit, tool: ToolStats): boolean {
+  const [x, , z] = hit.cell;
+  const key = `ground:${x},${z}`;
+  const needed = Math.max(1, Math.ceil(2 / Math.max(tool.harvest.ground ?? 0.5, 0.25)));
+  const hits = (state.blockDamage?.key === key ? state.blockDamage.hits : 0) + 1;
+  if (hits < needed) {
+    state.blockDamage = { key, hits };
+    sfx(state, "hit");
+    return true;
+  }
+  state.blockDamage = null;
+  addItem(state, heightAt(x + 0.5, z + 0.5, state.seed) < 2.2 ? "sand" : "dirt", 1);
+  sfx(state, "harvest");
+  return true;
+}
+
+/** Open or close the door you're looking at (both halves). */
+export function toggleDoor(state: GameState, cell: [number, number, number]): string | null {
+  const key = cellKey(cell[0], cell[1], cell[2]);
+  const current = state.blocks[key];
+  if (!isDoor(current)) return null;
+  const cells = [cell];
+  const other = doorPartner(state.blocks, cell[0], cell[1], cell[2]);
+  if (other) cells.push(other);
+  const next = current === "door" ? "door_open" : "door";
+  if (next === "door" && cells.some((c) => cellOverlapsPlayer(state, c))) return "Step out of the doorway to close it";
+  for (const c of cells) state.blocks[cellKey(c[0], c[1], c[2])] = next;
+  state.blockVersion++;
+  sfx(state, "place");
+  return next === "door" ? "Door closed" : "Door opened";
 }
 
 function swing(state: GameState): boolean {
@@ -389,6 +438,7 @@ function swing(state: GameState): boolean {
   const block = blockTarget(state, Math.max(tool.reach, 3.5) + 1);
   if (block?.block && (!target || block.dist <= target.dist + 0.5)) return hitBlock(state, block, tool);
   if (!target) {
+    if (block && !block.block) return dig(state, block, tool);
     sfx(state, "swing");
     return false;
   }
@@ -533,6 +583,8 @@ function place(state: GameState, kind: StructureKind): boolean {
 export function interact(state: GameState): string | null {
   const p = state.player;
   if (p.dead) return null;
+  const door = blockTarget(state, 3.5);
+  if (door && isDoor(door.block ?? undefined)) return toggleDoor(state, door.cell);
   const target = lookTarget(state, 3.5);
   if (target?.kind === "creature") {
     const c = target.creature;

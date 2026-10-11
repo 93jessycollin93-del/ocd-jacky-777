@@ -1,8 +1,8 @@
 // Primal Isle on-screen UI: vitals, compass, hotbar, prompts, crafting/inventory, storage, tames, death screen.
 import type { MutableRefObject } from "react";
-import { ITEMS, RECIPES, type ItemId } from "./engine/items";
+import { ITEMS, RECIPES, isEquippable, type ItemId } from "./engine/items";
 import {
-  bedSpawn, canCraft, count, craft, isNight, respawn, timeOfDay, transfer, xpForLevel, type GameState,
+  assignHotbar, bedSpawn, canCraft, count, craft, isNight, respawn, timeOfDay, transfer, xpForLevel, type GameState,
 } from "./engine/game";
 import { promptFor } from "./engine/prompt";
 
@@ -184,8 +184,14 @@ export function Hud({
                       key={id}
                       id={id}
                       n={count(g, id)}
-                      hint={box ? "store all" : undefined}
-                      onClick={box ? () => { transfer(g, box.id, id, "deposit"); onChange(); } : undefined}
+                      hint={box ? "store all" : isEquippable(id) ? `put in hotbar slot ${g.selected + 1}` : undefined}
+                      onClick={
+                        box
+                          ? () => { transfer(g, box.id, id, "deposit"); onChange(); }
+                          : isEquippable(id)
+                            ? () => { assignHotbar(g, id, g.selected); onChange(); }
+                            : undefined
+                      }
                     />
                   ))}
                 </div>
@@ -193,7 +199,7 @@ export function Hud({
               <p className="mt-3 text-[11px] text-white/50">
                 {box
                   ? "Tap an item to store all of it. Boxes keep their contents when you die."
-                  : "Tools, food and buildings go on the hotbar automatically."}
+                  : `Tap a tool, food or block to put it in hotbar slot ${g.selected + 1} (pick the slot first with 1–8 or a tap).`}
               </p>
             </div>
 

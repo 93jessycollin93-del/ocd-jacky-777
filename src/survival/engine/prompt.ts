@@ -1,7 +1,10 @@
 // The hint shown under the crosshair.
 import { SPECIES } from "./creatures";
+import { heightAt } from "./world";
 import { ITEMS, type ItemId } from "./items";
-import { BLOCKS, cellKey, hitsToBreak, isBlockItem } from "./blocks";
+import { BLOCKS, cellKey, hitsToBreak, isBlockItem, isDoor, type BlockId, type PlaceableBlock } from "./blocks";
+
+const blockName = (b: BlockId) => ITEMS[BLOCKS[b].drop ?? (b as PlaceableBlock)].name;
 import { blockTarget, canDrink, count, equipped, lookTarget, nearCampfire, nearForge, toolStats, type GameState } from "./game";
 
 /** The hint under the crosshair for whatever you're looking at. */
@@ -22,7 +25,16 @@ export function promptFor(state: GameState): string | null {
     const key = cellKey(hit.cell[0], hit.cell[1], hit.cell[2]);
     const needed = hitsToBreak(hit.block, tool.harvest[BLOCKS[hit.block].breakAs] ?? 0.5);
     const done = state.blockDamage?.key === key ? state.blockDamage.hits : 0;
-    return `${ITEMS[hit.block].name} · Click: break${done ? ` (${done}/${needed})` : needed > 1 ? ` (${needed} hits)` : ""}`;
+    const breakHint = `Click: break${done ? ` (${done}/${needed})` : needed > 1 ? ` (${needed} hits)` : ""}`;
+    if (isDoor(hit.block) && hit.dist <= 3.5) {
+      return `Door · E: ${hit.block === "door" ? "open" : "close"} · ${breakHint}`;
+    }
+    return `${blockName(hit.block)} · ${breakHint}`;
+  }
+  if (!near && hit && !hit.block && p.pitch < -0.35) {
+    const [x, , z] = hit.cell;
+    const what = state.blockDamage?.key === `ground:${x},${z}` ? " (keep going)" : "";
+    return `Click: dig ${heightAt(x + 0.5, z + 0.5, state.seed) < 2.2 ? "sand" : "dirt"}${what}`;
   }
   if (near?.kind === "creature") {
     const c = near.creature;
