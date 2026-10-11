@@ -1,0 +1,90 @@
+// Items, tools, structures and crafting recipes for Primal Isle.
+
+export type ItemId =
+  | "wood" | "thatch" | "stone" | "flint" | "fiber" | "berries" | "narcoberry"
+  | "raw_meat" | "cooked_meat" | "hide"
+  | "stone_pick" | "stone_hatchet" | "spear" | "club" | "bandage"
+  | "campfire" | "foundation" | "wall";
+
+export type ItemKind = "resource" | "tool" | "consumable" | "structure";
+
+export interface ToolStats {
+  damage: number;
+  /** Knock-out damage dealt to creatures; builds their torpor. */
+  torpor: number;
+  reach: number;
+  cooldown: number;
+  /** Harvest multipliers per node kind. */
+  harvest: Partial<Record<"tree" | "rock" | "bush" | "corpse", number>>;
+}
+
+export interface ItemDef {
+  id: ItemId;
+  name: string;
+  kind: ItemKind;
+  icon: string;
+  tool?: ToolStats;
+  /** For consumables: what using one restores. */
+  restores?: { hp?: number; food?: number; water?: number; stamina?: number };
+}
+
+export const HAND: ToolStats = { damage: 8, torpor: 0, reach: 2.6, cooldown: 0.5, harvest: { tree: 1, rock: 1, bush: 1, corpse: 0.5 } };
+
+export const ITEMS: Record<ItemId, ItemDef> = {
+  wood: { id: "wood", name: "Wood", kind: "resource", icon: "🪵" },
+  thatch: { id: "thatch", name: "Thatch", kind: "resource", icon: "🌾" },
+  stone: { id: "stone", name: "Stone", kind: "resource", icon: "🪨" },
+  flint: { id: "flint", name: "Flint", kind: "resource", icon: "🔺" },
+  fiber: { id: "fiber", name: "Fiber", kind: "resource", icon: "🧵" },
+  hide: { id: "hide", name: "Hide", kind: "resource", icon: "🟫" },
+  berries: { id: "berries", name: "Wild Berries", kind: "consumable", icon: "🫐", restores: { food: 6, water: 2 } },
+  narcoberry: { id: "narcoberry", name: "Sleepberries", kind: "resource", icon: "🍇" },
+  raw_meat: { id: "raw_meat", name: "Raw Meat", kind: "consumable", icon: "🥩", restores: { food: 10, hp: -4 } },
+  cooked_meat: { id: "cooked_meat", name: "Cooked Meat", kind: "consumable", icon: "🍖", restores: { food: 30, hp: 6 } },
+  bandage: { id: "bandage", name: "Bandage", kind: "consumable", icon: "🩹", restores: { hp: 35 } },
+  stone_pick: {
+    id: "stone_pick", name: "Stone Pick", kind: "tool", icon: "⛏️",
+    tool: { damage: 14, torpor: 0, reach: 2.8, cooldown: 0.6, harvest: { rock: 3, tree: 1.5, bush: 1, corpse: 1 } },
+  },
+  stone_hatchet: {
+    id: "stone_hatchet", name: "Stone Hatchet", kind: "tool", icon: "🪓",
+    tool: { damage: 16, torpor: 0, reach: 2.8, cooldown: 0.6, harvest: { tree: 3, rock: 1.5, bush: 1, corpse: 2.5 } },
+  },
+  spear: {
+    id: "spear", name: "Spear", kind: "tool", icon: "🔱",
+    tool: { damage: 30, torpor: 0, reach: 3.8, cooldown: 0.8, harvest: { corpse: 1 } },
+  },
+  club: {
+    id: "club", name: "Wooden Club", kind: "tool", icon: "🏏",
+    tool: { damage: 5, torpor: 22, reach: 2.8, cooldown: 0.7, harvest: { corpse: 0.5 } },
+  },
+  campfire: { id: "campfire", name: "Campfire", kind: "structure", icon: "🔥" },
+  foundation: { id: "foundation", name: "Thatch Foundation", kind: "structure", icon: "🟧" },
+  wall: { id: "wall", name: "Thatch Wall", kind: "structure", icon: "🧱" },
+};
+
+export type Cost = Partial<Record<ItemId, number>>;
+
+export interface Recipe {
+  id: string;
+  output: ItemId;
+  count: number;
+  cost: Cost;
+  /** Must be standing near a lit campfire. */
+  needsCampfire?: boolean;
+  level?: number;
+}
+
+export const RECIPES: Recipe[] = [
+  { id: "stone_pick", output: "stone_pick", count: 1, cost: { wood: 1, thatch: 10, stone: 1 } },
+  { id: "stone_hatchet", output: "stone_hatchet", count: 1, cost: { wood: 1, flint: 1, stone: 1, thatch: 10 } },
+  { id: "club", output: "club", count: 1, cost: { wood: 10, fiber: 6 } },
+  { id: "spear", output: "spear", count: 1, cost: { wood: 8, flint: 2, fiber: 12 }, level: 2 },
+  { id: "bandage", output: "bandage", count: 1, cost: { fiber: 10, berries: 4 } },
+  { id: "campfire", output: "campfire", count: 1, cost: { thatch: 12, flint: 1, stone: 16, wood: 2 } },
+  { id: "foundation", output: "foundation", count: 1, cost: { wood: 15, thatch: 10, fiber: 6 }, level: 2 },
+  { id: "wall", output: "wall", count: 1, cost: { wood: 8, thatch: 6, fiber: 4 }, level: 2 },
+  { id: "cooked_meat", output: "cooked_meat", count: 1, cost: { raw_meat: 1, wood: 1 }, needsCampfire: true },
+];
+
+export const isEquippable = (id: ItemId) => ITEMS[id].kind !== "resource";
