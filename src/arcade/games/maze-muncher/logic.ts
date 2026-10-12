@@ -98,6 +98,8 @@ export interface MazeState {
   dots: Uint8Array;
   dotsLeft: number;
   dotsEaten: number;
+  /** Dots and pellets in a fresh maze. */
+  totalDots: number;
   player: Muncher;
   hunters: Hunter[];
   phase: Phase;
@@ -117,8 +119,8 @@ export interface MazeState {
   sinceDot: number;
   /** Shared dot counter used after losing a life; -1 when off. */
   globalDots: number;
-  /** The chaser's late-level speed-up is suspended after a death until the last hunter is out. */
-  elroyOn: boolean;
+  /** The chaser's late-level speed-up ("rage") is suspended after a death until the last hunter is out. */
+  rageOn: boolean;
   acc: number;
   rng: Rng;
 }
@@ -184,7 +186,7 @@ function dotLimit(level: number, id: number): number {
 const GLOBAL_LIMITS = [0, 7, 17, 32];
 const releaseTimer = (level: number) => (level < 5 ? 4 : 3);
 
-function elroyDots(level: number): number {
+function rageDots(level: number): number {
   if (level <= 1) return 20;
   if (level <= 2) return 30;
   if (level <= 5) return 40;
@@ -196,9 +198,9 @@ function elroyDots(level: number): number {
 }
 
 /** 0 = normal, 1 or 2 = the chaser has sped up because few dots are left. */
-export function elroy(s: MazeState): 0 | 1 | 2 {
-  if (!s.elroyOn) return 0;
-  const n = elroyDots(s.level);
+export function rage(s: MazeState): 0 | 1 | 2 {
+  if (!s.rageOn) return 0;
+  const n = rageDots(s.level);
   if (s.dotsLeft <= n / 2) return 2;
   if (s.dotsLeft <= n) return 1;
   return 0;
@@ -225,11 +227,11 @@ function countDots(d: Uint8Array) {
 export function newGame(seed = 1): MazeState {
   const dots = freshDots();
   const s: MazeState = {
-    level: 1, score: 0, lives: START_LIVES, extraGiven: false, dots, dotsLeft: countDots(dots), dotsEaten: 0,
+    level: 1, score: 0, lives: START_LIVES, extraGiven: false, dots, dotsLeft: countDots(dots), dotsEaten: 0, totalDots: countDots(dots),
     player: { x: 0, y: 0, dir: LEFT, want: -1, stall: 0, moving: false, travelled: 0 },
     hunters: HUNTERS.map((_, id) => ({ id, x: 0, y: 0, dir: LEFT, mode: "house" as HunterMode, frightened: false, dots: 0 })),
     phase: "ready", phaseTime: 0, readyTime: READY_TIME + 1, modeIndex: 0, modeTime: 0, fright: 0, frightMax: 0, chain: 0,
-    bonus: null, eaten: null, sinceDot: 0, globalDots: -1, elroyOn: true, acc: 0, rng: mulberry32(seed),
+    bonus: null, eaten: null, sinceDot: 0, globalDots: -1, rageOn: true, acc: 0, rng: mulberry32(seed),
   };
   resetActors(s, false);
   return s;
@@ -260,7 +262,7 @@ export function resetActors(s: MazeState, afterDeath: boolean) {
     if (!afterDeath) h.dots = 0;
   }
   s.globalDots = afterDeath ? 0 : -1;
-  s.elroyOn = !afterDeath;
+  s.rageOn = !afterDeath;
   s.modeIndex = 0;
   s.modeTime = 0;
   s.fright = 0;
@@ -314,7 +316,7 @@ export function chaseTarget(id: number, hunterTile: Point, playerTile: Point, pl
 /** The tile a hunter is steering for right now. */
 export function targetFor(s: MazeState, h: Hunter): Point {
   if (h.mode === "eyes") return { x: Math.floor(PEN_DOOR.x), y: PEN_DOOR.y };
-  if (currentMode(s) === "scatter" && !(h.id === 0 && elroy(s) > 0)) return HUNTERS[h.id].scatter;
+  if (currentMode(s) === "scatter" && !(h.id === 0 && rage(s) > 0)) return HUNTERS[h.id].scatter;
   const p = s.player;
   const chaser = s.hunters[0];
   return chaseTarget(h.id, tileOf(h.x, h.y), tileOf(p.x, p.y), p.dir, tileOf(chaser.x, chaser.y));
@@ -364,7 +366,7 @@ const nextCentre = (pos: number, sign: number) => (sign > 0 ? Math.floor(pos + E
 
 function tryTurn(p: Muncher) {
   const w = p.want;
-  if (w < 0 || w === p.dir) return;
+  if (w === -1 || w === p.dir) return;
   if (w === OPP[p.dir]) {
     p.dir = w;
     return;
@@ -496,7 +498,7 @@ function moveHunter(s: MazeState, h: Hunter, dist: number) {
         h.y = PEN_DOOR.y;
         h.mode = "roam";
         h.dir = LEFT;
-        if (h.id === 3) s.elroyOn = true;
+        if (h.id === 3) s.rageOn = true;
       }
       return;
     }
@@ -523,7 +525,7 @@ export function hunterSpeed(s: MazeState, h: Hunter): number {
   if (h.frightened) return BASE_SPEED * sp.hunterFright;
   let k = sp.hunter;
   if (h.id === 0) {
-    const e = elroy(s);
+    const e = rage(s);
     if (e) k += e * 0.05;
   }
   return BASE_SPEED * k;
@@ -565,6 +567,9 @@ export function eatHunter(s: MazeState, h: Hunter, out: MazeEvent[]) {
   out.push(ev("hunter", h.x, h.y, points));
 }
 
+/** The bonus item shows up after about 30% and 70% of the dots are gone. */
+export const bonusAt = (s: Pick<MazeState, "totalDots">, n: 0 | 1) => Math.round(s.totalDots * (n === 0 ? 0.29 : 0.7));
+
 function release(s: MazeState, h: Hunter) {
   h.mode = "leaving";
   s.sinceDot = 0;
@@ -594,7 +599,7 @@ function eatAt(s: MazeState, out: MazeEvent[]) {
     addScore(s, 10, out);
     out.push(ev("dot", tx, ty, 10));
   }
-  if ((s.dotsEaten === 70 || s.dotsEaten === 170) && !s.bonus) {
+  if ((s.dotsEaten === bonusAt(s, 0) || s.dotsEaten === bonusAt(s, 1)) && !s.bonus) {
     s.bonus = { kind: bonusForLevel(s.level), ttl: 9 + s.rng() };
     out.push(ev("bonus-spawn", BONUS_SPOT.x, BONUS_SPOT.y));
   }
@@ -733,6 +738,7 @@ export function update(s: MazeState, dt: number): MazeEvent[] {
         s.dots = freshDots();
         s.dotsLeft = countDots(s.dots);
         s.dotsEaten = 0;
+        s.totalDots = s.dotsLeft;
         resetActors(s, false);
         s.phase = "ready";
         s.phaseTime = 0;

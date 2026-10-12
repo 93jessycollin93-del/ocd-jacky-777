@@ -38,6 +38,8 @@ export type Step =
       type: "clear";
       popped: Popped[];
       created: Popped[];
+      /** Matched sweets that fly together into the special they make: `from` cells slide to `to`. */
+      merges: { to: number; from: number[] }[];
       effects: Effect[];
       points: number;
       floaters: { cell: number; points: number }[];
@@ -99,12 +101,12 @@ export function newLevel(level: LevelDef, seed = 1): GameState {
   }
   for (let tries = 0; tries < 200; tries++) {
     dealColors(s);
+    s.spawnedIngredients = 0;
     for (const i of ingredientCells) {
       s.cells[i] = newPiece(s, s.spawnedIngredients % 2, "ingredient");
       s.spawnedIngredients++;
     }
     if (findGroups(s).length === 0 && findMoves(s).length > 0) break;
-    s.spawnedIngredients = 0;
   }
   return s;
 }
@@ -298,6 +300,8 @@ export function hintMove(s: GameState): [number, number] | null {
 
 // ------------------------------------------------------------------------------------------ clearing
 
+/** Chain multipliers stop growing here, so a long cascade is exciting but can't break the scoring. */
+export const MAX_CHAIN_MULT = 5;
 const POINTS_PER_SWEET = 20;
 const POINTS_BLAST = 40;
 const POINTS_FROSTING = 100;
@@ -339,11 +343,14 @@ interface ClearPlan {
   spent: Set<number>;
   effects: Effect[];
   created: Popped[];
+  merges: { to: number; from: number[] }[];
   groupPoints: { cell: number; points: number; cells: number[] }[];
   collected: number[];
 }
 
-const emptyPlan = (): ClearPlan => ({ cells: new Set(), spent: new Set(), effects: [], created: [], groupPoints: [], collected: [] });
+const emptyPlan = (): ClearPlan => ({
+  cells: new Set(), spent: new Set(), effects: [], created: [], merges: [], groupPoints: [], collected: [],
+});
 
 /** Fire every special caught in the plan, chaining into any others they hit. */
 function expand(s: GameState, plan: ClearPlan) {
@@ -380,8 +387,9 @@ function expand(s: GameState, plan: ClearPlan) {
 }
 
 /** Remove everything in the plan, score it, chip frosting, then drop in any specials it made. */
-function applyPlan(s: GameState, plan: ClearPlan, chain: number): Step {
+function applyPlan(s: GameState, plan: ClearPlan, chainNo: number): Step {
   expand(s, plan);
+  const chain = Math.min(chainNo, MAX_CHAIN_MULT);
   const popped: Popped[] = [];
   const frostingHit: number[] = [];
   const floaters: { cell: number; points: number }[] = [];
@@ -425,7 +433,8 @@ function applyPlan(s: GameState, plan: ClearPlan, chain: number): Step {
   for (const c of plan.created) s.cells[c.cell] = c.piece;
   s.score += points;
   return {
-    type: "clear", popped, created: plan.created, effects: plan.effects, points, floaters, chain, frostingHit, collected,
+    type: "clear", popped, created: plan.created, merges: plan.merges, effects: plan.effects, points, floaters, chain,
+    frostingHit, collected,
     board: s.cells.slice(),
   };
 }
@@ -445,6 +454,7 @@ function planMatches(s: GameState, swapped: number[]): ClearPlan | null {
     if (kind) {
       at = placementFor(g, kind, swapped);
       plan.created.push({ cell: at, piece: newPiece(s, g.color, kind) });
+      plan.merges.push({ to: at, from: g.cells.filter((c) => c !== at) });
       points += SPECIAL_BONUS[kind];
     } else {
       at = g.runs[0].cells[1];
@@ -502,7 +512,8 @@ export function gravity(s: GameState): Step {
         piece = newPiece(s, Math.floor(s.rng() * s.colors));
       }
       s.cells[idx(row, c)] = piece;
-      spawned.push({ id: piece.id, cell: idx(row, c), fromRow: valid[0] - 1 - j });
+      // The piece for the top cell waits just above the board; the ones below it queue higher up.
+      spawned.push({ id: piece.id, cell: idx(row, c), fromRow: valid[0] - empty + j });
     }
   }
   return { type: "fall", board: s.cells.slice(), spawned };
@@ -550,10 +561,15 @@ function cascade(s: GameState, steps: Step[], swapped: number[], startChain: num
     steps.push(gravity(s));
     chain++;
   }
-  if (!hasMoves(s)) {
-    shuffleBoard(s);
-    steps.push({ type: "shuffle", board: s.cells.slice() });
-  }
+  const stuck = reshuffleIfStuck(s);
+  if (stuck) steps.push(stuck);
+}
+
+/** If play is still on but no swap makes anything happen, reshuffle and return the animation step. */
+export function reshuffleIfStuck(s: GameState): Step | null {
+  if (s.moves <= 0 || goalMet(s) || hasMoves(s)) return null;
+  shuffleBoard(s);
+  return { type: "shuffle", board: s.cells.slice() };
 }
 
 /**
@@ -669,8 +685,11 @@ export function starsFor(s: GameState): number {
   return s.score >= three ? 3 : s.score >= two ? 2 : 1;
 }
 
-/** Goal met or out of moves. */
-export const levelOver = (s: GameState) => goalMet(s) || s.moves <= 0;
+/**
+ * Out of moves, or a frosting / ingredient goal done. A score goal never ends the level early: keep
+ * swapping to earn more stars until the moves run out.
+ */
+export const levelOver = (s: GameState) => s.moves <= 0 || (s.level.goal.type !== "score" && goalMet(s));
 
 /**
  * The victory lap: specials left on the board go off, then each move you didn't need becomes a rocket
