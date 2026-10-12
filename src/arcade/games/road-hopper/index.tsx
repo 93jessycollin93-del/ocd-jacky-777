@@ -50,7 +50,7 @@ export default function RoadHopper({ touch, best, submitScore }: GameProps) {
   const timer = useRef(0);
 
   // Logical pixels are CSS pixels divided by a zoom, so tiles stay a comfortable size on any screen.
-  const zoom = clamp(Math.min(box.w / 520, box.h / 420), 0.6, 1.4);
+  const zoom = clamp(Math.min(box.w / 520, box.h / 420), 0.6, 1.2);
   const lw = box.w / zoom;
   const lh = box.h / zoom;
 
