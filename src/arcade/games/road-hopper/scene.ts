@@ -5,10 +5,7 @@ import {
   H_GRASS, H_RAIL, H_ROAD, H_WATER, HH, HW, drawBunny, drawCoin, drawGround, drawHawk, drawLog, drawPad, drawSignal, drawTrain,
   drawTree, drawVehicle, groundEllipse, rowHeight, setOrigin, sx, sy,
 } from "./art";
-import {
-  BACK_GRAB, DRAW_COLS, HALF_COLS, HOP_TIME, IDLE_GRAB, IDLE_WARN, birdWarn, logX, rowAt, supportingLog, trainState, vehicleX,
-  type HopperState, type Row,
-} from "./logic";
+import { DRAW_COLS, HOP_TIME, birdWarn, logX, rowAt, supportingLog, trainState, vehicleX, type HopperState, type Row } from "./logic";
 
 export interface Vis {
   camC: number;
@@ -233,9 +230,9 @@ export function drawWorld(ctx: Ctx, w: number, h: number, s: HopperState, v: Vis
   // The bunny sits a bit left of and below the middle so there is more room ahead (up and to the right).
   const ax = w * 0.4;
   const ay = h * 0.64;
-  setOrigin(ax - (v.camC + v.camR) * HW, ay - (v.camC - v.camR) * HH + (v.groundZ > 0 ? 0 : 0));
   const ox = ax - (v.camC + v.camR) * HW;
   const oy = ay - (v.camC - v.camR) * HH;
+  setOrigin(ox, oy);
 
   const pRow = Math.round(v.pr);
   const rLo = Math.max(-10, Math.floor(v.camR) - 48);
@@ -279,13 +276,6 @@ export function drawWorld(ctx: Ctx, w: number, h: number, s: HopperState, v: Vis
   g.addColorStop(1, "rgba(10,30,60,0.22)");
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, w, h);
-  void HALF_COLS;
-  void IDLE_GRAB;
-  void IDLE_WARN;
-  void BACK_GRAB;
-  void H_RAIL;
-  void sx;
-  void sy;
 }
 
 /** Expanding rings where the bunny went in. */
