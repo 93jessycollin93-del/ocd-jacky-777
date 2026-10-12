@@ -31,8 +31,8 @@ export function makeLayout(landscape: boolean): BpLayout {
   const w = landscape ? 640 : COLS * d;
   const fx = (w - COLS * d) / 2;
   const lineY = fy + ((LOSE_ROW - 1) * ROW_H + 1) * d;
-  const shooterY = lineY + 1.35 * d;
-  const h = Math.ceil(shooterY + 0.95 * d + (landscape ? 4 : 18));
+  const shooterY = lineY + 1.25 * d;
+  const h = Math.ceil(shooterY + 1.15 * d + (landscape ? 3 : 14));
   return {
     w, h, d, fx, fy, lineY, shooterX: w / 2, shooterY, landscape,
     menu: landscape ? { x: w - 118, y: 12, w: 104, h: 36 } : { x: w - 52, y: 8, w: 42, h: 42 },

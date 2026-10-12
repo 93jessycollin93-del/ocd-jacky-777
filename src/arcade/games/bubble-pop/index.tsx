@@ -421,7 +421,7 @@ export default function BubblePop({ touch, best, submitScore }: GameProps) {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     v.atlas.setSize(d * view.scale * dpr);
     const fw = COLS * d;
-    const fieldH = L.lineY + d * 2.2 - L.fy;
+    const fieldH = L.lineY + d * 2.45 - L.fy;
 
     // Field backdrop with glowing side walls.
     ctx.save();
@@ -623,7 +623,7 @@ export default function BubblePop({ touch, best, submitScore }: GameProps) {
     ctx.lineWidth = 1.5;
     ctx.stroke();
     v.atlas.stamp(ctx, g.next, nx, ny, d, 0.8);
-    text(ctx, "NEXT · TAP", nb.x, nb.y + d * 0.95, { size: Math.max(8, d * 0.24), color: "rgba(255,255,255,0.55)", weight: 700 });
+    text(ctx, "NEXT · TAP", nb.x, nb.y - d * 1.0, { size: Math.max(8, d * 0.24), color: "rgba(255,255,255,0.55)", weight: 700 });
 
     // The shot in flight.
     if (v.shot) v.atlas.stamp(ctx, g.loaded, L.fx + v.shot.x * d, L.fy + v.shot.y * d, d);
@@ -790,6 +790,6 @@ function drawHud(ctx: CanvasRenderingContext2D, L: ReturnType<typeof makeLayout>
     if (level < 0 && best > 0) text(ctx, `Best ${formatNumber(Math.max(best, shown))}`, x, 112, { size: 12, align: "left", color: "rgba(255,255,255,0.55)", weight: 600 });
     if (g.missesPerDrop > 0) text(ctx, `Ceiling drops in ${Math.max(1, g.missesPerDrop - g.misses)}`, x, 140, { size: 12, align: "left", color: "rgba(255,255,255,0.6)", weight: 700 });
     const left = colorsOnBoard(g.board).length;
-    text(ctx, `${left} colours left`, x, 160, { size: 12, align: "left", color: "rgba(255,255,255,0.45)", weight: 600 });
+    text(ctx, `${left} ${left === 1 ? "colour" : "colours"} left`, x, 160, { size: 12, align: "left", color: "rgba(255,255,255,0.45)", weight: 600 });
   }
 }
