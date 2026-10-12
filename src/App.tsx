@@ -37,6 +37,7 @@ import AIProviders from "./pages/AIProviders";
 import PodStation from "./pages/PodStation";
 import JackyLive from "./pages/JackyLive";
 const ModelQueue = lazy(() => import("./pages/ModelQueue"));
+const Survival = lazy(() => import("./pages/Survival"));
 const EruRouter = lazy(() => import("./eru/EruRouter"));
 const FloatingEditorNav = lazy(() => import("./eru/FloatingEditorNav"));
 const VisualizerLab = lazy(() => import("./eru/VisualizerLab"));
@@ -183,6 +184,7 @@ const App = () => (
               <Route path="/pods" element={<ProtectedRoute><PodStation /></ProtectedRoute>} />
               <Route path="/jacky-live" element={<ProtectedRoute><JackyLive /></ProtectedRoute>} />
               <Route path="/models" element={<ProtectedRoute><Suspense fallback={null}><ModelQueue /></Suspense></ProtectedRoute>} />
+              <Route path="/survival" element={<ProtectedRoute><Suspense fallback={null}><Survival /></Suspense></ProtectedRoute>} />
               <Route
                 path="/eru/visualizers"
                 element={
