@@ -13,9 +13,29 @@ export type ItemId =
   | "plank" | "cobblestone" | "thatch_block" | "torch"
   | "metal_ore" | "metal_ingot" | "metal_pick" | "metal_hatchet" | "metal_sword" | "forge" | "metal_block"
   | "dirt" | "sand" | "glass" | "stone_brick" | "log" | "door" | "stone_shovel"
-  | "lootbag";
+  | "lootbag"
+  | "spoiled_meat" | "jerky"
+  | "straw_hat" | "leather_cap" | "leather_jacket" | "leather_trousers" | "leather_boots"
+  | "fiber_pack" | "leather_backpack";
 
-export type ItemKind = "resource" | "tool" | "consumable" | "structure" | "block";
+export type ItemKind = "resource" | "tool" | "consumable" | "structure" | "block" | "gear";
+
+/** Where a piece of gear is worn. */
+export type EquipSlot = "head" | "body" | "legs" | "feet" | "back";
+
+export const EQUIP_SLOTS: EquipSlot[] = ["head", "body", "legs", "feet", "back"];
+
+export interface GearStats {
+  slot: EquipSlot;
+  /** Each point keeps you about 1.5 °C warmer in the cold (and a little hotter in the heat). */
+  insulation?: number;
+  /** Shade: degrees taken off the heat in strong sun. */
+  cooling?: number;
+  /** Share of creature damage it absorbs (stacks, capped). */
+  armor?: number;
+  /** Extra carrying capacity in kg (backpacks). */
+  capacity?: number;
+}
 
 /** Injuries a medical item can treat. */
 export type Ailment = "bleeding" | "heavy_bleeding" | "fracture";
@@ -48,6 +68,12 @@ export interface ItemDef {
   cures?: Ailment[];
   /** For medical items: health restored gradually. */
   regen?: { hp: number; seconds: number };
+  /** Wearable gear. */
+  wear?: GearStats;
+  /** Perishable: seconds until one unit carried in your inventory goes off. */
+  spoilSeconds?: number;
+  /** What a spoiled unit turns into (otherwise it's just lost). */
+  spoilsInto?: ItemId;
 }
 
 export const HAND: ToolStats = {
@@ -74,15 +100,26 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   // -- food
   berries: {
     id: "berries", name: "Wild Berries", kind: "consumable", icon: "🫐", weight: 0.02,
-    desc: "A handful of tart berries. A little food and water.", restores: { food: 6, water: 2 },
+    desc: "A handful of tart berries. A little food and water. Go mushy in a day or two.", restores: { food: 6, water: 2 },
+    spoilSeconds: 1200,
   },
   raw_meat: {
     id: "raw_meat", name: "Raw Meat", kind: "consumable", icon: "🥩", weight: 0.25,
-    desc: "Fresh meat. Eating it raw will make you sick; cook it.", restores: { food: 10, hp: -4 },
+    desc: "Fresh meat. Eating it raw will make you sick; cook it before it turns.", restores: { food: 10, hp: -4 },
+    spoilSeconds: 360, spoilsInto: "spoiled_meat",
   },
   cooked_meat: {
     id: "cooked_meat", name: "Cooked Meat", kind: "consumable", icon: "🍖", weight: 0.2,
-    desc: "Fire-cooked meat. Filling and safe.", restores: { food: 30, hp: 6 },
+    desc: "Fire-cooked meat. Filling and safe, but only keeps about a day.", restores: { food: 30, hp: 6 },
+    spoilSeconds: 900, spoilsInto: "spoiled_meat",
+  },
+  jerky: {
+    id: "jerky", name: "Jerky", kind: "consumable", icon: "🥓", weight: 0.1,
+    desc: "Smoke-dried strips of meat. Light, filling, and never spoils.", restores: { food: 24, hp: 4 },
+  },
+  spoiled_meat: {
+    id: "spoiled_meat", name: "Spoiled Meat", kind: "consumable", icon: "🦴", weight: 0.25,
+    desc: "Rotten. Eating it is a bad idea; drop it.", restores: { food: 4, hp: -12 },
   },
 
   // -- medical
@@ -149,6 +186,36 @@ export const ITEMS: Record<ItemId, ItemDef> = {
     tool: { damage: 48, torpor: 0, reach: 3.2, cooldown: 0.55, harvest: { corpse: 1.5, bush: 1 } },
   },
 
+  // -- gear (worn, not held)
+  straw_hat: {
+    id: "straw_hat", name: "Straw Hat", kind: "gear", icon: "👒", weight: 0.2,
+    desc: "Woven thatch brim. Keeps the midday sun off (−4 °C in strong heat).", wear: { slot: "head", cooling: 4 },
+  },
+  leather_cap: {
+    id: "leather_cap", name: "Leather Cap", kind: "gear", icon: "🧢", weight: 0.4,
+    desc: "Snug leather hood. A little warmth and protection.", wear: { slot: "head", insulation: 1, armor: 0.05 },
+  },
+  leather_jacket: {
+    id: "leather_jacket", name: "Leather Jacket", kind: "gear", icon: "🧥", weight: 2.2,
+    desc: "Stitched leather jacket. Warm, and turns teeth and claws.", wear: { slot: "body", insulation: 3, armor: 0.12 },
+  },
+  leather_trousers: {
+    id: "leather_trousers", name: "Leather Trousers", kind: "gear", icon: "👖", weight: 1.6,
+    desc: "Hard-wearing leather legs.", wear: { slot: "legs", insulation: 2, armor: 0.08 },
+  },
+  leather_boots: {
+    id: "leather_boots", name: "Leather Boots", kind: "gear", icon: "🥾", weight: 1.2,
+    desc: "Thick-soled boots. Warm feet are happy feet.", wear: { slot: "feet", insulation: 1, armor: 0.03 },
+  },
+  fiber_pack: {
+    id: "fiber_pack", name: "Fiber Pack", kind: "gear", icon: "🎒", weight: 0.8,
+    desc: "Woven fiber sack on a wooden frame. +15 kg carrying capacity.", wear: { slot: "back", capacity: 15 },
+  },
+  leather_backpack: {
+    id: "leather_backpack", name: "Leather Backpack", kind: "gear", icon: "🧳", weight: 2,
+    desc: "Framed leather rucksack. +35 kg carrying capacity.", wear: { slot: "back", capacity: 35 },
+  },
+
   // -- structures and stations
   campfire: { id: "campfire", name: "Campfire", kind: "structure", icon: "🔥", weight: 8, desc: "Stone-ringed fire. Cooks food, boils salve, fires glass, lights the night." },
   workbench: { id: "workbench", name: "Workbench", kind: "structure", icon: "🪚", weight: 15, desc: "Sturdy bench for tanning, joinery, metalwork and tool repair." },
@@ -181,9 +248,12 @@ export type StationId = "campfire" | "workbench" | "forge";
 
 export const STATION_NAMES: Record<StationId, string> = { campfire: "Campfire", workbench: "Workbench", forge: "Forge" };
 
-export type RecipeCategory = "Materials" | "Tools" | "Weapons" | "Medical" | "Food" | "Stations" | "Building" | "Blocks";
+export type RecipeCategory =
+  | "Materials" | "Tools" | "Weapons" | "Medical" | "Food" | "Clothing" | "Stations" | "Building" | "Blocks";
 
-export const RECIPE_CATEGORIES: RecipeCategory[] = ["Materials", "Tools", "Weapons", "Medical", "Food", "Stations", "Building", "Blocks"];
+export const RECIPE_CATEGORIES: RecipeCategory[] = [
+  "Materials", "Tools", "Weapons", "Medical", "Food", "Clothing", "Stations", "Building", "Blocks",
+];
 
 export interface Recipe {
   id: string;
@@ -221,6 +291,15 @@ export const RECIPES: Recipe[] = [
   { id: "salve", output: "salve", count: 1, cost: { berries: 6, fiber: 2 }, category: "Medical", time: 4, station: "campfire" },
   // Food
   { id: "cooked_meat", output: "cooked_meat", count: 1, cost: { raw_meat: 1, wood: 1 }, category: "Food", time: 3, station: "campfire" },
+  { id: "jerky", output: "jerky", count: 2, cost: { cooked_meat: 2, wood: 2 }, category: "Food", time: 8, station: "campfire" },
+  // Clothing
+  { id: "straw_hat", output: "straw_hat", count: 1, cost: { thatch: 10, fiber: 4 }, category: "Clothing", time: 3 },
+  { id: "fiber_pack", output: "fiber_pack", count: 1, cost: { fiber: 20, cordage: 3, wood: 2 }, category: "Clothing", time: 5 },
+  { id: "leather_cap", output: "leather_cap", count: 1, cost: { leather: 1, cordage: 1 }, category: "Clothing", time: 4, station: "workbench" },
+  { id: "leather_jacket", output: "leather_jacket", count: 1, cost: { leather: 4, cordage: 2 }, category: "Clothing", time: 8, station: "workbench" },
+  { id: "leather_trousers", output: "leather_trousers", count: 1, cost: { leather: 3, cordage: 2 }, category: "Clothing", time: 7, station: "workbench" },
+  { id: "leather_boots", output: "leather_boots", count: 1, cost: { leather: 2, cordage: 1 }, category: "Clothing", time: 5, station: "workbench" },
+  { id: "leather_backpack", output: "leather_backpack", count: 1, cost: { leather: 4, cordage: 4, wood: 2 }, category: "Clothing", time: 8, station: "workbench", level: 2 },
   // Stations
   { id: "campfire", output: "campfire", count: 1, cost: { stone: 12, wood: 4, flint: 1, thatch: 6 }, category: "Stations", time: 4 },
   { id: "workbench", output: "workbench", count: 1, cost: { wood: 20, stone: 10, cordage: 4 }, category: "Stations", time: 10, level: 2 },
@@ -242,6 +321,7 @@ export const RECIPES: Recipe[] = [
   { id: "metal_block", output: "metal_block", count: 1, cost: { metal_ingot: 2 }, category: "Blocks", time: 5, station: "workbench", level: 3 },
 ];
 
-export const isEquippable = (id: ItemId) => ITEMS[id].kind !== "resource";
+/** Goes on the hotbar (held and used). Gear is worn instead, from the bag. */
+export const isEquippable = (id: ItemId) => ITEMS[id].kind !== "resource" && ITEMS[id].kind !== "gear";
 
 export const recipeFor = (output: ItemId) => RECIPES.find((r) => r.output === output);

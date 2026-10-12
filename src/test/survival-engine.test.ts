@@ -3,7 +3,8 @@ import {
   newGame, step, craft, addItem, count, primaryAction, interact, toggleMount, respawn, lookTarget,
   serialize, deserialize, placementFor, groundAt, lookedAtStorage, transfer, bedSpawn, toggleDoor, assignHotbar, collectLoot,
   carryWeight, encumbrance, toolDurability, repairTool, queueCraft, cancelCraft, craftBlocker,
-  SWING_STAMINA, FALL_SAFE, FALL_DAMAGE, TAME_REGEN, NO_INPUT,
+  carryCapacity, wearGear, removeGear, armorValue, ambientTemperature, feelsLike, thermalBand, dropItem, consume, canCraft,
+  SWING_STAMINA, FALL_SAFE, FALL_DAMAGE, TAME_REGEN, DAY_LENGTH, NO_INPUT,
   type GameState,
 } from "@/survival/engine/game";
 import { solidAt } from "@/survival/engine/blocks";
@@ -780,6 +781,221 @@ describe("realism: weight, wear, injuries", () => {
     expect(back.player.fracture).toBe(true);
     expect(back.craftQueue).toHaveLength(1);
     expect(back.durability.stone_pick).toBe(40);
+  });
+});
+
+describe("gear, weather and food", () => {
+  function settle(g: GameState) {
+    for (let i = 0; i < 60; i++) step(g, NO_INPUT, 1 / 60);
+  }
+  const run = (g: GameState, seconds: number, dt = 0.5) => {
+    for (let t = 0; t < seconds; t += dt) step(g, NO_INPUT, dt);
+  };
+  const LEATHERS = ["leather_cap", "leather_jacket", "leather_trousers", "leather_boots"] as const;
+  /** The highest spot on the island, for cold-weather tests. */
+  function summit() {
+    let best = { x: 0, z: 0, h: -Infinity };
+    for (let x = -WORLD_HALF; x <= WORLD_HALF; x += 4) {
+      for (let z = -WORLD_HALF; z <= WORLD_HALF; z += 4) {
+        const h = heightAt(x, z, SEED);
+        if (h > best.h) best = { x, z, h };
+      }
+    }
+    return best;
+  }
+
+  it("clothing and backpacks are crafted at the right station", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    addItem(g, "leather", 10);
+    addItem(g, "cordage", 10);
+    expect(canCraft(g, RECIPES.find((r) => r.output === "leather_jacket")!).ok).toBe(false);
+    addItem(g, "workbench", 1);
+    g.selected = g.hotbar.indexOf("workbench");
+    primaryAction(g);
+    expect(canCraft(g, RECIPES.find((r) => r.output === "leather_jacket")!).ok).toBe(true);
+    expect(craft(g, "leather_jacket", true)).toBe(true);
+    expect(count(g, "leather_jacket")).toBe(1);
+    expect(g.hotbar).not.toContain("leather_jacket"); // you wear it, not hold it
+  });
+
+  it("wearing gear moves it out of the bag but it still weighs something; backpacks add capacity", () => {
+    const g = newGame(SEED);
+    addItem(g, "leather_jacket", 1);
+    addItem(g, "leather_backpack", 1);
+    const kg = carryWeight(g);
+    const cap = carryCapacity(g);
+    expect(wearGear(g, "leather_jacket")).toBe(true);
+    expect(wearGear(g, "leather_backpack")).toBe(true);
+    expect(count(g, "leather_jacket")).toBe(0);
+    expect(g.equipment).toEqual({ body: "leather_jacket", back: "leather_backpack" });
+    expect(carryWeight(g)).toBeCloseTo(kg);
+    expect(carryCapacity(g)).toBe(cap + 35);
+    // a second backpack swaps in and the first goes back in the bag
+    addItem(g, "fiber_pack", 1);
+    wearGear(g, "fiber_pack");
+    expect(g.equipment.back).toBe("fiber_pack");
+    expect(count(g, "leather_backpack")).toBe(1);
+    expect(removeGear(g, "body")).toBe(true);
+    expect(count(g, "leather_jacket")).toBe(1);
+    expect(wearGear(g, "wood")).toBe(false);
+  });
+
+  it("armor takes the edge off bites", () => {
+    const bite = (armored: boolean) => {
+      const g = newGame(SEED);
+      isolate(g);
+      settle(g);
+      if (armored) for (const id of LEATHERS) { addItem(g, id, 1); wearGear(g, id); }
+      const p = g.player;
+      g.creatures = [makeCreature(60, "raptor", p.x + 1, p.z)];
+      Object.assign(g.creatures[0], { state: "chase", target: "player", timer: 99 });
+      for (let i = 0; i < 300; i++) {
+        const before = p.hp;
+        step(g, NO_INPUT, 1 / 30);
+        if (before - p.hp > 3) return before - p.hp;
+      }
+      return 0;
+    };
+    const bare = bite(false);
+    const armored = bite(true);
+    expect(bare).toBeCloseTo(SPECIES.raptor.damage, 0);
+    expect(armored).toBeGreaterThan(0);
+    expect(armored).toBeLessThan(bare * 0.8);
+  });
+
+  it("nights are colder than noon, fires warm you, and the mountains are cold", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    settle(g);
+    g.time = DAY_LENGTH * 0.5;
+    const noon = ambientTemperature(g);
+    g.time = DAY_LENGTH;
+    const midnight = ambientTemperature(g);
+    expect(noon - midnight).toBeGreaterThan(10);
+    expect(thermalBand(midnight)).toBe("cold");
+    g.structures.push({ id: 900, kind: "campfire", x: g.player.x + 1, z: g.player.z, y: g.player.y, rot: 0 });
+    expect(ambientTemperature(g)).toBeGreaterThan(midnight + 8);
+    g.time = DAY_LENGTH * 0.5;
+    expect(thermalBand(ambientTemperature(g))).toBe("comfortable"); // a fire at noon won't cook you
+    g.structures = [];
+    g.player.y += 30;
+    expect(ambientTemperature(g)).toBeLessThan(noon - 12);
+  });
+
+  it("freezing on a mountain at night hurts, and warm clothes fix it", () => {
+    const top = summit();
+    expect(top.h).toBeGreaterThan(24);
+    const g = newGame(SEED);
+    isolate(g);
+    Object.assign(g.player, { x: top.x, z: top.z, y: top.h });
+    g.time = DAY_LENGTH * 2; // midnight
+    settle(g);
+    const hp = (g.player.hp = 80);
+    run(g, 10);
+    expect(thermalBand(g.player.feels!)).toBe("freezing");
+    expect(g.player.hp).toBeLessThan(hp - 3);
+    const cold = feelsLike(g);
+    for (const id of LEATHERS) { addItem(g, id, 1); wearGear(g, id); }
+    expect(feelsLike(g)).toBeGreaterThan(cold + 8);
+  });
+
+  it("swimming soaks you, which chills you until you dry off", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    settle(g);
+    const dry = feelsLike(g);
+    Object.assign(g.player, { x: WORLD_HALF * 0.95, z: 0, y: WATER_LEVEL });
+    step(g, NO_INPUT, 1 / 30);
+    expect(g.player.swimming).toBe(true);
+    expect(g.player.wet).toBeGreaterThan(59); // soaked: about a minute to dry
+    const spot = newGame(SEED);
+    isolate(spot);
+    settle(spot);
+    spot.player.wet = 30;
+    expect(feelsLike(spot)).toBeCloseTo(dry - 6, 0);
+    run(spot, 31);
+    expect(spot.player.wet).toBe(0);
+  });
+
+  it("raw meat spoils, jerky keeps, and boxed food stays fresh", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    settle(g);
+    addItem(g, "raw_meat", 2);
+    addItem(g, "jerky", 3);
+    run(g, 200);
+    expect(g.spoil.raw_meat).toBeLessThan(ITEMS.raw_meat.spoilSeconds!);
+    run(g, 170);
+    expect(count(g, "raw_meat")).toBe(1);
+    expect(count(g, "spoiled_meat")).toBe(1);
+    expect(count(g, "jerky")).toBe(3);
+    g.player.food = 50;
+    const hp = g.player.hp;
+    consume(g, "spoiled_meat");
+    expect(g.player.hp).toBeLessThan(hp);
+    expect(g.log.at(-1)?.text).toMatch(/gone off/);
+  });
+
+  it("jerky is smoked from cooked meat at a campfire", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    addItem(g, "cooked_meat", 2);
+    addItem(g, "wood", 2);
+    expect(canCraft(g, RECIPES.find((r) => r.output === "jerky")!).ok).toBe(false);
+    g.structures.push({ id: 901, kind: "campfire", x: g.player.x + 1, z: g.player.z, y: g.player.y, rot: 0 });
+    expect(craft(g, "jerky", true)).toBe(true);
+    expect(count(g, "jerky")).toBe(2);
+  });
+
+  it("drops items into a bag at your feet that you can pick back up", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    settle(g);
+    addItem(g, "stone", 10);
+    addItem(g, "stone_hatchet", 1);
+    expect(dropItem(g, "stone", 4)).toBe(true);
+    expect(dropItem(g, "stone_hatchet")).toBe(true);
+    expect(dropItem(g, "flint")).toBe(false);
+    const bags = g.structures.filter((s) => s.kind === "lootbag");
+    expect(bags).toHaveLength(1); // drops nearby pile into the same bag
+    expect(bags[0].items).toEqual({ stone: 4, stone_hatchet: 1 });
+    expect(count(g, "stone")).toBe(6);
+    expect(g.hotbar).not.toContain("stone_hatchet");
+    collectLoot(g, bags[0]);
+    expect(count(g, "stone")).toBe(10);
+    expect(g.hotbar).toContain("stone_hatchet");
+  });
+
+  it("what you're wearing goes in your death bag too, and gear survives save and load", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    settle(g);
+    addItem(g, "leather_jacket", 1);
+    wearGear(g, "leather_jacket");
+    addItem(g, "raw_meat", 1);
+    run(g, 10);
+    const back = deserialize(serialize(g))!;
+    expect(back.equipment).toEqual({ body: "leather_jacket" });
+    expect(back.spoil.raw_meat).toBeCloseTo(g.spoil.raw_meat!, 3);
+    expect(armorValue(back)).toBeCloseTo(0.12);
+
+    g.player.hp = 1;
+    g.player.food = 0;
+    step(g, NO_INPUT, 1);
+    expect(g.player.dead).toBe(true);
+    expect(g.equipment).toEqual({});
+    expect(g.structures.find((s) => s.kind === "lootbag")!.items).toEqual({ raw_meat: 1, leather_jacket: 1 });
+  });
+
+  it("old saves without gear or spoilage still load", () => {
+    const g = newGame(SEED);
+    const data = JSON.parse(serialize(g));
+    delete data.equipment;
+    delete data.spoil;
+    const back = deserialize(JSON.stringify(data))!;
+    expect(back.equipment).toEqual({});
+    expect(back.spoil).toEqual({});
   });
 });
 

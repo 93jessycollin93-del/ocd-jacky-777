@@ -1,17 +1,21 @@
-// The bag: inventory with real weights, item details, crafting by category with a timed queue,
-// station status, tool repair, and storage boxes.
+// The bag: worn gear, inventory with real weights, item details, dropping, crafting by category
+// with a timed queue, station status, tool repair, and storage boxes.
 import { useState } from "react";
 import {
-  ITEMS, RECIPES, RECIPE_CATEGORIES, STATION_NAMES, isEquippable,
-  type ItemId, type Recipe, type RecipeCategory, type StationId,
+  EQUIP_SLOTS, ITEMS, RECIPES, RECIPE_CATEGORIES, STATION_NAMES, isEquippable,
+  type EquipSlot, type ItemId, type Recipe, type RecipeCategory, type StationId,
 } from "./engine/items";
 import {
-  assignHotbar, canCraft, cancelCraft, carryCapacity, carryWeight, count, craftBlocker, encumbrance, maxDurability,
-  nearStation, queueCraft, repairCost, repairTool, toolDurability, transfer, MAX_CRAFT_QUEUE,
+  armorValue, assignHotbar, canCraft, cancelCraft, carryCapacity, carryWeight, consume, count, craftBlocker, dropItem,
+  encumbrance, gearTotal, maxDurability, nearStation, queueCraft, removeGear, repairCost, repairTool, toolDurability,
+  transfer, wearGear, MAX_CRAFT_QUEUE,
   type GameState, type Structure,
 } from "./engine/game";
 
 const STATION_ICONS: Record<StationId, string> = { campfire: "🔥", workbench: "🪚", forge: "🏭" };
+const SLOT_NAMES: Record<EquipSlot, string> = { head: "Head", body: "Body", legs: "Legs", feet: "Feet", back: "Back" };
+
+const mmss = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, "0")}`;
 
 function DurabilityBar({ value, max }: { value: number; max: number }) {
   const r = value / max;
@@ -26,7 +30,7 @@ function DurabilityBar({ value, max }: { value: number; max: number }) {
 }
 
 function ItemTile({
-  g, id, n, onClick, onInspect, hint, selected,
+  g, id, n, onClick, onInspect, hint, selected, spoil,
 }: {
   g: GameState;
   id: ItemId;
@@ -35,6 +39,8 @@ function ItemTile({
   onInspect?: () => void;
   hint?: string;
   selected?: boolean;
+  /** Seconds until the next one goes off, for perishables you're carrying. */
+  spoil?: number;
 }) {
   const def = ITEMS[id];
   const dur = toolDurability(g, id);
@@ -55,6 +61,9 @@ function ItemTile({
       <span className="text-xl leading-none">{def.icon}</span>
       <span className="w-full truncate text-center">{def.name}</span>
       <span className="text-white/70">×{n} · {(def.weight * n).toFixed(1)}kg</span>
+      {spoil !== undefined && (
+        <span className={spoil < 60 ? "text-red-400" : "text-white/50"} title="Until the next one spoils">⏳{mmss(spoil)}</span>
+      )}
       {dur !== undefined && max !== undefined && <DurabilityBar value={dur} max={max} />}
     </button>
   );
@@ -93,6 +102,47 @@ function WeightBar({ g }: { g: GameState }) {
       </div>
       <div className="h-2 overflow-hidden rounded bg-black/60">
         <div className="h-full" style={{ width: `${Math.min(100, (kg / (cap * 1.5)) * 100)}%`, background: color }} />
+      </div>
+    </div>
+  );
+}
+
+function Equipment({ g, onChange }: { g: GameState; onChange: () => void }) {
+  const warmth = gearTotal(g, "insulation");
+  const cooling = gearTotal(g, "cooling");
+  const capacity = gearTotal(g, "capacity");
+  const armor = armorValue(g);
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-sm font-semibold">Wearing</h2>
+        <span className="text-[10px] text-white/50">Tap gear below to wear · tap a slot to take off</span>
+      </div>
+      <div className="grid grid-cols-5 gap-1.5">
+        {EQUIP_SLOTS.map((slot) => {
+          const id = g.equipment[slot];
+          return (
+            <button
+              key={slot}
+              type="button"
+              disabled={!id}
+              onClick={() => { removeGear(g, slot); onChange(); }}
+              title={id ? `${ITEMS[id].name}: tap to take off` : `${SLOT_NAMES[slot]}: empty`}
+              className={`flex flex-col items-center gap-0.5 rounded border p-1.5 text-[10px] ${
+                id ? "border-amber-300/50 bg-amber-300/5 hover:border-amber-300" : "border-dashed border-white/15 bg-black/30 text-white/35"
+              }`}
+            >
+              <span className="text-xl leading-none">{id ? ITEMS[id].icon : "·"}</span>
+              <span className="w-full truncate text-center">{id ? ITEMS[id].name : SLOT_NAMES[slot]}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="flex flex-wrap gap-x-3 text-[11px] text-white/70">
+        <span title="Share of creature damage your gear absorbs">🛡️ Armor {Math.round(armor * 100)}%</span>
+        <span title="Clothing keeps you warm in the cold">🧥 Warmth +{warmth}</span>
+        {cooling > 0 && <span title="Shade in strong heat">👒 Cooling {cooling}</span>}
+        <span title="Extra carrying capacity from your backpack">🎒 +{capacity} kg</span>
       </div>
     </div>
   );
@@ -143,6 +193,7 @@ export function BagPanel({
       <div className="grid max-h-[94vh] w-full max-w-5xl gap-3 overflow-y-auto rounded-xl border border-white/15 bg-zinc-900/95 p-3 sm:p-4 md:grid-cols-2">
         {/* ---------------- left: inventory */}
         <div className="space-y-3">
+          {!box && <Equipment g={g} onChange={onChange} />}
           <div className="flex items-baseline justify-between">
             <h2 className="text-sm font-semibold">Inventory</h2>
             <span className="text-[10px] text-white/50">
@@ -162,13 +213,16 @@ export function BagPanel({
                   n={count(g, id)}
                   selected={inspect === id}
                   onInspect={() => setInspect(id)}
-                  hint={box ? "store all" : isEquippable(id) ? `hotbar slot ${g.selected + 1}` : undefined}
+                  spoil={g.spoil[id] ?? ITEMS[id].spoilSeconds}
+                  hint={box ? "store all" : ITEMS[id].wear ? "wear" : isEquippable(id) ? `hotbar slot ${g.selected + 1}` : undefined}
                   onClick={
                     box
                       ? () => { transfer(g, box.id, id, "deposit"); onChange(); }
-                      : isEquippable(id)
-                        ? () => { assignHotbar(g, id, g.selected); onChange(); }
-                        : undefined
+                      : ITEMS[id].wear
+                        ? () => { wearGear(g, id); onChange(); }
+                        : isEquippable(id)
+                          ? () => { assignHotbar(g, id, g.selected); onChange(); }
+                          : undefined
                   }
                 />
               ))}
@@ -186,6 +240,42 @@ export function BagPanel({
                   Damage {shown.tool.damage}
                   {shown.tool.torpor ? ` · Knock-out ${shown.tool.torpor}` : ""} · Reach {shown.tool.reach} m
                   {maxDurability(shown.id) !== undefined && ` · Condition ${toolDurability(g, shown.id)}/${maxDurability(shown.id)}`}
+                </div>
+              )}
+              {shown.wear && (
+                <div className="mt-1 text-white/60">
+                  {SLOT_NAMES[shown.wear.slot]} slot
+                  {shown.wear.armor ? ` · Armor ${Math.round(shown.wear.armor * 100)}%` : ""}
+                  {shown.wear.insulation ? ` · Warmth +${shown.wear.insulation}` : ""}
+                  {shown.wear.cooling ? ` · Cooling ${shown.wear.cooling}` : ""}
+                  {shown.wear.capacity ? ` · +${shown.wear.capacity} kg` : ""}
+                </div>
+              )}
+              {shown.spoilSeconds !== undefined && (
+                <div className="mt-1 text-white/60">
+                  Keeps about {Math.round(shown.spoilSeconds / 60)} min in your bag; boxes keep food fresh.
+                </div>
+              )}
+              {!box && count(g, shown.id) > 0 && (
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {shown.wear && (
+                    <button type="button" onClick={() => { wearGear(g, shown.id); onChange(); }} className="rounded bg-amber-400 px-2 py-0.5 text-black hover:bg-amber-300">
+                      Wear
+                    </button>
+                  )}
+                  {(shown.restores || shown.cures || shown.regen) && (
+                    <button type="button" onClick={() => { consume(g, shown.id); onChange(); }} className="rounded bg-amber-400 px-2 py-0.5 text-black hover:bg-amber-300">
+                      {shown.restores?.food ? "Eat" : shown.restores?.water ? "Drink" : "Use"}
+                    </button>
+                  )}
+                  <button type="button" onClick={() => { dropItem(g, shown.id, 1); onChange(); }} className="rounded border border-white/20 px-2 py-0.5 hover:bg-white/10">
+                    Drop 1
+                  </button>
+                  {count(g, shown.id) > 1 && (
+                    <button type="button" onClick={() => { dropItem(g, shown.id); onChange(); }} className="rounded border border-white/20 px-2 py-0.5 hover:bg-white/10">
+                      Drop all ({count(g, shown.id)})
+                    </button>
+                  )}
                 </div>
               )}
             </div>

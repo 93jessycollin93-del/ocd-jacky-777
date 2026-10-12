@@ -2,8 +2,8 @@
 import type { MutableRefObject } from "react";
 import { ITEMS, RECIPES } from "./engine/items";
 import {
-  bedSpawn, count, craftBlocker, encumbrance, isNight, maxDurability, respawn, timeOfDay, toolDurability, xpForLevel,
-  type GameState,
+  bedSpawn, count, craftBlocker, encumbrance, isNight, maxDurability, respawn, thermalBand, timeOfDay, toolDurability, xpForLevel,
+  type GameState, type Thermal,
 } from "./engine/game";
 import { BagPanel } from "./BagPanel";
 import { promptFor } from "./engine/prompt";
@@ -67,6 +67,14 @@ function Compass({ state }: { state: GameState }) {
 }
 
 /** Injuries, healing, load and crafting at a glance. */
+const THERMAL: Record<Thermal, { icon: string; text: string; tone: string } | null> = {
+  freezing: { icon: "🥶", text: "Freezing · find fire or clothes", tone: "text-sky-300" },
+  cold: { icon: "❄️", text: "Cold · hungrier, slow stamina", tone: "text-sky-200" },
+  comfortable: null,
+  hot: { icon: "🥵", text: "Hot · thirstier", tone: "text-orange-300" },
+  overheating: { icon: "🔥", text: "Overheating · get to shade", tone: "text-red-400" },
+};
+
 function StatusBadges({ g }: { g: GameState }) {
   const p = g.player;
   const load = encumbrance(g);
@@ -77,6 +85,9 @@ function StatusBadges({ g }: { g: GameState }) {
   else if (p.bleeding === 1) badges.push({ icon: "🩸", text: "Bleeding · bandage", tone: "text-red-300" });
   if (p.fracture) badges.push({ icon: "🦴", text: "Broken leg · splint", tone: "text-orange-300" });
   if (p.regen) badges.push({ icon: "💊", text: `Healing +${Math.ceil(p.regen.left)}`, tone: "text-green-300" });
+  const thermal = THERMAL[thermalBand(p.feels ?? 20)];
+  if (thermal) badges.push(thermal);
+  if ((p.wet ?? 0) > 0) badges.push({ icon: "💧", text: `Soaked · drying ${Math.ceil(p.wet ?? 0)}s`, tone: "text-sky-200" });
   if (load.level !== "ok") {
     badges.push({ icon: "🎒", text: load.level === "heavy" ? "Heavy load" : "Overloaded", tone: load.level === "heavy" ? "text-yellow-300" : "text-red-400" });
   }
@@ -141,6 +152,9 @@ export function Hud({
       <div className="absolute left-3 top-3 space-y-1">
         <div className="text-sm font-semibold drop-shadow">
           Day {g.day} · {clockText(g)} {isNight(g) ? "🌙" : "☀️"}
+          <span className="ml-1.5 font-normal text-white/75" title="How warm it feels, with your clothes on">
+            🌡️{Math.round(p.feels ?? 20)}°C
+          </span>
         </div>
         {(touch ? g.log.slice(-2) : g.log).map((l) => (
           <div key={l.id} className="max-w-[45vw] text-xs text-white/85 drop-shadow">{l.text}</div>

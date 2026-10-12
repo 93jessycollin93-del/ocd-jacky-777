@@ -6,7 +6,7 @@ import {
 } from "./creatures";
 import {
   HAND, ITEMS, RECIPES, STATION_NAMES, isEquippable, recipeFor,
-  type Ailment, type Cost, type ItemId, type Recipe, type StationId, type ToolStats,
+  type Ailment, type Cost, type EquipSlot, type ItemId, type Recipe, type StationId, type ToolStats,
 } from "./items";
 import { mulberry32 } from "./noise";
 import {
@@ -37,6 +37,8 @@ export const FRACTURE_FALL = 7;
 /** Health lost per second while bleeding. */
 export const LIGHT_BLEED = 0.35;
 export const HEAVY_BLEED = 1.1;
+/** Health lost per second when freezing or overheating. */
+export const EXPOSURE_DAMAGE = 0.5;
 /** Share of a tame's health it regains per second out of combat. */
 export const TAME_REGEN = 0.01;
 const WATER_DRAIN = 0.11;
@@ -102,6 +104,10 @@ export interface Player {
   fracture?: boolean;
   /** Health still to come from a salve, and how fast. */
   regen?: { left: number; perSec: number } | null;
+  /** Seconds until you're dry after a swim. */
+  wet?: number;
+  /** How warm it feels to you right now (°C), updated every step. */
+  feels?: number;
 }
 
 export interface CraftJob {
@@ -145,6 +151,10 @@ export interface GameState {
   durability: Partial<Record<ItemId, number>>;
   /** Things being made, in order. Materials are taken when a job is queued. */
   craftQueue: CraftJob[];
+  /** What you're wearing, by slot. Worn gear isn't in the inventory but still counts for weight. */
+  equipment: Partial<Record<EquipSlot, ItemId>>;
+  /** Seconds until the next unit of each perishable in your inventory goes off. */
+  spoil: Partial<Record<ItemId, number>>;
   /** Sounds to play this frame; the page drains it. Not saved. */
   sfx: Sfx[];
   /** Particle bursts for the scene; drained every frame. Not saved. */
@@ -188,6 +198,8 @@ export function newGame(seed = Math.floor(Math.random() * 1e9)): GameState {
     stats: { tamed: 0, kills: 0, crafted: 0 },
     durability: {},
     craftQueue: [],
+    equipment: {},
+    spoil: {},
     sfx: [],
     fx: [],
   };
@@ -418,11 +430,134 @@ export function repairTool(state: GameState, id: ItemId): { ok: boolean; reason?
 export function carryWeight(state: GameState): number {
   let kg = 0;
   for (const [id, n] of Object.entries(state.inventory) as [ItemId, number][]) kg += ITEMS[id].weight * n;
+  for (const id of Object.values(state.equipment)) if (id) kg += ITEMS[id].weight;
   return Math.round(kg * 10) / 10;
 }
 
-/** What you can carry without slowing down, in kg. Grows a little with level. */
-export const carryCapacity = (state: GameState) => 60 + (state.player.level - 1) * 3;
+/** What you can carry without slowing down, in kg: 60, +3 per level, plus your backpack. */
+export const carryCapacity = (state: GameState) => 60 + (state.player.level - 1) * 3 + gearTotal(state, "capacity");
+
+// ---------------------------------------------------------------- gear
+
+/** Sum one stat across everything you're wearing. */
+export function gearTotal(state: GameState, stat: "insulation" | "cooling" | "armor" | "capacity"): number {
+  let total = 0;
+  for (const id of Object.values(state.equipment)) if (id) total += ITEMS[id].wear?.[stat] ?? 0;
+  return total;
+}
+
+/** Share of creature damage your gear absorbs (capped at 40%). */
+export const armorValue = (state: GameState) => Math.min(0.4, gearTotal(state, "armor"));
+
+/** Put on a piece of gear from your bag, swapping out whatever was in that slot. */
+export function wearGear(state: GameState, id: ItemId): boolean {
+  const wear = ITEMS[id].wear;
+  if (!wear || count(state, id) <= 0) return false;
+  removeItem(state, id, 1);
+  const old = state.equipment[wear.slot];
+  if (old) addItem(state, old, 1);
+  state.equipment[wear.slot] = id;
+  sfx(state, "place");
+  return true;
+}
+
+export function removeGear(state: GameState, slot: EquipSlot): boolean {
+  const id = state.equipment[slot];
+  if (!id) return false;
+  delete state.equipment[slot];
+  addItem(state, id, 1);
+  return true;
+}
+
+// ---------------------------------------------------------------- temperature
+
+export type Thermal = "freezing" | "cold" | "comfortable" | "hot" | "overheating";
+
+/** Air temperature where you stand: warm days, cool nights, colder up high, warmer by a fire. */
+export function ambientTemperature(state: GameState): number {
+  const p = state.player;
+  const t = timeOfDay(state);
+  let temp = 18 + 8 * Math.sin((t - 0.25) * Math.PI * 2); // 10 °C at midnight, 26 °C at noon
+  temp -= Math.max(0, p.y - 8) * 0.55; // thinner, colder air up the mountains
+  let fire = 0;
+  let forge = 0;
+  for (const s of state.structures) {
+    const d = Math.hypot(s.x - p.x, s.z - p.z);
+    if (s.kind === "campfire" && d < 6) fire += 14 * (1 - d / 6);
+    if (s.kind === "forge" && d < 7) forge += 18 * (1 - d / 7);
+  }
+  let torchHeat = 0;
+  const px = Math.floor(p.x);
+  const pz = Math.floor(p.z);
+  const py = Math.floor(p.y);
+  for (let dx = -3; dx <= 3; dx++) {
+    for (let dz = -3; dz <= 3; dz++) {
+      for (let dy = -2; dy <= 3; dy++) {
+        if (state.blocks[cellKey(px + dx, py + dy, pz + dz)] === "torch") torchHeat += 3;
+      }
+    }
+  }
+  // A campfire takes the chill off but won't cook you at noon; a forge's furnace is properly hot.
+  temp = Math.max(temp, Math.min(temp + fire + Math.min(8, torchHeat), 28));
+  return Math.max(temp, Math.min(temp + forge, 34));
+}
+
+/** How warm it feels to you: the air, plus what you're wearing, minus being soaked. */
+export function feelsLike(state: GameState): number {
+  const air = ambientTemperature(state) - ((state.player.wet ?? 0) > 0 ? 6 : 0);
+  const insulation = gearTotal(state, "insulation");
+  return air + insulation * (air < 20 ? 1.5 : 0.6) - (air > 24 ? gearTotal(state, "cooling") : 0);
+}
+
+export function thermalBand(feels: number): Thermal {
+  if (feels < 2) return "freezing";
+  if (feels < 12) return "cold";
+  if (feels <= 30) return "comfortable";
+  if (feels <= 38) return "hot";
+  return "overheating";
+}
+
+// ---------------------------------------------------------------- dropping and spoilage
+
+/** Drop items at your feet, into a bag you (or anyone) can pick up again. */
+export function dropItem(state: GameState, id: ItemId, n = count(state, id)): boolean {
+  const take = Math.min(n, count(state, id));
+  if (take <= 0) return false;
+  const p = state.player;
+  removeItem(state, id, take);
+  let bag = state.structures.find((s) => s.kind === "lootbag" && Math.hypot(s.x - p.x, s.z - p.z) < 2);
+  if (!bag) {
+    const y = Math.max(groundAt(state, p.x, p.z), blockSupport(state.blocks, p.x, p.y, p.z), WATER_LEVEL);
+    bag = { id: state.nextId++, kind: "lootbag", x: p.x, y, z: p.z, rot: 0, items: {} };
+    state.structures.push(bag);
+    state.structureVersion++;
+  }
+  bag.items ??= {};
+  bag.items[id] = (bag.items[id] ?? 0) + take;
+  return true;
+}
+
+/** Perishables in your inventory go off one at a time. Food stored in boxes keeps. */
+function spoilFood(state: GameState, dt: number) {
+  for (const id of Object.keys(ITEMS) as ItemId[]) {
+    const life = ITEMS[id].spoilSeconds;
+    if (!life) continue;
+    if (count(state, id) <= 0) {
+      delete state.spoil[id];
+      continue;
+    }
+    const left = (state.spoil[id] ?? life) - dt;
+    if (left > 0) {
+      state.spoil[id] = left;
+      continue;
+    }
+    state.spoil[id] = life;
+    removeItem(state, id, 1);
+    const into = ITEMS[id].spoilsInto;
+    if (into) addItem(state, into, 1);
+    log(state, `A ${ITEMS[id].name.toLowerCase()} went off.${id === "raw_meat" ? " Cook or dry meat to keep it." : ""}`);
+  }
+}
 
 export interface Encumbrance {
   ratio: number;
@@ -774,7 +909,8 @@ const AILMENT_NAMES: Record<Ailment, string> = {
   bleeding: "light bleeding", heavy_bleeding: "heavy bleeding", fracture: "a broken leg",
 };
 
-function consume(state: GameState, id: ItemId): boolean {
+/** Eat, drink or apply an item from your bag. */
+export function consume(state: GameState, id: ItemId): boolean {
   const p = state.player;
   const def = ITEMS[id];
   const r = def.restores ?? {};
@@ -798,7 +934,8 @@ function consume(state: GameState, id: ItemId): boolean {
   p.food = clamp(p.food + (r.food ?? 0), 0, 100);
   p.water = clamp(p.water + (r.water ?? 0), 0, 100);
   p.stamina = clamp(p.stamina + (r.stamina ?? 0), 0, p.maxStamina);
-  if ((r.hp ?? 0) < 0) log(state, "Raw meat makes you feel sick. Cook it at a campfire.");
+  if (id === "spoiled_meat") log(state, "That meat had gone off. You feel awful.");
+  else if ((r.hp ?? 0) < 0) log(state, "Raw meat makes you feel sick. Cook it at a campfire.");
   sfx(state, "eat");
   return true;
 }
@@ -1041,7 +1178,10 @@ export function movePlayer(state: GameState, input: Input, dt: number) {
   if (mount) speed = (SPECIES[mount.species].rideSpeed ?? speed) * (sprinting ? 1.35 : 1);
   else speed *= (load?.speed ?? 1) * (p.fracture ? 0.6 : 1);
   if (sprinting) p.stamina = Math.max(0, p.stamina - (mount ? 6 : 14 * (load?.staminaDrain ?? 1)) * dt);
-  else p.stamina = Math.min(p.maxStamina, p.stamina + (moving ? 9 / (load?.staminaDrain ?? 1) : 9) * dt);
+  else {
+    const chilled = thermalBand(p.feels ?? 20) === "cold" || thermalBand(p.feels ?? 20) === "freezing" ? 0.6 : 1;
+    p.stamina = Math.min(p.maxStamina, p.stamina + (moving ? 9 / (load?.staminaDrain ?? 1) : 9) * chilled * dt);
+  }
 
   const sin = Math.sin(p.yaw);
   const cos = Math.cos(p.yaw);
@@ -1062,6 +1202,7 @@ export function movePlayer(state: GameState, input: Input, dt: number) {
   const ground = Math.max(groundAt(state, p.x, p.z), blockSupport(state.blocks, p.x, p.y, p.z));
   const swimDepth = WATER_LEVEL - 1.3;
   p.swimming = ground < swimDepth && p.y <= WATER_LEVEL;
+  if (p.swimming) p.wet = 60; // soaked: takes a minute to dry off
   if (p.swimming) {
     p.peakY = p.y; // water breaks your fall
     p.vy = 0;
@@ -1125,12 +1266,18 @@ export function step(state: GameState, input: Input, dt: number) {
   movePlayer(state, input, dt);
 
   if (!p.dead) {
-    const night = isNight(state) ? 1.25 : 1;
-    // Bleeding makes you thirsty too.
-    p.food = Math.max(0, p.food - FOOD_DRAIN * night * dt);
-    p.water = Math.max(0, p.water - WATER_DRAIN * (p.bleeding ? 1.5 : 1) * dt);
+    p.wet = Math.max(0, (p.wet ?? 0) - dt);
+    p.feels = feelsLike(state);
+    const band = thermalBand(p.feels);
+    // Cold burns calories; heat (and bleeding) makes you thirsty; the extremes hurt.
+    const hunger = band === "cold" || band === "freezing" ? 1.6 : 1;
+    const thirst = (band === "hot" || band === "overheating" ? 1.8 : 1) * (p.bleeding ? 1.5 : 1);
+    p.food = Math.max(0, p.food - FOOD_DRAIN * hunger * dt);
+    p.water = Math.max(0, p.water - WATER_DRAIN * thirst * dt);
+    const exposed = band === "freezing" || band === "overheating";
+    if (exposed) hurtPlayer(state, EXPOSURE_DAMAGE * dt, true);
     if (p.food <= 0 || p.water <= 0) hurtPlayer(state, 1.2 * dt, true);
-    else if (p.food > 25 && p.water > 25 && !p.bleeding) p.hp = Math.min(p.maxHp, p.hp + 0.4 * dt);
+    else if (p.food > 25 && p.water > 25 && !p.bleeding && !exposed) p.hp = Math.min(p.maxHp, p.hp + 0.4 * dt);
     if (p.bleeding) hurtPlayer(state, (p.bleeding === 2 ? HEAVY_BLEED : LIGHT_BLEED) * dt, true);
     if (p.regen && !p.dead) {
       const heal = Math.min(p.regen.left, p.regen.perSec * dt);
@@ -1140,6 +1287,7 @@ export function step(state: GameState, input: Input, dt: number) {
     }
   }
   advanceCrafting(state, dt);
+  spoilFood(state, dt);
 
   const rng = mulberry32((Math.floor(state.time * 10) * 2654435761) ^ state.seed);
   const ctx = {
@@ -1219,6 +1367,7 @@ export function step(state: GameState, input: Input, dt: number) {
 function hurtPlayer(state: GameState, amount: number, silent: boolean, from?: { x: number; z: number }, fall = false) {
   const p = state.player;
   if (p.dead || amount <= 0) return;
+  if (from) amount *= 1 - armorValue(state); // gear turns teeth and claws
   p.hp -= amount;
   p.fallDeath = fall;
   if (!silent) {
@@ -1260,7 +1409,11 @@ function woundPlayer(state: GameState, chance: { light: number; heavy: number } 
 /** On death, everything you carry goes into a bag where you fell, to walk back for. */
 function dropLoot(state: GameState) {
   const p = state.player;
-  const items = Object.fromEntries(Object.entries(state.inventory).filter(([, n]) => (n ?? 0) > 0));
+  const items: Partial<Record<ItemId, number>> = Object.fromEntries(
+    Object.entries(state.inventory).filter(([, n]) => (n ?? 0) > 0),
+  );
+  for (const id of Object.values(state.equipment)) if (id) items[id] = (items[id] ?? 0) + 1;
+  state.equipment = {};
   if (!Object.keys(items).length) return;
   const y = Math.max(groundAt(state, p.x, p.z), blockSupport(state.blocks, p.x, p.y, p.z), WATER_LEVEL);
   state.structures.push({ id: state.nextId++, kind: "lootbag", x: p.x, y, z: p.z, rot: 0, items });
@@ -1317,6 +1470,8 @@ export function deserialize(json: string): GameState | null {
       blockDamage: null,
       durability: data.durability ?? {},
       craftQueue: data.craftQueue ?? [],
+      equipment: data.equipment ?? {},
+      spoil: data.spoil ?? {},
       nodes,
       nodeVersion: 0,
       structureVersion: 0,
