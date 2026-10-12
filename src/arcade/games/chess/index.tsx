@@ -9,7 +9,7 @@ import { meta } from "./meta";
 import { chooseMove, LEVELS } from "./ai";
 import type { AiReply, AiRequest } from "./ai.worker";
 import {
-  BLACK, KING, QUEEN, ROOK, BISHOP, KNIGHT, WHITE, colorOfPiece, getStatus, isCapture, moveFrom, movePromo, moveTo, newGame, playMove,
+  BLACK, QUEEN, ROOK, BISHOP, KNIGHT, WHITE, colorOfPiece, getStatus, isCapture, moveFrom, movePromo, moveTo, newGame, playMove,
   replay, undoMove, F_CASTLE, moveFlags, type ChessGame, type Color, type Reason,
 } from "./logic";
 import { Piece, PieceDefs } from "./Piece";
@@ -77,6 +77,7 @@ export default function ChessGame({ touch, best, submitScore }: GameProps) {
   const dragInfo = useRef<{ id: number; from: number; moved: boolean; wasSel: boolean; pid: number } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const commitRef = useRef<(m: number) => void>(() => {});
+  const startedAt = useRef(0);
 
   const later = (fn: () => void, ms: number) => {
     const t = window.setTimeout(fn, ms);
@@ -203,8 +204,6 @@ export default function ChessGame({ touch, best, submitScore }: GameProps) {
       if (r.move !== null) commitRef.current(r.move);
     }, wait);
   };
-  const startedAt = useRef(0);
-
   const runLocally = (req: AiRequest) => {
     later(() => {
       if (req.id !== reqId.current) return;
@@ -496,15 +495,16 @@ export default function ChessGame({ touch, best, submitScore }: GameProps) {
     </div>
   );
 
-  const oppName = `Computer · ${LEVELS[level.current - 1].name} (${level.current})`;
+  const lvName = `Level ${level.current} · ${LEVELS[level.current - 1].name}`;
   const turnColor = g.pos.turn;
+  const playing = phase === "playing";
   const oppStrip = (
     <Strip
       color={oppColor}
-      name={phase === "ready" ? "Computer" : oppName}
-      sub={phase === "playing" && turnColor === oppColor ? (thinking ? "Thinking" : "") : status.check && turnColor === oppColor && phase !== "ready" ? "In check" : ""}
-      thinking={phase === "playing" && thinking}
-      active={phase === "playing" && turnColor === oppColor}
+      name="Computer"
+      sub={playing && thinking ? "Thinking" : playing && status.check && turnColor === oppColor ? "In check" : phase === "ready" ? "" : lvName}
+      thinking={playing && thinking}
+      active={playing && turnColor === oppColor}
       captured={oppColor === WHITE ? captured.byWhite : captured.byBlack}
       diff={oppColor === WHITE ? matW - matB : matB - matW}
       h={stripH}
@@ -514,8 +514,8 @@ export default function ChessGame({ touch, best, submitScore }: GameProps) {
     <Strip
       color={humanColor}
       name="You"
-      sub={phase === "playing" && turnColor === humanColor ? (status.check ? "Your move, you are in check" : "Your move") : ""}
-      active={phase === "playing" && turnColor === humanColor}
+      sub={playing && turnColor === humanColor ? (status.check ? "Your move, in check" : "Your move") : humanColor === WHITE ? "White" : "Black"}
+      active={playing && turnColor === humanColor}
       captured={humanColor === WHITE ? captured.byWhite : captured.byBlack}
       diff={humanColor === WHITE ? matW - matB : matB - matW}
       h={stripH}
@@ -649,7 +649,7 @@ function Strip({ color, name, sub, active, captured, diff, thinking, h }: { colo
       <span style={{ width: 12, height: 12, borderRadius: 6, flex: "none", background: color === WHITE ? "#f5eedc" : "#2b2b36", border: "1.5px solid rgba(255,255,255,0.55)" }} />
       <div style={{ minWidth: 0, lineHeight: 1.15 }}>
         <div style={{ fontSize: 13, fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
-        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", minHeight: 13 }}>
+        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)" }}>
           {sub}
           {thinking && <Dots />}
         </div>
