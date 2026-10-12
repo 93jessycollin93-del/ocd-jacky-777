@@ -3,8 +3,9 @@ import type { ReactNode } from "react";
 
 export function Overlay({ children, dim = true }: { children: ReactNode; dim?: boolean }) {
   return (
-    <div className={`absolute inset-0 z-20 flex items-center justify-center overflow-y-auto p-4 ${dim ? "bg-black/60 backdrop-blur-[2px]" : ""}`}>
-      <div className="my-auto w-full max-w-sm rounded-2xl border border-white/15 bg-zinc-950/90 p-5 text-center text-white shadow-2xl">
+    // Not items-center: auto margins centre the panel but let a panel taller than the screen scroll from its top.
+    <div className={`absolute inset-0 z-20 flex justify-center overflow-y-auto p-4 [@media(max-height:480px)]:p-2 ${dim ? "bg-black/60 backdrop-blur-[2px]" : ""}`}>
+      <div className="my-auto h-fit w-full max-w-sm rounded-2xl border border-white/15 bg-zinc-950/90 p-5 text-center text-white shadow-2xl [@media(max-height:480px)]:p-3">
         {children}
       </div>
     </div>
@@ -49,13 +50,13 @@ export function StartPanel({
 }) {
   return (
     <Overlay>
-      <div className="text-5xl">{emoji}</div>
-      <h2 className="mt-1 text-3xl font-black tracking-tight" style={{ color: accent }}>{title}</h2>
-      <p className="mt-2 text-sm text-white/75">{blurb}</p>
+      <div className="text-5xl [@media(max-height:480px)]:text-3xl">{emoji}</div>
+      <h2 className="mt-1 text-3xl font-black tracking-tight [@media(max-height:480px)]:text-2xl" style={{ color: accent }}>{title}</h2>
+      <p className="mt-2 text-sm text-white/75 [@media(max-height:480px)]:mt-1 [@media(max-height:480px)]:text-xs">{blurb}</p>
       <p className="mt-2 text-xs text-white/50">{controls}</p>
       {best ? <p className="mt-2 text-sm text-white/70">{bestLabel}: <b className="text-white">{best}</b></p> : null}
       {extra}
-      <div className="mt-4">
+      <div className="mt-4 [@media(max-height:480px)]:mt-2">
         <PrimaryButton onClick={onStart} accent={accent} autoFocus>Play</PrimaryButton>
       </div>
     </Overlay>
