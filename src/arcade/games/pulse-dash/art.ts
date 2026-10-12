@@ -202,9 +202,9 @@ export function drawObject(ctx: Ctx, f: Frame, o: Obj, used: boolean) {
       ctx.beginPath();
       for (let i = 0; i < 2; i++) {
         const cy = base + dirY * (16 + i * 10 + ((f.time * 20) % 10));
-        ctx.moveTo(x0 + 10, cy + dirY * 6);
-        ctx.lineTo(x0 + BLOCK / 2, cy);
-        ctx.lineTo(x0 + BLOCK - 10, cy + dirY * 6);
+        ctx.moveTo(x0 + 10, cy);
+        ctx.lineTo(x0 + BLOCK / 2, cy + dirY * 6);
+        ctx.lineTo(x0 + BLOCK - 10, cy);
       }
       ctx.stroke();
       break;

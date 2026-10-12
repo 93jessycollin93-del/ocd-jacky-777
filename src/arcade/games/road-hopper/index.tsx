@@ -54,9 +54,6 @@ export default function RoadHopper({ touch, best, submitScore }: GameProps) {
   const lw = box.w / zoom;
   const lh = box.h / zoom;
 
-  // DBG-REMOVE
-  if (typeof window !== "undefined" && window.location.search.includes("dbg")) (window as unknown as Record<string, unknown>).__dbg = { game, vis, fx };
-
   const go = useCallback((p: Phase) => {
     phaseRef.current = p;
     setPhase(p);

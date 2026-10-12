@@ -82,7 +82,7 @@ export interface PulseState {
   pressBuf: number;
   alive: boolean;
   won: boolean;
-  /** Rotation in radians; free in the air, snapped to a quarter turn on landing. */
+  /** Rotation in radians: one full turn per beat in the air, snapped upright on landing. */
   rot: number;
   /** Indices of pads, orbs and portals already used in this pass (pruned as they fall behind). */
   used: number[];
@@ -128,8 +128,10 @@ function land(s: PulseState, wasGround: boolean) {
   s.vy = 0;
   if (!wasGround) {
     s.events.push("land");
-    const q = Math.PI / 2;
-    s.rot = Math.round(s.rot / q) * q;
+    // Snap upright: a whole number of turns (upside down while standing on the ceiling).
+    const base = s.grav === 1 ? 0 : Math.PI;
+    const turn = Math.PI * 2;
+    s.rot = base + Math.round((s.rot - base) / turn) * turn;
   }
 }
 
@@ -185,7 +187,7 @@ export function tick(s: PulseState) {
   const vmax = 2.3 * s.v0;
   s.vy = Math.max(-vmax, Math.min(vmax, s.vy + gdir * s.g * dt));
   s.y += s.vy * dt;
-  if (!wasGround || s.vy * up > 0) s.rot += (Math.PI / spb(L)) * dt * s.grav;
+  if (!wasGround || s.vy * up > 0) s.rot += ((2 * Math.PI) / spb(L)) * dt * s.grav;
 
   // Landing: on the floor or ceiling, or on top of a block. (Hitting a block any other way is checked below.)
   let landed = false;

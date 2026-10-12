@@ -55,8 +55,6 @@ export default function FlapDash({ touch, best, submitScore }: GameProps) {
   const zoom = box.h / VIEW_H;
   const viewW = clamp(box.w / zoom, 300, 480);
 
-  // DBG-REMOVE
-  if (typeof window !== "undefined" && window.location.search.includes("dbg")) (window as unknown as Record<string, unknown>).__dbg = { game, fx, flap, go: (p: Phase) => { phaseRef.current = p; setPhase(p); } };
 
   const go = useCallback((p: Phase) => {
     phaseRef.current = p;

@@ -44,8 +44,6 @@ export default function SkyHopper({ touch, best, submitScore }: GameProps) {
   // The page is always W wide; its height follows the screen so tall phones see further up.
   const logicalH = clamp((W * box.h) / box.w, box.h < 520 ? MIN_H_SHORT : MIN_H, MAX_H);
 
-  // DBG-REMOVE
-  if (typeof window !== "undefined" && window.location.search.includes("dbg")) (window as unknown as Record<string, unknown>).__dbg = { game, fx, ensureWorld };
 
   const go = useCallback((p: Phase) => {
     phaseRef.current = p;
