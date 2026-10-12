@@ -1,7 +1,8 @@
 // Primal Isle game state and simulation. Pure TypeScript: no React, no three.js, so it can be tested
 // headless. The scene reads this state every frame; the HUD samples it a few times a second.
 import {
-  SPECIES, makeCreature, updateCreature, damageCreature, feedCreature, sedateCreature, isDown,
+  SPECIES, makeCreature, updateCreature, damageCreature, feedCreature, sedateCreature, isDown, creatureDamage,
+  creatureLevel, creatureMaxHp, gainTameXp,
   type Creature, type SpeciesId,
 } from "./creatures";
 import {
@@ -155,6 +156,8 @@ export interface GameState {
   equipment: Partial<Record<EquipSlot, ItemId>>;
   /** Seconds until the next unit of each perishable in your inventory goes off. */
   spoil: Partial<Record<ItemId, number>>;
+  /** The last night a hunting pack came for you (see huntNight). */
+  lastHunt: number;
   /** Sounds to play this frame; the page drains it. Not saved. */
   sfx: Sfx[];
   /** Particle bursts for the scene; drained every frame. Not saved. */
@@ -200,6 +203,7 @@ export function newGame(seed = Math.floor(Math.random() * 1e9)): GameState {
     craftQueue: [],
     equipment: {},
     spoil: {},
+    lastHunt: 0,
     sfx: [],
     fx: [],
   };
@@ -815,9 +819,10 @@ function swing(state: GameState): boolean {
     }
     if (c.tamed) return false;
     const mount = p.mountId ? state.creatures.find((m) => m.id === p.mountId) : undefined;
-    const damage = mount ? SPECIES[mount.species].damage + tool.damage * 0.5 : tool.damage;
+    const damage = mount ? creatureDamage(mount) + tool.damage * 0.5 : tool.damage;
     const killed = damageCreature(c, damage, tool.torpor, state.time, "player", p);
     if (!mount) wearTool(state);
+    else tameXp(state, mount, damage * TAME_XP_PER_DAMAGE + (killed ? SPECIES[c.species].xp : 0));
     sfx(state, killed ? "kill" : "hit");
     burst(state, c.x, heightAt(c.x, c.z, state.seed) + SPECIES[c.species].size, c.z, killed ? "#7a1010" : "#c0392b", killed ? 16 : 6);
     if (killed) onKilled(state, c);
@@ -982,6 +987,110 @@ function place(state: GameState, kind: StructureKind): boolean {
 }
 
 /** E: feed / sedate a knocked-out creature, toggle a tame, cook, or drink. */
+// ---------------------------------------------------------------- tames
+
+/** Experience a tame earns per point of damage it deals (kills also give the species' XP). */
+export const TAME_XP_PER_DAMAGE = 0.3;
+/** Share of a tame's max health one meal of its food restores. */
+export const TAME_FEED_HEAL = 0.2;
+
+function tameXp(state: GameState, c: Creature, amount: number) {
+  if (gainTameXp(c, amount) > 0) {
+    log(state, `${c.name ?? SPECIES[c.species].name} reached level ${creatureLevel(c)}: tougher and hits harder.`);
+    sfx(state, "level");
+  }
+}
+
+/** A food from the held hotbar slot that this tame eats, if it's hurt. */
+export function tameFeedFor(state: GameState, c: Creature): ItemId | null {
+  const held = state.hotbar[state.selected];
+  if (!c.tamed || !held || c.hp >= creatureMaxHp(c) || count(state, held) <= 0) return null;
+  return held in SPECIES[c.species].tameFoods ? held : null;
+}
+
+/** Hold a food your tame eats and press E on it to patch it up. */
+function feedTame(state: GameState, c: Creature): string | null {
+  const food = tameFeedFor(state, c);
+  if (!food) return null;
+  removeItem(state, food);
+  const max = creatureMaxHp(c);
+  c.hp = Math.min(max, c.hp + max * TAME_FEED_HEAL);
+  sfx(state, "eat");
+  return `Fed ${c.name}: ${Math.ceil(c.hp)}/${max} HP`;
+}
+
+// ---------------------------------------------------------------- night hunters
+
+/** Which night it is: the evening of day N and the small hours after it share a number. */
+export const huntNight = (state: GameState) => Math.floor(state.time / DAY_LENGTH + 0.22);
+
+interface Light {
+  x: number;
+  z: number;
+  r: number;
+}
+const lightCache = new WeakMap<GameState, { blocks: number; structures: number; lights: Light[] }>();
+
+/** Campfires, forges and torches, with how far their light keeps night hunters off. */
+export function lightSources(state: GameState): Light[] {
+  const hit = lightCache.get(state);
+  if (hit && hit.blocks === state.blockVersion && hit.structures === state.structureVersion) return hit.lights;
+  const lights: Light[] = [];
+  for (const s of state.structures) {
+    if (s.kind === "campfire") lights.push({ x: s.x, z: s.z, r: 7 });
+    if (s.kind === "forge") lights.push({ x: s.x, z: s.z, r: 6 });
+  }
+  for (const [key, b] of Object.entries(state.blocks)) {
+    if (b !== "torch") continue;
+    const [x, , z] = key.split(",").map(Number);
+    lights.push({ x: x + 0.5, z: z + 0.5, r: 5 });
+  }
+  lightCache.set(state, { blocks: state.blockVersion, structures: state.structureVersion, lights });
+  return lights;
+}
+
+export const isLit = (state: GameState, x: number, z: number) =>
+  lightSources(state).some((l) => Math.hypot(l.x - x, l.z - z) < l.r);
+
+/**
+ * From the second night on, a raptor pack comes looking for you after dark (the first night is a
+ * warning). At dawn the ones still prowling run off and are gone.
+ */
+function nightHunt(state: GameState, rng: () => number) {
+  const p = state.player;
+  if (isNight(state)) {
+    const night = huntNight(state);
+    if (state.lastHunt === night || p.dead) return;
+    state.lastHunt = night;
+    if (night <= 1) {
+      log(state, "Night is falling. Light a campfire: from tomorrow night, packs hunt in the dark.");
+      return;
+    }
+    const pack = state.day >= 4 ? 3 : 2;
+    for (let attempt = 0; attempt < 24; attempt++) {
+      const a = rng() * Math.PI * 2;
+      const d = 45 + rng() * 15;
+      const x = p.x + Math.sin(a) * d;
+      const z = p.z + Math.cos(a) * d;
+      const h = heightAt(x, z, state.seed);
+      if (Math.abs(x) > WORLD_HALF * 0.9 || Math.abs(z) > WORLD_HALF * 0.9 || h < WATER_LEVEL + 0.5 || h > 18 || isLit(state, x, z)) continue;
+      for (let i = 0; i < pack; i++) {
+        const c = makeCreature(state.nextId++, "raptor", x + (rng() - 0.5) * 4, z + (rng() - 0.5) * 4, a + Math.PI);
+        c.hunter = true;
+        state.creatures.push(c);
+      }
+      log(state, "Something is calling in the dark. A pack is hunting: stay near fire.");
+      return;
+    }
+    return;
+  }
+  const prowlers = state.creatures.filter((c) => c.hunter && !c.tamed && !isDown(c));
+  if (!prowlers.length) return;
+  const gone = prowlers.filter((c) => Math.hypot(c.x - p.x, c.z - p.z) > 40 || timeOfDay(state) > 0.3);
+  for (const c of prowlers) Object.assign(c, { state: "flee", target: null, timer: 1 });
+  if (gone.length) state.creatures = state.creatures.filter((c) => !gone.includes(c));
+}
+
 export function interact(state: GameState): string | null {
   const p = state.player;
   if (p.dead) return null;
@@ -1020,6 +1129,8 @@ export function interact(state: GameState): string | null {
       return msg;
     }
     if (c.tamed) {
+      const fed = feedTame(state, c);
+      if (fed) return fed;
       c.state = c.state === "follow" ? "stay" : "follow";
       c.target = null;
       return `${c.name}: ${c.state}`;
@@ -1290,10 +1401,13 @@ export function step(state: GameState, input: Input, dt: number) {
   spoilFood(state, dt);
 
   const rng = mulberry32((Math.floor(state.time * 10) * 2654435761) ^ state.seed);
+  nightHunt(state, rng);
   const ctx = {
     seed: state.seed, time: state.time, dt, rng,
     player: { x: p.x, z: p.z, dead: p.dead, mountId: p.mountId },
     creatures: state.creatures,
+    night: isNight(state),
+    lit: (x: number, z: number) => isLit(state, x, z),
     blocked: (x: number, z: number) => {
       const y = heightAt(x, z, state.seed);
       return solidAt(state.blocks, x, y + 0.5, z) || solidAt(state.blocks, x, y + 1.2, z) || blockedByWall(state, x, z, y);
@@ -1326,7 +1440,9 @@ export function step(state: GameState, input: Input, dt: number) {
         }
       } else if (ev.type === "hit-creature" && ev.targetId != null) {
         const foe = state.creatures.find((o) => o.id === ev.targetId);
-        if (foe && damageCreature(foe, ev.amount ?? 0, 0, state.time, ev.creatureId, c)) {
+        const killed = !!foe && damageCreature(foe, ev.amount ?? 0, 0, state.time, ev.creatureId, c);
+        if (foe && c.tamed) tameXp(state, c, (ev.amount ?? 0) * TAME_XP_PER_DAMAGE + (killed ? SPECIES[foe.species].xp : 0));
+        if (foe && killed) {
           if (foe.tamed) log(state, `${foe.name} was killed!`);
           else gainXp(state, SPECIES[foe.species].xp * 0.5);
         }
@@ -1339,7 +1455,7 @@ export function step(state: GameState, input: Input, dt: number) {
   // Tames slowly heal when nothing is fighting them.
   for (const c of state.creatures) {
     if (!c.tamed || c.state === "dead" || typeof c.target === "number") continue;
-    const max = SPECIES[c.species].hp;
+    const max = creatureMaxHp(c);
     if (c.hp < max) c.hp = Math.min(max, c.hp + max * TAME_REGEN * dt);
   }
 
@@ -1348,7 +1464,7 @@ export function step(state: GameState, input: Input, dt: number) {
   state.creatures = state.creatures.filter((c) => !(c.state === "dead" && state.time >= c.despawnAt));
   if (state.creatures.length !== before) {
     for (const sp of Object.values(SPECIES)) {
-      const wild = state.creatures.filter((c) => c.species === sp.id && !c.tamed).length;
+      const wild = state.creatures.filter((c) => c.species === sp.id && !c.tamed && !c.hunter).length;
       for (let i = wild; i < sp.population; i++) spawnCreature(state, sp.id, rng);
     }
   }
@@ -1472,6 +1588,7 @@ export function deserialize(json: string): GameState | null {
       craftQueue: data.craftQueue ?? [],
       equipment: data.equipment ?? {},
       spoil: data.spoil ?? {},
+      lastHunt: data.lastHunt ?? 0,
       nodes,
       nodeVersion: 0,
       structureVersion: 0,

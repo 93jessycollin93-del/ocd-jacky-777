@@ -167,8 +167,10 @@ function CreatureModel({ creature, seed }: { creature: Creature; seed: number })
     }
   });
 
-  const color = creature.state === "dead" ? "#4a3f35" : sp.color;
+  // Night hunters are darker, with eyes that catch the light.
+  const color = creature.state === "dead" ? "#4a3f35" : creature.hunter ? "#3b302a" : sp.color;
   const legH = (biped ? 0.9 : 0.7) * s;
+  const head: [number, number, number] = [0, legH + (biped ? 0.95 : 0.55) * s, (biped ? 0.6 : 1.1) * s];
   return (
     <group ref={group}>
       <group ref={body}>
@@ -178,10 +180,17 @@ function CreatureModel({ creature, seed }: { creature: Creature; seed: number })
           <meshStandardMaterial color={color} flatShading />
         </mesh>
         {/* neck + head */}
-        <mesh position={[0, legH + (biped ? 0.95 : 0.55) * s, (biped ? 0.6 : 1.1) * s]} scale={0.32 * s} castShadow>
+        <mesh position={head} scale={0.32 * s} castShadow>
           <sphereGeometry args={[1, 8, 6]} />
           <meshStandardMaterial color={color} flatShading />
         </mesh>
+        {creature.hunter && creature.state !== "dead" &&
+          [-1, 1].map((side) => (
+            <mesh key={side} position={[head[0] + side * 0.13 * s, head[1] + 0.09 * s, head[2] + 0.26 * s]} scale={0.05 * s}>
+              <sphereGeometry args={[1, 6, 4]} />
+              <meshBasicMaterial color="#ffd23f" />
+            </mesh>
+          ))}
         {/* tail */}
         <mesh position={[0, legH + 0.35 * s, -1.2 * s]} rotation-x={-Math.PI / 2} scale={s}>
           <coneGeometry args={[0.22, 1.2, 6]} />

@@ -87,6 +87,35 @@ export interface Creature {
   /** Knockback velocity (m/s), decays quickly. */
   kx?: number;
   kz?: number;
+  /** Tames grow stronger by fighting: level (from 1) and experience toward the next. */
+  level?: number;
+  xp?: number;
+  /** Came out of the dark to hunt you. Keeps out of firelight and slinks off at dawn. */
+  hunter?: boolean;
+}
+
+export const MAX_TAME_LEVEL = 15;
+export const creatureLevel = (c: Creature) => c.level ?? 1;
+/** Health grows 10% per level. */
+export const creatureMaxHp = (c: Creature) => Math.round(SPECIES[c.species].hp * (1 + 0.1 * (creatureLevel(c) - 1)));
+/** Bite and kick damage grows 8% per level. */
+export const creatureDamage = (c: Creature) => SPECIES[c.species].damage * (1 + 0.08 * (creatureLevel(c) - 1));
+export const tameXpForLevel = (level: number) => 50 * level;
+
+/** Give a tame experience. Returns how many levels it gained; it heals by the health it gains. */
+export function gainTameXp(c: Creature, amount: number): number {
+  if (!c.tamed || amount <= 0) return 0;
+  let gained = 0;
+  c.xp = (c.xp ?? 0) + amount;
+  while (creatureLevel(c) < MAX_TAME_LEVEL && c.xp >= tameXpForLevel(creatureLevel(c))) {
+    c.xp -= tameXpForLevel(creatureLevel(c));
+    const before = creatureMaxHp(c);
+    c.level = creatureLevel(c) + 1;
+    c.hp += creatureMaxHp(c) - before;
+    gained++;
+  }
+  if (creatureLevel(c) >= MAX_TAME_LEVEL) c.xp = 0;
+  return gained;
 }
 
 export function makeCreature(id: number, species: SpeciesId, x: number, z: number, heading = 0): Creature {
@@ -110,6 +139,9 @@ export interface CreatureContext {
   blocked?: (x: number, z: number) => boolean;
   /** True when something solid stands between two points, so neither can reach the other. */
   losBlocked?: (ax: number, az: number, bx: number, bz: number) => boolean;
+  /** True within the glow of a campfire, forge or torch. */
+  lit?: (x: number, z: number) => boolean;
+  night?: boolean;
 }
 
 export interface CreatureEvent {
@@ -127,10 +159,20 @@ function angleTo(from: { x: number; z: number }, to: { x: number; z: number }) {
   return Math.atan2(to.x - from.x, to.z - from.z);
 }
 
+const prowling = (c: Creature, ctx: CreatureContext) => !!c.hunter && !c.tamed && !!ctx.night;
+
 function stepToward(c: Creature, heading: number, speed: number, ctx: CreatureContext) {
   c.heading = heading;
-  const nx = c.x + Math.sin(heading) * speed * ctx.dt;
-  const nz = c.z + Math.cos(heading) * speed * ctx.dt;
+  let nx = c.x + Math.sin(heading) * speed * ctx.dt;
+  let nz = c.z + Math.cos(heading) * speed * ctx.dt;
+  if (prowling(c, ctx) && ctx.lit?.(nx, nz) && !ctx.lit(c.x, c.z)) {
+    // Night hunters won't step into firelight: they circle its edge instead.
+    const side = heading + (c.id % 2 ? 1 : -1) * Math.PI * 0.5;
+    nx = c.x + Math.sin(side) * speed * 0.5 * ctx.dt;
+    nz = c.z + Math.cos(side) * speed * 0.5 * ctx.dt;
+    if (ctx.lit(nx, nz)) return;
+    c.heading = side;
+  }
   const lim = WORLD_HALF * 0.95;
   if (
     Math.abs(nx) > lim || Math.abs(nz) > lim || heightAt(nx, nz, ctx.seed) < WATER_LEVEL + 0.3 ||
@@ -219,6 +261,18 @@ export function updateCreature(c: Creature, ctx: CreatureContext): CreatureEvent
   }
 
   // Wild behaviour.
+  if (prowling(c, ctx)) {
+    if (ctx.lit?.(c.x, c.z)) {
+      // Caught in the light: bolt back into the dark.
+      c.state = "flee";
+      c.target = null;
+      c.timer = Math.max(c.timer, 1.5);
+    } else if (c.state === "wander" && !ctx.player.dead && distPlayer >= sp.aggroRange) {
+      // Stalk: drift toward the player until close enough to rush.
+      stepToward(c, angleTo(c, ctx.player), sp.speed * 0.45, ctx);
+      return events;
+    }
+  }
   if (sp.temperament === "aggressive" && c.state === "wander" && !ctx.player.dead && distPlayer < sp.aggroRange) {
     c.state = "chase";
     c.target = "player";
@@ -285,9 +339,9 @@ function attackOrApproach(
   if (c.attackCooldown > 0) return;
   c.attackCooldown = 1.1;
   if ("id" in target && typeof target.id === "number") {
-    events.push({ type: "hit-creature", creatureId: c.id, targetId: target.id, amount: sp.damage });
+    events.push({ type: "hit-creature", creatureId: c.id, targetId: target.id, amount: creatureDamage(c) });
   } else {
-    events.push({ type: "hit-player", creatureId: c.id, amount: sp.damage });
+    events.push({ type: "hit-player", creatureId: c.id, amount: creatureDamage(c) });
   }
 }
 
@@ -354,7 +408,9 @@ export function feedCreature(c: Creature, has: (id: ItemId) => boolean): { food:
     c.tamed = true;
     c.state = "follow";
     c.torpor = 0;
-    c.hp = sp.hp;
+    c.level = creatureLevel(c);
+    c.xp = 0;
+    c.hp = creatureMaxHp(c);
     c.target = null;
     return { food, tamed: true };
   }

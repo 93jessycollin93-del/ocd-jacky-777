@@ -6,6 +6,7 @@ import {
   type GameState, type Thermal,
 } from "./engine/game";
 import { BagPanel } from "./BagPanel";
+import { creatureLevel, creatureMaxHp } from "./engine/creatures";
 import { promptFor } from "./engine/prompt";
 
 function Bar({ label, value, max, color, compact }: { label: string; value: number; max: number; color: string; compact?: boolean }) {
@@ -210,12 +211,17 @@ export function Hud({
       </div>
 
       {tames.length > 0 && !touch && (
-        <div className="absolute right-4 top-12 w-48 space-y-1 rounded-lg bg-black/35 p-2 text-[11px] backdrop-blur-sm">
+        <div className="absolute right-4 top-12 w-52 space-y-1.5 rounded-lg bg-black/35 p-2 text-[11px] backdrop-blur-sm">
           <div className="font-semibold">Tames</div>
           {tames.map((c) => (
-            <div key={c.id} className="flex justify-between">
-              <span>{c.name}</span>
-              <span className="text-white/70">{c.id === p.mountId ? "ridden" : c.state} · {Math.ceil(c.hp)}hp</span>
+            <div key={c.id} className="space-y-0.5">
+              <div className="flex justify-between gap-2">
+                <span className="truncate">{c.name} <span className="text-amber-300">Lv {creatureLevel(c)}</span></span>
+                <span className="shrink-0 text-white/70">{c.id === p.mountId ? "ridden" : c.state}</span>
+              </div>
+              <div className="h-1 overflow-hidden rounded bg-black/60" title={`${Math.ceil(c.hp)}/${creatureMaxHp(c)} HP`}>
+                <div className="h-full bg-green-400" style={{ width: `${(c.hp / creatureMaxHp(c)) * 100}%` }} />
+              </div>
             </div>
           ))}
         </div>

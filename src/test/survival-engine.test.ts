@@ -4,11 +4,14 @@ import {
   serialize, deserialize, placementFor, groundAt, lookedAtStorage, transfer, bedSpawn, toggleDoor, assignHotbar, collectLoot,
   carryWeight, encumbrance, toolDurability, repairTool, queueCraft, cancelCraft, craftBlocker,
   carryCapacity, wearGear, removeGear, armorValue, ambientTemperature, feelsLike, thermalBand, dropItem, consume, canCraft,
+  huntNight, isLit, TAME_FEED_HEAL,
   SWING_STAMINA, FALL_SAFE, FALL_DAMAGE, TAME_REGEN, DAY_LENGTH, NO_INPUT,
   type GameState,
 } from "@/survival/engine/game";
 import { solidAt } from "@/survival/engine/blocks";
-import { SPECIES, makeCreature, damageCreature, feedCreature } from "@/survival/engine/creatures";
+import {
+  SPECIES, makeCreature, damageCreature, feedCreature, gainTameXp, creatureLevel, creatureMaxHp, creatureDamage, tameXpForLevel,
+} from "@/survival/engine/creatures";
 import { heightAt, spawnPoint, generateNodes, WATER_LEVEL, WORLD_HALF } from "@/survival/engine/world";
 import { RECIPES, ITEMS } from "@/survival/engine/items";
 
@@ -921,15 +924,19 @@ describe("gear, weather and food", () => {
   it("raw meat spoils, jerky keeps, and boxed food stays fresh", () => {
     const g = newGame(SEED);
     isolate(g);
+    g.time = DAY_LENGTH * 0.22; // all daylight, so no hunting pack interrupts lunch
     settle(g);
     addItem(g, "raw_meat", 2);
     addItem(g, "jerky", 3);
+    const box = { id: 990, kind: "storage" as const, x: g.player.x + 3, z: g.player.z, y: g.player.y, rot: 0, items: { raw_meat: 1 } };
+    g.structures.push(box);
     run(g, 200);
     expect(g.spoil.raw_meat).toBeLessThan(ITEMS.raw_meat.spoilSeconds!);
     run(g, 170);
     expect(count(g, "raw_meat")).toBe(1);
     expect(count(g, "spoiled_meat")).toBe(1);
     expect(count(g, "jerky")).toBe(3);
+    expect(box.items).toEqual({ raw_meat: 1 });
     g.player.food = 50;
     const hp = g.player.hp;
     consume(g, "spoiled_meat");
@@ -996,6 +1003,147 @@ describe("gear, weather and food", () => {
     const back = deserialize(JSON.stringify(data))!;
     expect(back.equipment).toEqual({});
     expect(back.spoil).toEqual({});
+  });
+});
+
+describe("night hunters and tame levels", () => {
+  function settle(g: GameState) {
+    for (let i = 0; i < 60; i++) step(g, NO_INPUT, 1 / 60);
+  }
+  const at = (g: GameState, dayFraction: number) => {
+    g.time = DAY_LENGTH * dayFraction;
+    step(g, NO_INPUT, 1 / 30);
+  };
+  /** A night hunter already on your trail, and no other pack due tonight. */
+  function stalked(withFire: boolean) {
+    const g = newGame(SEED);
+    isolate(g);
+    settle(g);
+    g.time = DAY_LENGTH * 0.85;
+    g.lastHunt = huntNight(g);
+    const p = g.player;
+    if (withFire) g.structures.push({ id: 950, kind: "campfire", x: p.x, z: p.z, y: p.y, rot: 0 });
+    const c = makeCreature(951, "raptor", p.x + 12, p.z);
+    Object.assign(c, { hunter: true, state: "chase", target: "player", timer: 99 });
+    g.creatures = [c];
+    return { g, c, fire: { x: p.x, z: p.z } };
+  }
+
+  it("from the second night a pack comes once each night, out of sight, and runs off at dawn", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    settle(g);
+    expect(g.creatures).toHaveLength(0); // nothing hunts by day
+    at(g, 0.8);
+    expect(g.creatures).toHaveLength(0); // the first night is a warning
+    expect(g.log.at(-1)?.text).toMatch(/campfire/);
+    at(g, 1.8);
+    const pack = g.creatures.filter((c) => c.hunter);
+    expect(pack).toHaveLength(2);
+    for (const c of pack) {
+      expect(c.species).toBe("raptor");
+      expect(Math.hypot(c.x - g.player.x, c.z - g.player.z)).toBeGreaterThan(40);
+    }
+    at(g, 2.1); // the small hours are the same night
+    expect(g.creatures.filter((c) => c.hunter)).toHaveLength(2);
+    // at dawn, one that's close runs for it, then it's gone
+    Object.assign(pack[0], { x: g.player.x + 8, z: g.player.z });
+    at(g, 2.23);
+    expect(pack[0].state).toBe("flee");
+    expect(g.creatures).toContain(pack[0]);
+    expect(g.creatures).not.toContain(pack[1]); // far away: already gone
+    at(g, 2.35);
+    expect(g.creatures.filter((c) => c.hunter)).toHaveLength(0);
+    at(g, 2.8);
+    expect(g.creatures.filter((c) => c.hunter)).toHaveLength(2);
+  });
+
+  it("stalks you in the dark and bites", () => {
+    const { g } = stalked(false);
+    const hp = g.player.hp;
+    for (let i = 0; i < 300; i++) step(g, NO_INPUT, 1 / 30);
+    expect(g.player.hp).toBeLessThan(hp - 5);
+  });
+
+  it("won't step into firelight, so a campfire keeps you safe", () => {
+    const { g, c, fire } = stalked(true);
+    expect(isLit(g, fire.x, fire.z)).toBe(true);
+    const hp = g.player.hp;
+    let closest = Infinity;
+    for (let i = 0; i < 600; i++) {
+      step(g, NO_INPUT, 1 / 30);
+      closest = Math.min(closest, Math.hypot(c.x - fire.x, c.z - fire.z));
+    }
+    expect(closest).toBeGreaterThan(6.5);
+    expect(closest).toBeLessThan(9); // it waits at the edge of the light
+    expect(g.player.hp).toBeGreaterThanOrEqual(hp);
+  });
+
+  it("bolts if the light finds it", () => {
+    const { g, c, fire } = stalked(true);
+    Object.assign(c, { x: fire.x + 3, z: fire.z });
+    for (let i = 0; i < 30; i++) step(g, NO_INPUT, 1 / 30);
+    expect(Math.hypot(c.x - fire.x, c.z - fire.z)).toBeGreaterThan(6);
+  });
+
+  it("tames level up by fighting: more health, harder hits", () => {
+    const c = makeCreature(960, "raptor", 0, 0);
+    expect(gainTameXp(c, 999)).toBe(0); // wild animals don't level
+    c.tamed = true;
+    c.hp = 100;
+    expect(creatureLevel(c)).toBe(1);
+    expect(gainTameXp(c, tameXpForLevel(1) + 5)).toBe(1);
+    expect(creatureLevel(c)).toBe(2);
+    expect(c.xp).toBe(5);
+    expect(creatureMaxHp(c)).toBe(Math.round(SPECIES.raptor.hp * 1.1));
+    expect(creatureDamage(c)).toBeCloseTo(SPECIES.raptor.damage * 1.08);
+    expect(c.hp).toBe(100 + creatureMaxHp(c) - SPECIES.raptor.hp); // the new health comes topped up
+
+    const g = newGame(SEED);
+    isolate(g);
+    settle(g);
+    const p = g.player;
+    const tame = makeCreature(961, "raptor", p.x + 2, p.z);
+    Object.assign(tame, { tamed: true, name: "Rex", state: "follow" });
+    const compy = makeCreature(962, "compy", p.x - 6, p.z);
+    Object.assign(compy, { state: "chase", target: "player", timer: 99 });
+    g.creatures = [tame, compy];
+    for (let i = 0; i < 300 && compy.state !== "dead"; i++) step(g, NO_INPUT, 1 / 30);
+    expect(compy.state).toBe("dead");
+    expect(tame.xp).toBeGreaterThan(SPECIES.compy.xp);
+  });
+
+  it("feeding a hurt tame the food it eats heals it", () => {
+    const g = newGame(SEED);
+    isolate(g);
+    settle(g);
+    const p = g.player;
+    const c = makeCreature(970, "parasaur", p.x, p.z + 3);
+    Object.assign(c, { tamed: true, name: "Para", state: "stay", hp: 50 });
+    g.creatures = [c];
+    addItem(g, "berries", 3);
+    addItem(g, "raw_meat", 1);
+    g.selected = g.hotbar.indexOf("raw_meat");
+    expect(interact(g)).toMatch(/follow/); // it doesn't eat meat
+    c.state = "stay";
+    g.selected = g.hotbar.indexOf("berries");
+    expect(interact(g)).toMatch(/Fed Para/);
+    expect(c.hp).toBeCloseTo(50 + SPECIES.parasaur.hp * TAME_FEED_HEAL);
+    expect(count(g, "berries")).toBe(2);
+    c.hp = creatureMaxHp(c);
+    expect(interact(g)).toMatch(/follow/); // not hungry: E goes back to follow/stay
+    expect(count(g, "berries")).toBe(2);
+  });
+
+  it("tame levels and the night's hunt survive save and load", () => {
+    const g = newGame(SEED);
+    const c = makeCreature(980, "raptor", 0, 0);
+    Object.assign(c, { tamed: true, level: 4, xp: 12 });
+    g.creatures = [c];
+    g.lastHunt = 3;
+    const back = deserialize(serialize(g))!;
+    expect(back.creatures[0]).toMatchObject({ level: 4, xp: 12 });
+    expect(back.lastHunt).toBe(3);
   });
 });
 

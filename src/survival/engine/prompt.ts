@@ -1,11 +1,13 @@
 // The hint shown under the crosshair.
-import { SPECIES } from "./creatures";
+import { SPECIES, creatureLevel, creatureMaxHp } from "./creatures";
 import { heightAt } from "./world";
 import { ITEMS, type ItemId } from "./items";
 import { BLOCKS, cellKey, hitsToBreak, isBlockItem, isDoor, type BlockId, type PlaceableBlock } from "./blocks";
 
 const blockName = (b: BlockId) => ITEMS[BLOCKS[b].drop ?? (b as PlaceableBlock)].name;
-import { blockTarget, canDrink, count, equipped, lookTarget, nearCampfire, nearForge, toolStats, type GameState } from "./game";
+import {
+  blockTarget, canDrink, count, equipped, lookTarget, nearCampfire, nearForge, tameFeedFor, toolStats, type GameState,
+} from "./game";
 
 /** The hint under the crosshair for whatever you're looking at. */
 export function promptFor(state: GameState): string | null {
@@ -45,7 +47,10 @@ export function promptFor(state: GameState): string | null {
       return `${sp.name} unconscious · Taming ${Math.round(c.tameProgress * 100)}% · E: feed (${foods}) · torpor ${Math.round(c.torpor)}`;
     }
     if (c.tamed) {
-      return `${c.name} (${c.state}) · E: ${c.state === "follow" ? "stay" : "follow"}${sp.rideSpeed && !p.mountId ? " · R: ride" : ""}`;
+      const food = tameFeedFor(state, c);
+      const hp = `Lv ${creatureLevel(c)} · HP ${Math.ceil(c.hp)}/${creatureMaxHp(c)}`;
+      if (food) return `${c.name} · ${hp} · E: feed ${ITEMS[food].name} to heal`;
+      return `${c.name} · ${hp} (${c.state}) · E: ${c.state === "follow" ? "stay" : "follow"}${sp.rideSpeed && !p.mountId ? " · R: ride" : ""}`;
     }
   }
   if (near?.kind === "structure" && near.structure.kind === "lootbag") {
@@ -62,7 +67,7 @@ export function promptFor(state: GameState): string | null {
   if (reachTarget?.kind === "creature" && !reachTarget.creature.tamed) {
     const c = reachTarget.creature;
     const sp = SPECIES[c.species];
-    return `${sp.name} · HP ${Math.ceil(c.hp)}/${sp.hp} · KO ${Math.round((c.torpor / sp.maxTorpor) * 100)}%`;
+    return `${c.hunter ? "Night " : ""}${sp.name} · HP ${Math.ceil(c.hp)}/${creatureMaxHp(c)} · KO ${Math.round((c.torpor / sp.maxTorpor) * 100)}%`;
   }
   if (reachTarget?.kind === "node") {
     const kind = reachTarget.node.kind;
