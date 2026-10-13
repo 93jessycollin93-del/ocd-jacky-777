@@ -95,8 +95,8 @@ export interface SiegeState {
 }
 
 export const STEP = PHYS.dt;
-const BOMB = { radius: 3.8, power: 12, damage: 15, fuse: 0.9 };
-const TNT = { radius: 3.4, power: 10, damage: 11 };
+const BOMB = { radius: 3.4, power: 10, damage: 12, fuse: 0.9 };
+const TNT = { radius: 3, power: 8, damage: 9 };
 const GRUMBLER_BLAST = 2;
 /** Anything that falls below this is gone. */
 const KILL_Y = 30;

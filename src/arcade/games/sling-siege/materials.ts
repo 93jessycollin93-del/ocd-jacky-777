@@ -21,11 +21,11 @@ export interface Material {
 }
 
 export const MATERIALS: Record<MatId, Material> = {
-  wood: { id: "wood", name: "Wood", density: 1, friction: 0.7, restitution: 0.08, hp: 6, tough: 1.5, points: 500, blast: 1 },
-  stone: { id: "stone", name: "Stone", density: 2.5, friction: 0.8, restitution: 0.04, hp: 18, tough: 5, points: 800, blast: 0.45 },
-  glass: { id: "glass", name: "Glass", density: 0.7, friction: 0.35, restitution: 0.1, hp: 1.6, tough: 0.35, points: 250, blast: 3 },
-  ice: { id: "ice", name: "Ice", density: 0.9, friction: 0.06, restitution: 0.05, hp: 4, tough: 1.1, points: 400, blast: 1.6 },
-  tnt: { id: "tnt", name: "TNT", density: 1.3, friction: 0.6, restitution: 0.05, hp: 3, tough: 0.8, points: 800, blast: 3 },
+  wood: { id: "wood", name: "Wood", density: 1, friction: 0.7, restitution: 0.08, hp: 9, tough: 2, points: 500, blast: 1 },
+  stone: { id: "stone", name: "Stone", density: 2.5, friction: 0.8, restitution: 0.04, hp: 30, tough: 7, points: 800, blast: 0.45 },
+  glass: { id: "glass", name: "Glass", density: 0.7, friction: 0.35, restitution: 0.1, hp: 2.2, tough: 0.5, points: 250, blast: 3 },
+  ice: { id: "ice", name: "Ice", density: 0.9, friction: 0.06, restitution: 0.05, hp: 5.5, tough: 1.6, points: 400, blast: 1.6 },
+  tnt: { id: "tnt", name: "TNT", density: 1.3, friction: 0.6, restitution: 0.05, hp: 4, tough: 1.5, points: 800, blast: 3 },
   rock: { id: "rock", name: "Rock", density: 0, friction: 0.9, restitution: 0.02, hp: Infinity, tough: Infinity, points: 0, blast: 0 },
 };
 
@@ -64,10 +64,10 @@ export interface GrumblerSpec {
 }
 
 export const GRUMBLERS: Record<GrumblerKind, GrumblerSpec> = {
-  small: { kind: "small", r: 0.38, density: 1, hp: 3.5, tough: 1, points: 4000 },
-  normal: { kind: "normal", r: 0.5, density: 1, hp: 5, tough: 1.2, points: 5000 },
-  helmet: { kind: "helmet", r: 0.5, density: 1.3, hp: 11, tough: 2.4, points: 6000 },
-  king: { kind: "king", r: 0.78, density: 1, hp: 14, tough: 2, points: 10000 },
+  small: { kind: "small", r: 0.38, density: 1, hp: 4.5, tough: 1.5, points: 4000 },
+  normal: { kind: "normal", r: 0.5, density: 1, hp: 7, tough: 2, points: 5000 },
+  helmet: { kind: "helmet", r: 0.5, density: 1.3, hp: 16, tough: 3.5, points: 6000 },
+  king: { kind: "king", r: 0.78, density: 1, hp: 24, tough: 3, points: 10000 },
 };
 
 /** Where the slingshot stands (metres; y points down, the ground is y = 0). */
