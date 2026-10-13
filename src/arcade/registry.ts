@@ -7,15 +7,15 @@ import { CATEGORIES, type GameMeta, type GameProps } from "./types";
 // can't break a deploy) until they pass their checks, but are listed in development so they can be played and
 // tested. When a game ships, remove its id from all four brace lists below (they must be literal strings).
 const metas = {
-  ...import.meta.glob<{ meta: GameMeta }>(["./games/*/meta.ts", "!./games/{sea-battle,rope-snip,eight-ball,mini-golf,night-survivors,garden-defense,balloon-defense,tower-clash}/**"], { eager: true }),
+  ...import.meta.glob<{ meta: GameMeta }>(["./games/*/meta.ts", "!./games/{rope-snip,eight-ball,mini-golf,night-survivors,garden-defense,balloon-defense,tower-clash}/**"], { eager: true }),
   ...(import.meta.env.DEV
-    ? import.meta.glob<{ meta: GameMeta }>("./games/{sea-battle,rope-snip,eight-ball,mini-golf,night-survivors,garden-defense,balloon-defense,tower-clash}/meta.ts", { eager: true })
+    ? import.meta.glob<{ meta: GameMeta }>("./games/{rope-snip,eight-ball,mini-golf,night-survivors,garden-defense,balloon-defense,tower-clash}/meta.ts", { eager: true })
     : {}),
 };
 const loaders = {
-  ...import.meta.glob<{ default: ComponentType<GameProps> }>(["./games/*/index.tsx", "!./games/{sea-battle,rope-snip,eight-ball,mini-golf,night-survivors,garden-defense,balloon-defense,tower-clash}/**"]),
+  ...import.meta.glob<{ default: ComponentType<GameProps> }>(["./games/*/index.tsx", "!./games/{rope-snip,eight-ball,mini-golf,night-survivors,garden-defense,balloon-defense,tower-clash}/**"]),
   ...(import.meta.env.DEV
-    ? import.meta.glob<{ default: ComponentType<GameProps> }>("./games/{sea-battle,rope-snip,eight-ball,mini-golf,night-survivors,garden-defense,balloon-defense,tower-clash}/index.tsx")
+    ? import.meta.glob<{ default: ComponentType<GameProps> }>("./games/{rope-snip,eight-ball,mini-golf,night-survivors,garden-defense,balloon-defense,tower-clash}/index.tsx")
     : {}),
 };
 
