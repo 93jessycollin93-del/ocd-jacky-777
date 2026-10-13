@@ -35,6 +35,8 @@ export interface Body {
   restitution: number;
   linearDamping: number;
   angularDamping: number;
+  /** Rolling resistance (m): the torque a contact can put on a spinning body, per unit of normal force. */
+  rolling: number;
   /** Bodies sharing a non-zero group never collide with each other. */
   group: number;
   awake: boolean;
@@ -71,6 +73,7 @@ export interface BodyDef {
   linearDamping?: number;
   angularDamping?: number;
   group?: number;
+  rolling?: number;
   user?: unknown;
 }
 
@@ -86,6 +89,8 @@ export interface Contact {
   pt: number;
   /** Accumulated position-correction impulse (not carried between steps). */
   pnb: number;
+  /** Accumulated rolling-resistance impulse this step. */
+  pr: number;
   massN: number;
   massT: number;
   /** Target closing speed: a bounce, or the gap per step for a contact that has not touched yet. */
@@ -110,6 +115,7 @@ export interface Arbiter {
   n: number;
   friction: number;
   restitution: number;
+  rolling: number;
   stamp: number;
   /** Sum of the contact impact impulses this step. */
   impact: number;
@@ -142,7 +148,7 @@ export const PHYS = {
 };
 
 const newContact = (): Contact => ({
-  x: 0, y: 0, nx: 0, ny: 0, sep: 0, feature: 0, pn: 0, pt: 0, pnb: 0, massN: 0, massT: 0, bounce: 0, bias: 0, r1x: 0, r1y: 0, r2x: 0, r2y: 0, rn1: 0, rn2: 0, impact: 0,
+  x: 0, y: 0, nx: 0, ny: 0, sep: 0, feature: 0, pn: 0, pt: 0, pnb: 0, pr: 0, massN: 0, massT: 0, bounce: 0, bias: 0, r1x: 0, r1y: 0, r2x: 0, r2y: 0, rn1: 0, rn2: 0, impact: 0,
 });
 
 /** Area of a shape in square metres. */
@@ -220,7 +226,7 @@ export function makeBody(id: number, d: BodyDef): Body {
     mass, invMass: mass > 0 ? 1 / mass : 0, invI: inertia > 0 ? 1 / inertia : 0,
     friction: d.friction ?? 0.6, restitution: d.restitution ?? 0.1,
     linearDamping: d.linearDamping ?? 0.02, angularDamping: d.angularDamping ?? (sh.kind === "circle" ? 1.2 : 0.1),
-    group: d.group ?? 0, awake: mass > 0, sleepTime: 0, removed: false, minX: 0, minY: 0, maxX: 0, maxY: 0, idx: 0, user: d.user,
+    group: d.group ?? 0, rolling: d.rolling ?? (sh.kind === "circle" ? 0.14 : 0), awake: mass > 0, sleepTime: 0, removed: false, minX: 0, minY: 0, maxX: 0, maxY: 0, idx: 0, user: d.user,
     nv, lv: Float64Array.from(lv), ln, wv: new Float64Array(2 * nv), wn: new Float64Array(2 * nv),
   };
   computeAABB(b);
@@ -902,7 +908,7 @@ export class World {
     if (!arb) {
       arb = {
         a, b, contacts: [newContact(), newContact()], n: 0, stamp: 0, impact: 0, block: false, k11: 0, k12: 0, k22: 0, i11: 0, i12: 0, i22: 0,
-        friction: Math.sqrt(a.friction * b.friction), restitution: Math.max(a.restitution, b.restitution),
+        friction: Math.sqrt(a.friction * b.friction), restitution: Math.max(a.restitution, b.restitution), rolling: Math.max(a.rolling, b.rolling),
       };
       this.arbiters.set(key, arb);
     }
@@ -1036,6 +1042,7 @@ function preStep(arb: Arbiter, invDt: number) {
     c.bias = bias;
     c.bounce = c.sep > 0 ? -c.sep * invDt : vn < -PHYS.restitutionThreshold ? -arb.restitution * vn : 0;
     c.pnb = 0;
+    c.pr = 0;
   }
   if (arb.n === 2) {
     // The two normal constraints are solved together (a 2x2 block) so boxes sit flat instead of rocking.
@@ -1165,6 +1172,22 @@ function applyImpulse(arb: Arbiter) {
       b.vx += b.invMass * px;
       b.vy += b.invMass * py;
       b.w += b.invI * (c.r2x * py - c.r2y * px);
+    }
+  }
+
+  if (arb.rolling > 0) {
+    const k = a.invI + b.invI;
+    if (k > 0) {
+      for (let i = 0; i < n; i++) {
+        const c = arb.contacts[i];
+        const max = arb.rolling * c.pn;
+        let dW = -(b.w - a.w) / k;
+        const pr0 = c.pr;
+        c.pr = Math.max(-max, Math.min(max, pr0 + dW));
+        dW = c.pr - pr0;
+        a.w -= a.invI * dW;
+        b.w += b.invI * dW;
+      }
     }
   }
 

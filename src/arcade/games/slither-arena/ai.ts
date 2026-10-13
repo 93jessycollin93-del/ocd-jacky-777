@@ -87,11 +87,13 @@ export function think(s: World, wi: number) {
     const d2 = dx * dx + dy * dy;
     if (d2 > 640 * 640) continue;
     const d = Math.sqrt(d2) + 0.001;
-    if (o.mass > w.mass * 1.1 && d < 240 + 60 * skill) {
-      const wgt = (260 - d) / 260;
+    if (o.mass > w.mass * 1.1 && d < 230) {
+      // Only a head that is coming our way is a threat worth running from.
+      const toward = (-dx * Math.cos(o.ang) - dy * Math.sin(o.ang)) / d;
+      const wgt = ((230 - d) / 230) * (toward > 0.25 ? 1 : 0);
       if (wgt > 0) {
-        fleeX -= (dx / d) * wgt;
-        fleeY -= (dy / d) * wgt;
+        fleeX -= (dx / d) * wgt * 0.5 + Math.cos(o.ang + 1.57 * (dx * Math.sin(o.ang) - dy * Math.cos(o.ang) > 0 ? -1 : 1)) * wgt * 0.5;
+        fleeY -= (dy / d) * wgt * 0.5 + Math.sin(o.ang + 1.57 * (dx * Math.sin(o.ang) - dy * Math.cos(o.ang) > 0 ? -1 : 1)) * wgt * 0.5;
         fleeW += wgt;
       }
     } else if (o.mass < w.mass * 0.95 && o.shield <= 0) {
@@ -109,7 +111,7 @@ export function think(s: World, wi: number) {
     const o = s.worms[b.prey];
     if (!o.alive || b.preyT <= 0 || o.mass > w.mass * 1.05) b.prey = -1;
   }
-  if (b.prey < 0 && nearestPrey >= 0 && rng() < b.aggr * 0.5) {
+  if (b.prey < 0 && nearestPrey >= 0 && rng() < b.aggr * 0.3) {
     b.prey = nearestPrey;
     b.preyT = 3 + rng() * 5;
     b.circleDir = rng() < 0.5 ? 1 : -1;

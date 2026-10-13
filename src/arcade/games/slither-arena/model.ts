@@ -16,8 +16,8 @@ export const BOOST_RETURN = 0.7;
 /** Share of a dead worm's mass that bursts out as orbs. */
 export const DEATH_RETURN = 0.85;
 export const SHIELD_TIME = 1.4;
-export const HEAD_HIT = 0.72;
-export const BODY_HIT = 0.92;
+export const HEAD_HIT = 0.62;
+export const BODY_HIT = 0.88;
 
 export const ORB_COLORS = ["#fb7185", "#fb923c", "#facc15", "#4ade80", "#22d3ee", "#60a5fa", "#a78bfa", "#f472b6"];
 
