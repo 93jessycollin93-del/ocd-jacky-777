@@ -73,6 +73,8 @@ export interface Worm {
   wantBoost: boolean;
   boosting: boolean;
   mass: number;
+  /** Cached body radius (girth of the current mass). */
+  g: number;
   /** Live segment count; segment 0 is the head. */
   n: number;
   sx: Float32Array;
