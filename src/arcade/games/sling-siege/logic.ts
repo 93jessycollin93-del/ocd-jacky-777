@@ -152,8 +152,8 @@ function addGrumbler(s: SiegeState, d: GrumblerDef) {
   s.grumblersLeft++;
 }
 
-export function newSiege(index: number): SiegeState {
-  const level = LEVELS[index];
+/** Build a playable state from any level definition (the tests use this for tiny hand-made levels). */
+export function siegeFromLevel(level: LevelDef, index = 0): SiegeState {
   const world = new World();
   const s: SiegeState = {
     level, index, world, pieces: [], queue: [...level.critters], phase: "aim", score: 0, time: 0, shotTime: 0, settleTime: 0,
@@ -164,6 +164,39 @@ export function newSiege(index: number): SiegeState {
   for (const d of level.pieces) addBlock(s, d);
   for (const g of level.grumblers) addGrumbler(s, g);
   return s;
+}
+
+/** A level as built, before anything has settled. */
+export const newSiege = (index: number) => siegeFromLevel(LEVELS[index], index);
+
+/** A level ready to play: built, then given a moment for the blocks to settle and fall asleep. */
+export function startSiege(index: number, level: LevelDef = LEVELS[index]): SiegeState {
+  const s = siegeFromLevel(level, index);
+  simulate(s, 2.5);
+  s.events.length = 0;
+  s.time = 0;
+  return s;
+}
+
+/**
+ * Fire the critter on the sling and run the game until the shot has played out (or the level ends).
+ * `tap` is when to use the critter's trick, in seconds after launch. Used by the tests and the bot.
+ */
+export function playShot(s: SiegeState, pullX: number, pullY: number, tap: number | null = null, maxSeconds = 40): boolean {
+  if (!launch(s, pullX, pullY)) return false;
+  let t = 0;
+  let tapped = false;
+  while ((s.phase === "fly" || s.phase === "settle") && t < maxSeconds) {
+    stepSiege(s, 1 / 60);
+    t += 1 / 60;
+    if (tap !== null && !tapped && t >= tap && s.phase === "fly") {
+      triggerAbility(s);
+      tapped = true;
+    }
+  }
+  // If that was the last grumbler, let the short victory pause run out.
+  for (let i = 0; i < 240 && s.grumblersLeft === 0 && s.phase !== "won" && s.phase !== "lost"; i++) stepSiege(s, 1 / 60);
+  return true;
 }
 
 // ---------------------------------------------------------------- aiming and launching
@@ -263,7 +296,7 @@ export function abilityTarget(s: SiegeState): Piece | null {
 }
 
 /** Use the in-flight trick of the current critter. Returns true if something happened. */
-export function useAbility(s: SiegeState): boolean {
+export function triggerAbility(s: SiegeState): boolean {
   const p = abilityTarget(s);
   if (!p) return false;
   const b = p.body;

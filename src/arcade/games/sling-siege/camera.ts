@@ -19,12 +19,13 @@ export interface Viewport {
 export function homeZoom(v: Viewport, levelWidth: number): number {
   const fit = v.w / levelWidth;
   const portrait = v.h > v.w * 1.1;
-  return portrait ? fit * 1.5 : fit;
+  return portrait ? fit * 1.3 : fit;
 }
 
 /** How far below the middle of the screen the ground sits at home zoom: a margin under the grass. */
 export function groundMargin(v: Viewport): number {
-  return clamp(v.h * 0.16, 44, 120);
+  // On tall screens the ground sits well above the bottom, so the sky and the ground share the height.
+  return v.h > v.w * 1.1 ? v.h * 0.32 : clamp(v.h * 0.16, 44, 120);
 }
 
 /** The camera height that puts the ground a margin above the bottom edge at zoom z. */
