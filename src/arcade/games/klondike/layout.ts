@@ -49,7 +49,8 @@ export function computeLayout(g: Klondike, W: number, H: number): Layout {
   const baseUp = ch * (portrait ? 0.27 : 0.3);
   // Squeeze columns so the longest one still fits above the bottom edge.
   const room = H - m - tabY - ch;
-  let f = 1;
+  // Portrait phones have plenty of height, so the overlap may open up a little when there is room.
+  let f = portrait ? 1.28 : 1;
   for (const col of g.tableau) {
     let downs = 0;
     let ups = 0;
@@ -59,7 +60,7 @@ export function computeLayout(g: Klondike, W: number, H: number): Layout {
       else downs++;
     });
     const need = downs * baseDown + ups * baseUp;
-    if (need > room && need > 0) f = Math.min(f, Math.max(0.3, room / need));
+    if (need > 0 && need * f > room) f = Math.min(f, Math.max(0.3, room / need));
   }
   return { W, H, cw, ch, gap, left, top, tabY, colX, stepDown: baseDown * f, stepUp: baseUp * f, fan: cw * (portrait ? 0.2 : 0.24), portrait };
 }

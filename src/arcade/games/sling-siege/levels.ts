@@ -34,6 +34,8 @@ export interface LevelDef {
   hint?: string;
   /** Visible width in metres. */
   width: number;
+  /** The score a very good (bot-assisted) player reaches; the star targets are measured against it. */
+  par: number;
 }
 
 const R: Record<GrumblerKind, number> = { small: 0.38, normal: 0.5, helmet: 0.5, king: 0.78 };
@@ -93,13 +95,20 @@ class Builder {
   }
 }
 
+/** Scores of a strong shot-by-shot search (see the level-solving test), used to set the star targets. */
+const PARS: Record<string, number> = {
+  m1: 25500, m2: 21250, m3: 25500, m4: 38000, m5: 36000, m6: 41000,
+  c1: 21000, c2: 32000, c3: 24000, c4: 24400, c5: 35000, c6: 52300,
+  f1: 39700, f2: 37300, f3: 33950, f4: 49400, f5: 63700, f6: 88900,
+};
+
 function level(
   id: string, name: string, world: number, critters: CritterKind[], hint: string | undefined,
   build: (b: Builder) => void, width = 44,
 ): LevelDef {
   const b = new Builder();
   build(b);
-  return { id, name, world, critters, pieces: b.pieces, grumblers: b.grumblers, hint, width };
+  return { id, name, world, critters, pieces: b.pieces, grumblers: b.grumblers, hint, width, par: PARS[id] ?? 0 };
 }
 
 export const LEVELS: LevelDef[] = [
@@ -157,16 +166,22 @@ export const LEVELS: LevelDef[] = [
   }),
 
   level("m6", "Meadow Keep", 0, ["basic", "dasher", "splitter", "basic", "basic"], "Tap Zippy to burst through the walls.", (b) => {
-    for (const x of [25, 28.5, 32]) b.post("wood", x, 0, 2.5);
-    b.plank("wood", 26.75, 2.5, 3.5);
-    b.plank("wood", 30.25, 2.5, 3.5);
-    b.g("normal", 26.75, 0);
-    b.g("normal", 30.25, 0);
-    b.post("glass", 26, 2.8, 2, 0.3);
-    b.post("glass", 31, 2.8, 2, 0.3);
-    b.plank("wood", 28.5, 4.8, 6);
-    b.g("king", 28.5, 2.8);
-    b.tri("wood", 28.5, 5.1, 5, 1.5);
+    b.frame("wood", 22, 0, 2.4, 2.2);
+    b.g("normal", 22, 0);
+    for (const x of [27.2, 29.5, 31.8]) b.post("wood", x, 0, 2.4, 0.6);
+    b.plank("wood", 28.35, 2.4, 2.3);
+    b.plank("wood", 30.65, 2.4, 2.3);
+    b.box("wood", 28.35, 0, 1, 1);
+    b.post("wood", 27.6, 2.7, 2, 0.4);
+    b.post("wood", 31.4, 2.7, 2, 0.4);
+    b.plank("wood", 29.5, 4.7, 4.6);
+    b.g("king", 29.5, 2.7);
+    b.tri("wood", 29.5, 5, 4.8, 1.4);
+    const t = b.stack("wood", 36.5, 0, 1, [1, 1, 1, 1]);
+    b.plank("wood", 36.5, t, 2.4);
+    b.g("normal", 36.5, t + 0.3);
+    b.post("wood", 38.9, 0, 1.6);
+    b.g("small", 40, 0);
   }),
 
   // ------------------------------------------------------------ world 2: Dusty Canyon
@@ -182,13 +197,15 @@ export const LEVELS: LevelDef[] = [
 
   level("c2", "Mesa Cliff", 1, ["basic", "dasher", "bomber", "basic"], "The cliff is solid rock; aim for the tower on top.", (b) => {
     b.rock(31, 0, 9, 3.5);
-    const t = b.stack("wood", 29.5, 3.5, 1, [1, 1, 1]);
-    b.plank("wood", 29.5, t, 2.4);
-    b.g("normal", 29.5, t + 0.3);
-    b.box("wood", 33.5, 3.5, 1, 1);
-    b.g("normal", 33.5, 4.5);
+    const t = b.stack("wood", 28.8, 3.5, 1, [1, 1, 1]);
+    b.plank("wood", 28.8, t, 2.4);
+    b.g("normal", 28.8, t + 0.3);
+    b.frame("wood", 33.4, 3.5, 2.2, 1.8);
+    b.g("small", 33.4, 3.5);
     b.g("normal", 22.5, 0);
     b.post("wood", 23.7, 0, 1.8);
+    b.g("normal", 39, 0);
+    b.box("stone", 37.5, 0, 1, 1.6);
   }),
 
   level("c3", "TNT Shack", 1, ["basic", "basic", "bomber"], "Red crates go off with a bang when they are hit hard.", (b) => {
@@ -203,7 +220,7 @@ export const LEVELS: LevelDef[] = [
     b.g("small", 35, 0);
   }),
 
-  level("c4", "Rock Wall", 1, ["heavy", "basic", "bomber"], "Boulder smashes stone: tap to slam it down.", (b) => {
+  level("c4", "Rock Wall", 1, ["heavy", "basic", "bomber", "heavy"], "Boulder smashes stone: tap to slam it down.", (b) => {
     b.stack("stone", 25.6, 0, 1.2, [1.5, 1.5, 1.5]);
     b.stack("stone", 26.8, 0, 1.2, [1.5, 1.5, 1.5]);
     b.plank("stone", 26.2, 4.5, 2.6, 0.4);
@@ -211,7 +228,11 @@ export const LEVELS: LevelDef[] = [
     b.frame("wood", 31.5, 0, 2.4, 2.2);
     b.g("normal", 31.5, 0);
     b.box("wood", 31.5, 2.5, 1, 1);
-    b.g("small", 35, 0);
+    b.g("small", 34.6, 0);
+    b.stack("stone", 37, 0, 0.8, [1.5]);
+    b.stack("stone", 39.6, 0, 0.8, [1.5]);
+    b.plank("stone", 38.3, 1.5, 3.6, 0.4);
+    b.g("helmet", 38.3, 0);
   }),
 
   level("c5", "Canyon Crossing", 1, ["splitter", "dasher", "heavy", "basic"], "Lob your shot over the cliff and down into the canyon.", (b) => {
@@ -250,6 +271,8 @@ export const LEVELS: LevelDef[] = [
     b.g("normal", 29, 0);
     b.stack("ice", 34, 0, 1, [1, 1]);
     b.g("small", 34, 2);
+    b.stack("ice", 38, 0, 1, [1, 1, 1]);
+    b.g("small", 38, 3);
   }),
 
   level("f2", "Snowball Run", 2, ["basic", "dasher", "splitter", "basic"], "Free the snowballs and let gravity do the rest.", (b) => {
@@ -272,40 +295,53 @@ export const LEVELS: LevelDef[] = [
     b.g("normal", 30.75, 4.3);
     b.g("normal", 28, 0);
     b.box("glass", 33.2, 0, 0.8, 0.8);
+    b.frame("wood", 38.4, 0, 2.4, 2);
+    b.g("helmet", 38.4, 0);
   }),
 
-  level("f4", "Glacier Gate", 2, ["heavy", "bomber", "dasher", "splitter"], "Heavy pillars hold a sheet of ice over the grumblers.", (b) => {
-    b.stack("stone", 26, 0, 1, [1.5, 1.5, 1.5]);
-    b.stack("stone", 32, 0, 1, [1.5, 1.5, 1.5]);
-    b.plank("ice", 29, 4.5, 7, 0.5);
-    b.g("helmet", 29, 5);
-    b.box("glass", 27.2, 5, 0.8, 0.8);
-    b.box("glass", 30.8, 5, 0.8, 0.8);
-    b.frame("wood", 29, 0, 3.6, 2.2);
-    b.box("tnt", 28.1, 0, 1, 1);
-    b.g("normal", 29.7, 0);
-    b.g("small", 35.5, 0);
+  level("f4", "Glacier Gate", 2, ["heavy", "bomber", "dasher", "splitter", "basic"], "Heavy pillars hold a sheet of ice over the grumblers.", (b) => {
+    b.stack("stone", 25, 0, 1, [1.5, 1.5, 1.5]);
+    b.stack("stone", 31, 0, 1, [1.5, 1.5, 1.5]);
+    b.plank("ice", 28, 4.5, 7, 0.5);
+    b.g("helmet", 28, 5);
+    b.box("glass", 26.2, 5, 0.8, 0.8);
+    b.box("glass", 29.8, 5, 0.8, 0.8);
+    b.frame("wood", 28, 0, 3.6, 2.2);
+    b.box("tnt", 27.1, 0, 1, 1);
+    b.g("normal", 28.7, 0);
+    b.stack("stone", 36.2, 0, 0.8, [1.5, 1.5]);
+    b.stack("stone", 39, 0, 0.8, [1.5, 1.5]);
+    b.plank("ice", 37.6, 3, 3.8, 0.4);
+    b.g("king", 37.6, 0);
+    b.g("small", 37.6, 3.4);
   }),
 
-  level("f5", "Frozen Spire", 2, ["dasher", "heavy", "splitter", "bomber", "basic"], "Take out the bottom floor and the spire folds in on itself.", (b) => {
-    b.post("wood", 28.5, 0, 2, 0.5);
-    b.post("wood", 31.5, 0, 2, 0.5);
-    b.plank("stone", 30, 2, 3.8, 0.4);
-    b.g("normal", 30, 0);
-    b.post("ice", 28.8, 2.4, 2, 0.5);
-    b.post("ice", 31.2, 2.4, 2, 0.5);
-    b.plank("wood", 30, 4.4, 3.4, 0.3);
-    b.g("normal", 30, 2.4);
-    b.post("glass", 29.1, 4.7, 1.8, 0.4);
-    b.post("glass", 30.9, 4.7, 1.8, 0.4);
-    b.plank("wood", 30, 6.5, 2.8, 0.3);
-    b.g("helmet", 30, 4.7);
-    b.g("small", 30, 6.8);
-    b.box("wood", 35, 0, 1, 1);
-    b.g("small", 35, 1);
+  level("f5", "Frozen Spire", 2, ["dasher", "heavy", "splitter", "bomber", "basic", "basic"], "Take out the bottom floor and the spire folds in on itself.", (b) => {
+    b.post("wood", 26.5, 0, 2, 0.5);
+    b.post("wood", 29.5, 0, 2, 0.5);
+    b.plank("stone", 28, 2, 3.8, 0.4);
+    b.g("normal", 28, 0);
+    b.post("ice", 26.8, 2.4, 2, 0.5);
+    b.post("ice", 29.2, 2.4, 2, 0.5);
+    b.plank("wood", 28, 4.4, 3.4, 0.3);
+    b.g("normal", 28, 2.4);
+    b.post("glass", 27.1, 4.7, 1.8, 0.4);
+    b.post("glass", 28.9, 4.7, 1.8, 0.4);
+    b.plank("wood", 28, 6.5, 2.8, 0.3);
+    b.g("helmet", 28, 4.7);
+    b.g("small", 28, 6.8);
+    b.post("ice", 36.7, 0, 2, 0.5);
+    b.post("ice", 38.7, 0, 2, 0.5);
+    b.plank("wood", 37.7, 2, 3.0, 0.3);
+    b.g("normal", 37.7, 0);
+    b.post("glass", 36.9, 2.3, 1.6, 0.4);
+    b.post("glass", 38.5, 2.3, 1.6, 0.4);
+    b.plank("wood", 37.7, 3.9, 2.4, 0.3);
+    b.g("small", 37.7, 2.3);
+    b.box("wood", 33, 0, 1, 1);
   }),
 
-  level("f6", "Grumble King's Castle", 2, ["heavy", "bomber", "splitter", "dasher", "basic", "basic"], "The whole gang is home. Good luck!", (b) => {
+  level("f6", "Grumble King's Castle", 2, ["heavy", "bomber", "splitter", "dasher", "heavy", "basic", "basic"], "The whole gang is home. Good luck!", (b) => {
     const t1 = b.stack("stone", 24.8, 0, 1.6, [1.5, 1.5, 1.5]);
     const t2 = b.stack("stone", 35.2, 0, 1.6, [1.5, 1.5, 1.5]);
     b.plank("wood", 24.8, t1, 2.4, 0.3);
@@ -321,5 +357,9 @@ export const LEVELS: LevelDef[] = [
     b.box("wood", 28.2, 3.5, 1, 1);
     b.box("wood", 31.8, 3.5, 1, 1);
     b.g("king", 30, 3.5);
+    b.box("stone", 21.4, 0, 1, 1.6);
+    b.g("normal", 20.2, 0);
+    b.box("stone", 38.4, 0, 1, 1.6);
+    b.g("normal", 39.6, 0);
   }),
 ];

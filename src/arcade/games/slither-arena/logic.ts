@@ -67,7 +67,7 @@ function makeBrain(rng: Rng): Brain {
 
 function makeWorm(id: number, rng: Rng, isPlayer: boolean): Worm {
   return {
-    id, name: isPlayer ? "You" : "", skin: id % SKIN_COUNT, isPlayer, alive: false, x: 0, y: 0, ang: 0, targetAng: 0, turnCmd: null, wantBoost: false,
+    id, name: isPlayer ? "You" : "", skin: isPlayer ? 0 : 1 + (id % (SKIN_COUNT - 1)), isPlayer, alive: false, x: 0, y: 0, ang: 0, targetAng: 0, turnCmd: null, wantBoost: false,
     boosting: false, mass: START_MASS, g: girth(START_MASS), n: 0, sx: new Float32Array(MAX_SEGS), sy: new Float32Array(MAX_SEGS),
     minX: 0, maxX: 0, minY: 0, maxY: 0, kills: 0, peak: START_MASS, shield: 0, dropAcc: 0, killedBy: "", deadFor: 0,
     brain: makeBrain(rng),
@@ -182,7 +182,7 @@ export function spawnWorm(s: World, wi: number, mass: number, x?: number, y?: nu
   w.deadFor = 0;
   if (!w.isPlayer) {
     w.name = pickName(s);
-    w.skin = Math.floor(s.rng() * SKIN_COUNT);
+    w.skin = 1 + Math.floor(s.rng() * (SKIN_COUNT - 1));
     w.brain = makeBrain(s.rng);
   }
   w.n = segCount(mass);

@@ -173,7 +173,7 @@ export function drawFace(ctx: CanvasRenderingContext2D, id: number, w: number, h
 
   // Corner indexes (top-left, and the same turned upside down at bottom-right).
   const label = rank === 0 ? "A" : rank === 9 ? "10" : rank === 10 ? "J" : rank === 11 ? "Q" : rank === 12 ? "K" : String(rank + 1);
-  const fs = w * (label === "10" ? 0.25 : 0.29);
+  const fs = w * (label === "10" ? 0.22 : 0.27);
   for (const turned of [false, true]) {
     ctx.save();
     if (turned) {
@@ -184,15 +184,15 @@ export function drawFace(ctx: CanvasRenderingContext2D, id: number, w: number, h
     ctx.font = `800 ${fs}px ${FONT}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(label, w * 0.17, h * 0.1);
-    fillSuit(ctx, suit, w * 0.17, h * 0.1 + fs * 0.92 + w * 0.02, w * 0.17);
+    ctx.fillText(label, w * 0.15, h * 0.095);
+    fillSuit(ctx, suit, w * 0.15, h * 0.095 + fs * 0.9 + w * 0.02, w * 0.16);
     ctx.restore();
   }
 
-  const px0 = w * 0.3;
-  const px1 = w * 0.7;
-  const py0 = h * 0.17;
-  const py1 = h * 0.83;
+  const px0 = w * 0.33;
+  const px1 = w * 0.67;
+  const py0 = h * 0.2;
+  const py1 = h * 0.8;
   if (rank >= 10) {
     // Court card: a framed panel, the emblem and its mirror image.
     const fx = w * 0.27;
@@ -211,7 +211,7 @@ export function drawFace(ctx: CanvasRenderingContext2D, id: number, w: number, h
     ctx.globalAlpha = 0.35;
     ctx.stroke();
     ctx.globalAlpha = 1;
-    const u = w * 0.19;
+    const u = w * 0.2;
     emblem(ctx, rank, suit, w * 0.5 - u * 0.2, h * 0.31, u);
     ctx.save();
     ctx.translate(w, h);
@@ -221,7 +221,7 @@ export function drawFace(ctx: CanvasRenderingContext2D, id: number, w: number, h
     return;
   }
   const pips = PIPS[rank + 1];
-  const size = rank === 0 ? w * 0.46 : w * 0.2;
+  const size = rank === 0 ? w * 0.42 : w * 0.18;
   for (const [cx, cy] of pips) {
     const x = (px0 + px1) / 2 + cx * ((px1 - px0) / 2);
     const y = py0 + cy * (py1 - py0);

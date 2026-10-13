@@ -556,10 +556,11 @@ export function levelPotential(level: LevelDef): Potential {
 /** Scores needed for two and three stars. One star is simply winning. */
 export function starTargets(level: LevelDef): [number, number] {
   const { grumblers, blocks } = levelPotential(level);
-  const n = level.critters.length;
-  const two = grumblers + 0.3 * blocks + LEFTOVER_BONUS * Math.max(1, Math.floor(n / 3));
-  const three = grumblers + 0.5 * blocks + LEFTOVER_BONUS * Math.max(1, Math.ceil(n / 2));
-  return [Math.round(two / 100) * 100, Math.round(three / 100) * 100];
+  const par = level.par > 0 ? level.par : grumblers + 0.6 * blocks + LEFTOVER_BONUS * Math.floor(level.critters.length / 2);
+  // Clearing the grumblers is worth `grumblers` points on its own, so the stars are measured above that.
+  const extra = Math.max(0, par - grumblers);
+  const round = (v: number) => Math.round(v / 100) * 100;
+  return [round(grumblers + 0.4 * extra), round(grumblers + 0.85 * extra)];
 }
 
 export function starsFor(level: LevelDef, score: number): number {
