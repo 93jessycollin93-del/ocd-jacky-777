@@ -1,5 +1,5 @@
 // Sizes for drawing the tiles, in the SVG's own units (the whole board scales to fit the screen).
-import type { Slot } from "./layouts";
+import { slotsOf, type LayoutDef, type Slot } from "./layouts";
 
 /** Tile face width and height. */
 export const PW = 54;
@@ -28,4 +28,14 @@ export function boardBox(slots: readonly Slot[], pad = 6) {
     y1 = Math.max(y1, p.y + PH + DEPTH);
   }
   return { x: x0 - pad, y: y0 - pad, w: x1 - x0 + pad * 2, h: y1 - y0 + pad * 2 };
+}
+
+/** Should this layout be turned on its side? A wide layout on a tall phone fits much better that way. */
+export function shouldRotate(layout: LayoutDef, width: number, height: number): boolean {
+  if (width <= 0 || height <= 0) return false;
+  const a = boardBox(slotsOf(layout, false));
+  const b = boardBox(slotsOf(layout, true));
+  const sa = Math.min(width / a.w, height / a.h);
+  const sb = Math.min(width / b.w, height / b.h);
+  return sb > sa * 1.12;
 }

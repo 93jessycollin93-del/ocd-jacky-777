@@ -4,6 +4,7 @@ import {
   buildBoard, canPair, findMoves, freeTiles, hint, isFree, isStuck, isWon, newGame, removePair, replay, reshuffle, restart, undo,
   type Game,
 } from "@/arcade/games/mahjong-tiles/logic";
+import { PW, boardBox, shouldRotate, tilePos } from "@/arcade/games/mahjong-tiles/metrics";
 import { KIND_COUNT, fullSet, kindName, matches, suitOf } from "@/arcade/games/mahjong-tiles/tiles";
 import { mulberry32 } from "@/arcade/kit/rng";
 
@@ -292,5 +293,36 @@ describe("mahjong shuffle", () => {
     for (const [a, b] of g.solution.slice(0, 71)) removePair(g, a, b);
     expect(g.remaining).toBe(2);
     expect(reshuffle(g, mulberry32(1))).toBe(false);
+  });
+});
+
+describe("mahjong drawing", () => {
+  it("offsets higher layers up and to the left", () => {
+    const base = tilePos({ x: 4, y: 4, z: 0 });
+    const raised = tilePos({ x: 4, y: 4, z: 2 });
+    expect(raised.x).toBeLessThan(base.x);
+    expect(raised.y).toBeLessThan(base.y);
+  });
+
+  it("fits every layout in a box that holds all its tiles", () => {
+    for (const l of LAYOUTS) {
+      const slots = slotsOf(l);
+      const box = boardBox(slots);
+      for (const s of slots) {
+        const p = tilePos(s);
+        expect(p.x).toBeGreaterThanOrEqual(box.x);
+        expect(p.x + PW).toBeLessThanOrEqual(box.x + box.w);
+        expect(p.y).toBeGreaterThanOrEqual(box.y);
+      }
+    }
+  });
+
+  it("turns a wide layout on its side only when the screen is tall", () => {
+    for (const l of LAYOUTS) {
+      expect(shouldRotate(l, 1200, 700)).toBe(false);
+      expect(shouldRotate(l, 800, 330)).toBe(false);
+    }
+    expect(shouldRotate(LAYOUTS[2], 390, 700)).toBe(true);
+    expect(shouldRotate(LAYOUTS[3], 390, 700)).toBe(true);
   });
 });

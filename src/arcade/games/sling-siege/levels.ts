@@ -97,9 +97,9 @@ class Builder {
 
 /** Scores of a strong shot-by-shot search (see the level-solving test), used to set the star targets. */
 const PARS: Record<string, number> = {
-  m1: 25500, m2: 21250, m3: 25500, m4: 38000, m5: 36000, m6: 41000,
-  c1: 21000, c2: 32000, c3: 24000, c4: 24400, c5: 35000, c6: 52300,
-  f1: 39700, f2: 37300, f3: 33950, f4: 49400, f5: 63700, f6: 88900,
+  m1: 26000, m2: 31250, m3: 28000, m4: 37500, m5: 44000, m6: 42000,
+  c1: 22100, c2: 23000, c3: 28600, c4: 42000, c5: 35000, c6: 64500,
+  f1: 40500, f2: 27000, f3: 34350, f4: 60500, f5: 65500, f6: 90000,
 };
 
 function level(
@@ -354,9 +354,11 @@ export const LEVELS: LevelDef[] = [
     b.box("tnt", 28.4, 0, 1, 1);
     b.box("tnt", 31.6, 0, 1, 1);
     b.g("helmet", 30, 0);
-    b.box("wood", 28.2, 3.5, 1, 1);
-    b.box("wood", 31.8, 3.5, 1, 1);
+    b.post("stone", 28.55, 3.5, 2.2, 0.5);
+    b.post("stone", 31.45, 3.5, 2.2, 0.5);
+    b.plank("stone", 30, 5.7, 3.5, 0.4);
     b.g("king", 30, 3.5);
+    b.box("wood", 30, 6.1, 0.8, 0.8);
     b.box("stone", 21.4, 0, 1, 1.6);
     b.g("normal", 20.2, 0);
     b.box("stone", 38.4, 0, 1, 1.6);

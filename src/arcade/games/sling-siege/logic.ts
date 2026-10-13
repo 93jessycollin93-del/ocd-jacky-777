@@ -98,6 +98,8 @@ export const STEP = PHYS.dt;
 const BOMB = { radius: 3.4, power: 10, damage: 12, fuse: 0.9 };
 const TNT = { radius: 3, power: 8, damage: 9 };
 const GRUMBLER_BLAST = 2;
+/** Physics impulses are turned into game damage with this factor (tuned together with the material strengths). */
+const DAMAGE_SCALE = 1.2;
 /** Anything that falls below this is gone. */
 const KILL_Y = 30;
 const KILL_X = 90;
@@ -216,6 +218,13 @@ export function clampPull(dx: number, dy: number): { x: number; y: number; len: 
   return { x, y, len: Math.hypot(x, y) };
 }
 
+/** The pull vector for a launch angle (degrees above horizontal) and a power from 0 to 1. */
+export function pullFor(angleDeg: number, power: number): { x: number; y: number } {
+  const a = (angleDeg * Math.PI) / 180;
+  const len = power * SLING.maxPull;
+  return { x: -len * Math.cos(a), y: len * Math.sin(a) };
+}
+
 export function launchVelocity(pullX: number, pullY: number): { vx: number; vy: number; speed: number } {
   const vx = -pullX * SLING.power;
   const vy = -pullY * SLING.power;
@@ -247,7 +256,7 @@ export function trajectory(pullX: number, pullY: number, count: number, interval
   return out;
 }
 
-function spawnCritter(s: SiegeState, kind: CritterKind, x: number, y: number, vx: number, vy: number, r?: number, group = 0, density?: number): Piece {
+export function spawnCritter(s: SiegeState, kind: CritterKind, x: number, y: number, vx: number, vy: number, r?: number, group = 0, density?: number): Piece {
   const spec = CRITTERS[kind];
   const body = s.world.add({
     shape: { kind: "circle", r: r ?? spec.r }, x, y, vx, vy, density: density ?? spec.density, friction: 0.7, restitution: 0.22,
@@ -440,7 +449,7 @@ function processImpacts(s: SiegeState) {
     const arb = list[i];
     const pa = arb.a.user as Piece | undefined;
     const pb = arb.b.user as Piece | undefined;
-    const imp = arb.impact;
+    const imp = arb.impact * DAMAGE_SCALE;
     const c = arb.contacts[0];
     if (pa?.kind === "critter" && !pa.touched) pa.touched = true;
     if (pb?.kind === "critter" && !pb.touched) pb.touched = true;
@@ -593,7 +602,7 @@ export function starTargets(level: LevelDef): [number, number] {
   // Clearing the grumblers is worth `grumblers` points on its own, so the stars are measured above that.
   const extra = Math.max(0, par - grumblers);
   const round = (v: number) => Math.round(v / 100) * 100;
-  return [round(grumblers + 0.4 * extra), round(grumblers + 0.85 * extra)];
+  return [round(grumblers + 0.3 * extra), round(grumblers + 0.65 * extra)];
 }
 
 export function starsFor(level: LevelDef, score: number): number {
