@@ -15,17 +15,21 @@ export interface Viewport {
   h: number;
 }
 
-/** The zoom that fits the whole level across the screen (zoomed in a little on tall, narrow screens). */
+/**
+ * The zoom that fits the whole level across the screen. On tall, narrow screens that would make everything
+ * tiny, so it shows about 18 m around the slingshot instead; the intro pan, the shot camera and dragging the
+ * scenery show the rest.
+ */
 export function homeZoom(v: Viewport, levelWidth: number): number {
   const fit = v.w / levelWidth;
   const portrait = v.h > v.w * 1.1;
-  return portrait ? fit * 1.3 : fit;
+  return portrait ? Math.max(fit * 1.3, v.w / 18) : fit;
 }
 
 /** How far below the middle of the screen the ground sits at home zoom: a margin under the grass. */
 export function groundMargin(v: Viewport): number {
   // On tall screens the ground sits well above the bottom, so the sky and the ground share the height.
-  return v.h > v.w * 1.1 ? v.h * 0.32 : clamp(v.h * 0.16, 44, 120);
+  return v.h > v.w * 1.1 ? v.h * 0.22 : clamp(v.h * 0.16, 44, 120);
 }
 
 /** The camera height that puts the ground a margin above the bottom edge at zoom z. */
