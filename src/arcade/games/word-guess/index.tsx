@@ -432,7 +432,7 @@ export default function WordGuessGame({ touch, best, submitScore }: GameProps) {
     const kbH = keyH * 3 + 14 + 16;
     const byH = Math.floor((box.h - headerH - kbH - 28 - gap * 5) / 6);
     const byW = Math.floor((box.w - 28 - gap * 4) / 5);
-    tile = clamp(Math.min(byH, byW), 28, 64);
+    tile = clamp(Math.min(byH, byW), 28, 70);
   }
   const boardW = tile * 5 + gap * 4;
 
@@ -494,10 +494,10 @@ export default function WordGuessGame({ touch, best, submitScore }: GameProps) {
         aria-label={isEnter ? "Enter" : isDel ? "Backspace" : k}
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => (isEnter ? enter() : isDel ? backspace() : typeLetter(k))}
-        className="wg-key flex min-w-0 items-center justify-center rounded-md font-bold uppercase text-white"
+        className={`wg-key flex min-w-0 items-center justify-center rounded-md font-bold text-white ${isEnter ? "" : "uppercase"}`}
         style={{
-          flex: wideKey ? 1.55 : 1, height: keyH, background: bg, color: dim ? "rgba(255,255,255,0.45)" : "#fff",
-          fontSize: isEnter ? Math.round(keyH * 0.27) : Math.round(keyH * 0.36),
+          flex: wideKey ? 1.65 : 1, height: keyH, background: bg, color: dim ? "rgba(255,255,255,0.45)" : "#fff",
+          fontSize: isEnter ? Math.round(keyH * 0.25) : Math.round(keyH * 0.36),
         }}
       >
         {isEnter ? "Enter" : isDel ? "⌫" : k}
@@ -578,7 +578,12 @@ export default function WordGuessGame({ touch, best, submitScore }: GameProps) {
         >
           Hard
         </Chip>
-        <Chip label="High contrast colours" active={settings.contrast} onClick={() => setSetting({ contrast: !settings.contrast })}>◐</Chip>
+        <Chip label="High contrast colours" active={settings.contrast} onClick={() => setSetting({ contrast: !settings.contrast })}>
+          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+            <circle cx="7" cy="7" r="6" fill="none" stroke="currentColor" strokeWidth="1.6" />
+            <path d="M7 1a6 6 0 0 1 0 12z" fill="currentColor" />
+          </svg>
+        </Chip>
         <Chip label="Statistics" onClick={() => session && setShowStats(true)}>📊</Chip>
       </div>
 
@@ -597,7 +602,7 @@ export default function WordGuessGame({ touch, best, submitScore }: GameProps) {
       {/* board + keyboard */}
       {session && (
         <div
-          className={`absolute inset-x-0 bottom-0 flex items-center justify-center ${wide ? "flex-row gap-6 px-3" : "flex-col justify-between py-2"}`}
+          className={`absolute inset-x-0 bottom-0 flex items-center justify-center ${wide ? "flex-row gap-6 px-3" : "flex-col justify-between pb-3 pt-2"}`}
           style={{ top: headerH }}
         >
           {wide ? (

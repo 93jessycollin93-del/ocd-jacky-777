@@ -58,6 +58,8 @@ export interface Brain {
   circleDir: 1 | -1;
   /** "forage" | "hunt" | "circle" | "flee": what it did last think, for the HUD/tests. */
   mode: string;
+  /** Danger of the arc it chose at its last think (0..1), for tests and debugging. */
+  danger: number;
 }
 
 export interface Worm {

@@ -2,9 +2,16 @@
 // heads, cut off or circle smaller worms), then probe a fan of directions for bodies and the world edge
 // and steer along the safest one that still heads toward the goal.
 import type { World } from "./logic";
-import { BODY_HIT, HEAD_HIT, MIN_BOOST_MASS, WORLD_R, angDiff, clamp, type Orb, type Worm } from "./model";
+import { BASE_SPEED, BODY_HIT, BOOST_MULT, HEAD_HIT, MIN_BOOST_MASS, WORLD_R, angDiff, clamp, turnRate, type Orb } from "./model";
 
-const REL = [0, 0.28, -0.28, 0.6, -0.6, 1.0, -1.0, 1.5, -1.5, 2.3, -2.3];
+const MARGIN = 34;
+/** Fractions of the maximum turn rate to try. */
+const TURNS = [0, 0.25, -0.25, 0.55, -0.55, 1, -1];
+const SAMPLES = 5;
+const whiskX = new Float64Array(12);
+const whiskY = new Float64Array(12);
+const whiskG = new Float64Array(12);
+let nWhisk = 0;
 
 /** How dangerous it is for a head of radius myG to be at (px, py): 0 safe .. 1 certain death. */
 export function dangerAt(s: World, self: number, px: number, py: number, myG: number): number {
@@ -13,7 +20,7 @@ export function dangerAt(s: World, self: number, px: number, py: number, myG: nu
   const edgeStart = WORLD_R - 150;
   if (rr > edgeStart) danger = clamp((rr - edgeStart) / 110, 0, 1);
   const grid = s.grid;
-  grid.range(px, py, HEAD_HIT * myG + BODY_HIT * s.maxG + 26);
+  grid.range(px, py, HEAD_HIT * myG + BODY_HIT * s.maxG + MARGIN);
   const worms = s.worms;
   for (let gy = grid.gy0; gy <= grid.gy1; gy++) {
     for (let gx = grid.gx0; gx <= grid.gx1; gx++) {
@@ -26,8 +33,8 @@ export function dangerAt(s: World, self: number, px: number, py: number, myG: nu
         const dy = o.sy[si] - py;
         const hit = HEAD_HIT * myG + BODY_HIT * o.g;
         const d = Math.sqrt(dx * dx + dy * dy);
-        if (d < hit + 26) {
-          const k = 1 - (d - hit) / 26;
+        if (d < hit + MARGIN) {
+          const k = 1 - (d - hit) / MARGIN;
           if (k > danger) danger = k > 1 ? 1 : k;
         }
       }
@@ -184,24 +191,58 @@ export function think(s: World, wi: number) {
   let ta = Math.atan2(gy - w.y, gx - w.x);
   ta += (rng() - 0.5) * (1 - skill) * 0.7;
 
-  // ---- probe a fan of directions
-  const look = (55 + 95 * skill) * (w.boosting ? 1.5 : 1);
+  // ---- probe a fan of turning arcs (so the turning circle is respected) and keep the safest that heads for the goal
+  const v = BASE_SPEED * (wantBoost && w.mass > MIN_BOOST_MASS ? BOOST_MULT : 1);
+  const horizon = 0.5 + 0.5 * skill;
+  const dtp = horizon / SAMPLES;
+  const omega = turnRate(w.mass);
+  // Where the nearby heads will be soon: they are dangerous even before their bodies get there.
+  nWhisk = 0;
+  for (let j = 0; j < s.worms.length && nWhisk < 10; j++) {
+    if (j === wi) continue;
+    const o = s.worms[j];
+    if (!o.alive) continue;
+    if (Math.abs(o.x - w.x) > 420 || Math.abs(o.y - w.y) > 420) continue;
+    const ov = BASE_SPEED * (o.boosting ? BOOST_MULT : 1);
+    for (let k = 1; k <= 2; k++) {
+      whiskX[nWhisk] = o.x + Math.cos(o.ang) * ov * 0.3 * k;
+      whiskY[nWhisk] = o.y + Math.sin(o.ang) * ov * 0.3 * k;
+      whiskG[nWhisk] = o.g;
+      nWhisk++;
+    }
+  }
   const careless = rng() < (1 - skill) * 0.035;
   let bestA = w.ang;
   let bestSc = -1e9;
   let bestDanger = 0;
-  for (let k = 0; k < REL.length; k++) {
-    const rel = REL[k];
-    const a = w.ang + rel;
-    const ca = Math.cos(a);
-    const sa = Math.sin(a);
-    let dg = dangerAt(s, wi, w.x + ca * look * 0.5, w.y + sa * look * 0.5, w.g);
-    const dg2 = dangerAt(s, wi, w.x + ca * look, w.y + sa * look, w.g);
-    if (dg2 > dg) dg = dg2;
-    const sc = Math.cos(angDiff(a, ta)) - (careless ? 0 : 2.8 * dg) - 0.07 * Math.abs(rel);
+  for (let k = 0; k < TURNS.length; k++) {
+    const c = TURNS[k];
+    let a = w.ang;
+    let px = w.x;
+    let py = w.y;
+    let dg = 0;
+    for (let i = 0; i < SAMPLES; i++) {
+      a += c * omega * dtp * 0.5;
+      px += Math.cos(a) * v * dtp;
+      py += Math.sin(a) * v * dtp;
+      a += c * omega * dtp * 0.5;
+      const d = dangerAt(s, wi, px, py, w.g);
+      if (d > dg) dg = d;
+      for (let q = 0; q < nWhisk; q++) {
+        const dx = whiskX[q] - px;
+        const dy = whiskY[q] - py;
+        const hit = HEAD_HIT * w.g + BODY_HIT * whiskG[q];
+        const dd = Math.sqrt(dx * dx + dy * dy);
+        if (dd < hit + MARGIN) {
+          const kk = 1 - (dd - hit) / MARGIN;
+          if (kk > dg) dg = kk > 1 ? 1 : kk;
+        }
+      }
+    }
+    const sc = Math.cos(angDiff(a, ta)) - (careless ? 0 : 6 * dg) - 0.12 * Math.abs(c);
     if (sc > bestSc) {
       bestSc = sc;
-      bestA = a;
+      bestA = w.ang + c * omega * horizon;
       bestDanger = dg;
     }
   }
@@ -210,4 +251,5 @@ export function think(s: World, wi: number) {
   if (w.mass < MIN_BOOST_MASS + 10) wantBoost = false;
   w.wantBoost = wantBoost;
   b.mode = mode;
+  b.danger = bestDanger;
 }
