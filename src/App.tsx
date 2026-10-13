@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Sandbox from "./pages/Sandbox";
 import { SandboxBanner } from "./components/SandboxBanner";
+import { OfflineBadge } from "./components/OfflineBadge";
 
 import Play from "./pages/Play";
 import TelegramShell from "./pages/TelegramShell";
@@ -41,6 +42,7 @@ const Survival = lazy(() => import("./pages/Survival"));
 const DeadHours = lazy(() => import("./pages/DeadHours"));
 const Arcade = lazy(() => import("./pages/Arcade"));
 const ArcadeGame = lazy(() => import("./pages/ArcadeGame"));
+const PocketAI = lazy(() => import("./pages/PocketAI"));
 const EruRouter = lazy(() => import("./eru/EruRouter"));
 const FloatingEditorNav = lazy(() => import("./eru/FloatingEditorNav"));
 const VisualizerLab = lazy(() => import("./eru/VisualizerLab"));
@@ -85,6 +87,7 @@ const App = () => (
             <Sonner />
           <BrowserRouter>
             <SandboxBanner />
+            <OfflineBadge />
             <SandboxCatcher>
               <Routes>
                 <Route path="/auth" element={<Auth />} />
@@ -191,6 +194,7 @@ const App = () => (
               <Route path="/zombies" element={<ProtectedRoute><Suspense fallback={null}><DeadHours /></Suspense></ProtectedRoute>} />
               <Route path="/arcade" element={<ProtectedRoute><Suspense fallback={null}><Arcade /></Suspense></ProtectedRoute>} />
               <Route path="/arcade/:id" element={<ProtectedRoute><Suspense fallback={null}><ArcadeGame /></Suspense></ProtectedRoute>} />
+              <Route path="/pocket" element={<ProtectedRoute><Suspense fallback={null}><PocketAI /></Suspense></ProtectedRoute>} />
               <Route
                 path="/eru/visualizers"
                 element={

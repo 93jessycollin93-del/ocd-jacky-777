@@ -2,7 +2,7 @@
 // Each entry defines the edge function endpoint + supported models.
 // Add a key in Cloud → Secrets to activate the provider.
 
-export type ProviderId = "lovable" | "groq" | "openrouter" | "ollama";
+export type ProviderId = "lovable" | "groq" | "openrouter" | "ollama" | "device";
 
 export interface ModelDef {
   id: string;
@@ -115,6 +115,19 @@ export const PROVIDERS: ProviderDef[] = [
       { id: "mistral:7b", label: "Mistral 7B", free: true },
       { id: "phi3:mini", label: "Phi-3 Mini", free: true },
       { id: "starcoder2:15b", label: "StarCoder2 15B", free: true },
+    ],
+  },
+  {
+    id: "device",
+    label: "On-device (Pocket AI)",
+    fn: "", // runs in the browser, no edge function
+    free: true,
+    description: "Runs a downloaded model right in this browser. Private, free and works offline. Download one in Pocket AI first.",
+    helpUrl: "/pocket",
+    models: [
+      { id: "bonsai-1.7b", label: "Bonsai 1.7B (1-bit)", free: true, note: "248 MB, runs on phones" },
+      { id: "bonsai-4b", label: "Bonsai 4B (1-bit)", free: true, note: "572 MB" },
+      { id: "bonsai-8b", label: "Bonsai 8B (1-bit)", free: true, note: "1.16 GB, laptops" },
     ],
   },
 ];

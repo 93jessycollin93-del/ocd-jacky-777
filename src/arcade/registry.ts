@@ -3,8 +3,21 @@
 import type { ComponentType } from "react";
 import { CATEGORIES, type GameMeta, type GameProps } from "./types";
 
-const metas = import.meta.glob<{ meta: GameMeta }>("./games/*/meta.ts", { eager: true });
-const loaders = import.meta.glob<{ default: ComponentType<GameProps> }>("./games/*/index.tsx");
+// Games still being built are left out of the Arcade (and the production bundle) until they pass their checks.
+// Remove an id from both lists when its game is finished.
+const metas = import.meta.glob<{ meta: GameMeta }>(
+  [
+    "./games/*/meta.ts",
+    "!./games/chess/**", "!./games/checkers/**", "!./games/four-in-a-row/**", "!./games/klondike/**",
+    "!./games/word-guess/**", "!./games/slither-arena/**", "!./games/sling-siege/**",
+  ],
+  { eager: true },
+);
+const loaders = import.meta.glob<{ default: ComponentType<GameProps> }>([
+  "./games/*/index.tsx",
+  "!./games/chess/**", "!./games/checkers/**", "!./games/four-in-a-row/**", "!./games/klondike/**",
+  "!./games/word-guess/**", "!./games/slither-arena/**", "!./games/sling-siege/**",
+]);
 
 export const GAMES: GameMeta[] = Object.values(metas)
   .map((m) => m.meta)
