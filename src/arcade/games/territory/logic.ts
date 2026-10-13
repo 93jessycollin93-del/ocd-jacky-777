@@ -311,8 +311,10 @@ function enterCell(s: TWorld, p: TPlayer, cx: number, cy: number): boolean {
 function nextCentre(a: number, dir: number): number {
   const sign = dir === 0 || dir === 1 ? 1 : -1;
   const c0 = Math.floor(a) + 0.5;
-  if (sign > 0) return a < c0 - 1e-9 ? c0 : c0 + 1;
-  return a > c0 + 1e-9 ? c0 : c0 - 1;
+  // Exact comparisons: a centre that has been processed was snapped to exactly, so anything short of it (even by
+  // a rounding hair) still has that centre ahead. An epsilon here skipped cells, leaving no trail.
+  if (sign > 0) return a < c0 ? c0 : c0 + 1;
+  return a > c0 ? c0 : c0 - 1;
 }
 
 /** Glide one player by dt seconds, stopping at each cell centre to apply rules and turns. */

@@ -497,6 +497,11 @@ export default function SlingSiege({ touch, best, submitScore }: GameProps) {
   return (
     <div ref={root} className="absolute inset-0 select-none" style={{ touchAction: "none" }}>
       <GameCanvas width={box.w} height={box.h} draw={draw} background="#7dd3fc" onPointer={onPointer} cursor="crosshair" />
+      {playing && box.h > box.w * 1.1 && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-3 text-center text-[11px] font-semibold text-white/80 drop-shadow">
+          ↻ Turn your phone sideways to see the whole fort
+        </div>
+      )}
       {phase === "title" && (
         <StartPanel
           title={meta.title}

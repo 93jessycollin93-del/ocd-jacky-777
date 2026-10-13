@@ -7,15 +7,15 @@ import { CATEGORIES, type GameMeta, type GameProps } from "./types";
 // can't break a deploy) until they pass their checks, but are listed in development so they can be played and
 // tested. When a game ships, remove its id from all four brace lists below (they must be literal strings).
 const metas = {
-  ...import.meta.glob<{ meta: GameMeta }>(["./games/*/meta.ts", "!./games/{word-guess,mahjong-tiles,sea-battle,crazy-eights,sling-siege,rope-snip,eight-ball,mini-golf,slither-arena,blob-arena,territory,night-survivors,garden-defense,balloon-defense,tower-clash,missile-defense}/**"], { eager: true }),
+  ...import.meta.glob<{ meta: GameMeta }>(["./games/*/meta.ts", "!./games/{sea-battle,crazy-eights,rope-snip,eight-ball,mini-golf,night-survivors,garden-defense,balloon-defense,tower-clash,missile-defense}/**"], { eager: true }),
   ...(import.meta.env.DEV
-    ? import.meta.glob<{ meta: GameMeta }>("./games/{word-guess,mahjong-tiles,sea-battle,crazy-eights,sling-siege,rope-snip,eight-ball,mini-golf,slither-arena,blob-arena,territory,night-survivors,garden-defense,balloon-defense,tower-clash,missile-defense}/meta.ts", { eager: true })
+    ? import.meta.glob<{ meta: GameMeta }>("./games/{sea-battle,crazy-eights,rope-snip,eight-ball,mini-golf,night-survivors,garden-defense,balloon-defense,tower-clash,missile-defense}/meta.ts", { eager: true })
     : {}),
 };
 const loaders = {
-  ...import.meta.glob<{ default: ComponentType<GameProps> }>(["./games/*/index.tsx", "!./games/{word-guess,mahjong-tiles,sea-battle,crazy-eights,sling-siege,rope-snip,eight-ball,mini-golf,slither-arena,blob-arena,territory,night-survivors,garden-defense,balloon-defense,tower-clash,missile-defense}/**"]),
+  ...import.meta.glob<{ default: ComponentType<GameProps> }>(["./games/*/index.tsx", "!./games/{sea-battle,crazy-eights,rope-snip,eight-ball,mini-golf,night-survivors,garden-defense,balloon-defense,tower-clash,missile-defense}/**"]),
   ...(import.meta.env.DEV
-    ? import.meta.glob<{ default: ComponentType<GameProps> }>("./games/{word-guess,mahjong-tiles,sea-battle,crazy-eights,sling-siege,rope-snip,eight-ball,mini-golf,slither-arena,blob-arena,territory,night-survivors,garden-defense,balloon-defense,tower-clash,missile-defense}/index.tsx")
+    ? import.meta.glob<{ default: ComponentType<GameProps> }>("./games/{sea-battle,crazy-eights,rope-snip,eight-ball,mini-golf,night-survivors,garden-defense,balloon-defense,tower-clash,missile-defense}/index.tsx")
     : {}),
 };
 
