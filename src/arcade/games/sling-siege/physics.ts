@@ -1,12 +1,16 @@
-// A small 2D rigid-body engine for Sling Siege: boxes and circles with rotation, friction and
-// restitution. Contacts are solved with sequential impulses whose accumulated impulses are carried
+// A small 2D rigid-body engine for Sling Siege: boxes, circles and convex polygons (triangles) with
+// rotation, friction and restitution. Contacts are solved with sequential impulses whose accumulated impulses are carried
 // from step to step (warm starting) and matched by contact feature, which is what lets towers stand
 // still instead of jittering. Box–box contacts come from SAT plus edge clipping (up to two points).
 // Bodies that stay still for a moment fall asleep island by island and wake when touched.
 //
 // Units are metres, seconds and kilograms; y points DOWN (screen space), so gravity is positive.
 
-export type Shape = { kind: "box"; hw: number; hh: number } | { kind: "circle"; r: number };
+export type Shape =
+  | { kind: "box"; hw: number; hh: number }
+  | { kind: "circle"; r: number }
+  /** A convex polygon whose local origin is its centroid. Build one with polyShape(). */
+  | { kind: "poly"; verts: number[]; area: number; inertia: number };
 
 export interface Body {
   id: number;
@@ -20,6 +24,10 @@ export interface Body {
   vx: number;
   vy: number;
   w: number;
+  /** Pseudo-velocity used only to push overlapping bodies apart (split impulses), reset every step. */
+  bvx: number;
+  bvy: number;
+  bw: number;
   mass: number;
   invMass: number;
   invI: number;
@@ -38,6 +46,12 @@ export interface Body {
   maxY: number;
   /** Index in world.bodies (refreshed every step). */
   idx: number;
+  /** Polygon data (boxes and polys): vertex count, then local and world vertices / outward normals, x then y. */
+  nv: number;
+  lv: Float64Array;
+  ln: Float64Array;
+  wv: Float64Array;
+  wn: Float64Array;
   /** Whatever the game wants to hang on the body. */
   user: unknown;
 }
@@ -70,13 +84,21 @@ export interface Contact {
   feature: number;
   pn: number;
   pt: number;
+  /** Accumulated position-correction impulse (not carried between steps). */
+  pnb: number;
   massN: number;
   massT: number;
+  /** Target closing speed: a bounce, or the gap per step for a contact that has not touched yet. */
+  bounce: number;
+  /** Speed at which to push the bodies apart. */
   bias: number;
   r1x: number;
   r1y: number;
   r2x: number;
   r2y: number;
+  /** r × n for each body, for the block solver. */
+  rn1: number;
+  rn2: number;
   /** Estimated impact impulse at this point this step (approach speed × effective mass). */
   impact: number;
 }
@@ -91,6 +113,14 @@ export interface Arbiter {
   stamp: number;
   /** Sum of the contact impact impulses this step. */
   impact: number;
+  /** Two-point block solver data (normal mass matrix and its inverse). */
+  block: boolean;
+  k11: number;
+  k12: number;
+  k22: number;
+  i11: number;
+  i12: number;
+  i22: number;
 }
 
 export const PHYS = {
@@ -99,58 +129,135 @@ export const PHYS = {
   gravity: 10,
   slop: 0.008,
   baumgarte: 0.2,
-  maxBias: 3,
-  restitutionThreshold: 1,
+  maxBias: 2,
+  restitutionThreshold: 3,
+  /** Approach speed (m/s) below which a contact is resting, not an impact. */
+  impactSpeed: 0.35,
+  /** Contacts are kept for bodies this close (m): speculative contacts keep resting stacks from flickering. */
+  margin: 0.02,
+  maxSpeed: 60,
   sleepLinear: 0.06,
   sleepAngular: 0.08,
   timeToSleep: 0.5,
 };
 
 const newContact = (): Contact => ({
-  x: 0, y: 0, nx: 0, ny: 0, sep: 0, feature: 0, pn: 0, pt: 0, massN: 0, massT: 0, bias: 0, r1x: 0, r1y: 0, r2x: 0, r2y: 0, impact: 0,
+  x: 0, y: 0, nx: 0, ny: 0, sep: 0, feature: 0, pn: 0, pt: 0, pnb: 0, massN: 0, massT: 0, bounce: 0, bias: 0, r1x: 0, r1y: 0, r2x: 0, r2y: 0, rn1: 0, rn2: 0, impact: 0,
 });
 
 /** Area of a shape in square metres. */
-export const shapeArea = (s: Shape) => (s.kind === "box" ? 4 * s.hw * s.hh : Math.PI * s.r * s.r);
+export const shapeArea = (s: Shape) => (s.kind === "box" ? 4 * s.hw * s.hh : s.kind === "circle" ? Math.PI * s.r * s.r : s.area);
+
+/** A convex polygon from vertices in any winding; re-centred on its centroid. */
+export function polyShape(points: number[]): Shape {
+  const n = points.length / 2;
+  let a2 = 0;
+  let cx = 0;
+  let cy = 0;
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    const x0 = points[2 * i], y0 = points[2 * i + 1], x1 = points[2 * j], y1 = points[2 * j + 1];
+    const cr = x0 * y1 - x1 * y0;
+    a2 += cr;
+    cx += (x0 + x1) * cr;
+    cy += (y0 + y1) * cr;
+  }
+  const area = Math.abs(a2) / 2;
+  cx /= 3 * a2;
+  cy /= 3 * a2;
+  const v: number[] = [];
+  for (let i = 0; i < n; i++) v.push(points[2 * i] - cx, points[2 * i + 1] - cy);
+  // Winding with a positive shoelace sum (outward normal = (dy, -dx)).
+  if (a2 < 0) {
+    const r: number[] = [];
+    for (let i = n - 1; i >= 0; i--) r.push(v[2 * i], v[2 * i + 1]);
+    for (let i = 0; i < 2 * n; i++) v[i] = r[i];
+  }
+  let inertia = 0;
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    const x0 = v[2 * i], y0 = v[2 * i + 1], x1 = v[2 * j], y1 = v[2 * j + 1];
+    inertia += (x0 * y1 - x1 * y0) * (x0 * x0 + x0 * x1 + x1 * x1 + y0 * y0 + y0 * y1 + y1 * y1);
+  }
+  return { kind: "poly", verts: v, area, inertia: Math.abs(inertia) / 12 };
+}
+
+/** An isosceles triangle with the base on the bottom and the apex up (y points down on screen). */
+export const triangleShape = (w: number, h: number) => polyShape([-w / 2, h, w / 2, h, 0, 0]);
+/** A right triangle: the right angle at bottom-left (dir < 0 at bottom-right). */
+export const wedgeShape = (w: number, h: number, dir = 1) =>
+  polyShape(dir > 0 ? [0, h, w, h, 0, 0] : [0, h, w, h, w, 0]);
 
 export function makeBody(id: number, d: BodyDef): Body {
   const density = d.density ?? 1;
-  const area = shapeArea(d.shape);
+  const sh = d.shape;
+  const area = shapeArea(sh);
   const mass = density * area;
   let inertia = 0;
   if (mass > 0) {
-    inertia = d.shape.kind === "box"
-      ? (mass * ((2 * d.shape.hw) ** 2 + (2 * d.shape.hh) ** 2)) / 12
-      : 0.5 * mass * d.shape.r * d.shape.r;
+    inertia = sh.kind === "box"
+      ? (mass * ((2 * sh.hw) ** 2 + (2 * sh.hh) ** 2)) / 12
+      : sh.kind === "circle"
+        ? 0.5 * mass * sh.r * sh.r
+        : density * sh.inertia;
+  }
+  let lv: number[] = [];
+  if (sh.kind === "box") lv = [-sh.hw, -sh.hh, sh.hw, -sh.hh, sh.hw, sh.hh, -sh.hw, sh.hh];
+  else if (sh.kind === "poly") lv = sh.verts;
+  const nv = lv.length / 2;
+  const ln = new Float64Array(2 * nv);
+  for (let i = 0; i < nv; i++) {
+    const j = (i + 1) % nv;
+    const dx = lv[2 * j] - lv[2 * i];
+    const dy = lv[2 * j + 1] - lv[2 * i + 1];
+    const len = Math.hypot(dx, dy) || 1;
+    ln[2 * i] = dy / len;
+    ln[2 * i + 1] = -dx / len;
   }
   const a = d.angle ?? 0;
   const b: Body = {
-    id, shape: d.shape, x: d.x, y: d.y, a, cos: Math.cos(a), sin: Math.sin(a), vx: d.vx ?? 0, vy: d.vy ?? 0, w: d.w ?? 0,
+    id, shape: sh, x: d.x, y: d.y, a, cos: Math.cos(a), sin: Math.sin(a), vx: d.vx ?? 0, vy: d.vy ?? 0, w: d.w ?? 0, bvx: 0, bvy: 0, bw: 0,
     mass, invMass: mass > 0 ? 1 / mass : 0, invI: inertia > 0 ? 1 / inertia : 0,
     friction: d.friction ?? 0.6, restitution: d.restitution ?? 0.1,
-    linearDamping: d.linearDamping ?? 0.02, angularDamping: d.angularDamping ?? (d.shape.kind === "circle" ? 1.2 : 0.1),
+    linearDamping: d.linearDamping ?? 0.02, angularDamping: d.angularDamping ?? (sh.kind === "circle" ? 1.2 : 0.1),
     group: d.group ?? 0, awake: mass > 0, sleepTime: 0, removed: false, minX: 0, minY: 0, maxX: 0, maxY: 0, idx: 0, user: d.user,
+    nv, lv: Float64Array.from(lv), ln, wv: new Float64Array(2 * nv), wn: new Float64Array(2 * nv),
   };
   computeAABB(b);
   return b;
 }
 
+/** Refresh the world-space vertices, normals and bounding box after the body moved. */
 function computeAABB(b: Body) {
-  if (b.shape.kind === "circle") {
-    const r = b.shape.r;
+  const sh = b.shape;
+  if (sh.kind === "circle") {
+    const r = sh.r;
     b.minX = b.x - r;
     b.maxX = b.x + r;
     b.minY = b.y - r;
     b.maxY = b.y + r;
   } else {
-    const c = Math.abs(b.cos);
-    const s = Math.abs(b.sin);
-    const ex = c * b.shape.hw + s * b.shape.hh;
-    const ey = s * b.shape.hw + c * b.shape.hh;
-    b.minX = b.x - ex;
-    b.maxX = b.x + ex;
-    b.minY = b.y - ey;
-    b.maxY = b.y + ey;
+    const c = b.cos;
+    const s = b.sin;
+    let mnx = Infinity, mny = Infinity, mxx = -Infinity, mxy = -Infinity;
+    const { lv, ln, wv, wn } = b;
+    for (let i = 0; i < b.nv; i++) {
+      const lx = lv[2 * i], ly = lv[2 * i + 1];
+      const x = b.x + c * lx - s * ly;
+      const y = b.y + s * lx + c * ly;
+      wv[2 * i] = x;
+      wv[2 * i + 1] = y;
+      wn[2 * i] = c * ln[2 * i] - s * ln[2 * i + 1];
+      wn[2 * i + 1] = s * ln[2 * i] + c * ln[2 * i + 1];
+      if (x < mnx) mnx = x;
+      if (x > mxx) mxx = x;
+      if (y < mny) mny = y;
+      if (y > mxy) mxy = y;
+    }
+    b.minX = mnx;
+    b.maxX = mxx;
+    b.minY = mny;
+    b.maxY = mxy;
   }
   const m = 0.02;
   b.minX -= m;
@@ -273,10 +380,11 @@ export function collideBoxes(A: Body, B: Body, out: [Contact, Contact] = tmp): n
 
   const faceAx = Math.abs(dAx) - hAx - (c11 * hBx + c12 * hBy);
   const faceAy = Math.abs(dAy) - hAy - (c21 * hBx + c22 * hBy);
-  if (faceAx > 0 || faceAy > 0) return 0;
+  const M = PHYS.margin;
+  if (faceAx > M || faceAy > M) return 0;
   const faceBx = Math.abs(dBx) - (c11 * hAx + c21 * hAy) - hBx;
   const faceBy = Math.abs(dBy) - (c12 * hAx + c22 * hAy) - hBy;
-  if (faceBx > 0 || faceBy > 0) return 0;
+  if (faceBx > M || faceBy > M) return 0;
 
   // Pick the axis of least penetration, preferring A's faces for coherence.
   let axis = 0;
@@ -352,7 +460,7 @@ export function collideBoxes(A: Body, B: Body, out: [Contact, Contact] = tmp): n
   for (let i = 0; i < 2; i++) {
     const v = clip2[i];
     const s = fnx * v.x + fny * v.y - front;
-    if (s <= 0) {
+    if (s <= M) {
       const c = out[n++];
       c.sep = s;
       c.nx = nx;
@@ -373,7 +481,8 @@ export function collideCircles(A: Body, B: Body, out: [Contact, Contact] = tmp):
   const dy = B.y - A.y;
   const rs = A.shape.r + B.shape.r;
   const d2 = dx * dx + dy * dy;
-  if (d2 > rs * rs) return 0;
+  const rm = rs + PHYS.margin;
+  if (d2 > rm * rm) return 0;
   const d = Math.sqrt(d2);
   const nx = d > 1e-9 ? dx / d : 0;
   const ny = d > 1e-9 ? dy / d : 1;
@@ -424,7 +533,8 @@ export function collideBoxCircle(A: Body, B: Body, out: [Contact, Contact] = tmp
     const dx = lx - px;
     const dy = ly - py;
     const d2 = dx * dx + dy * dy;
-    if (d2 > r * r) return 0;
+    const rm = r + PHYS.margin;
+    if (d2 > rm * rm) return 0;
     const d = Math.sqrt(d2);
     nlx = dx / d;
     nly = dy / d;
@@ -440,19 +550,194 @@ export function collideBoxCircle(A: Body, B: Body, out: [Contact, Contact] = tmp
   return 1;
 }
 
+// Scratch for the clipper.
+const clipIn = [0, 0, 0, 0];
+const clipA = [0, 0, 0, 0];
+const clipB = [0, 0, 0, 0];
+
+/** Largest (closest to zero) separation of A's edges against B's vertices; writes the edge into edgeOut[0]. */
+const edgeOut = [0];
+function maxSeparation(A: Body, B: Body): number {
+  let best = -Infinity;
+  let bi = 0;
+  const { wv: av, wn: an } = A;
+  const { wv: bv } = B;
+  for (let i = 0; i < A.nv; i++) {
+    const nx = an[2 * i], ny = an[2 * i + 1];
+    const vx = av[2 * i], vy = av[2 * i + 1];
+    let si = Infinity;
+    for (let j = 0; j < B.nv; j++) {
+      const d = nx * (bv[2 * j] - vx) + ny * (bv[2 * j + 1] - vy);
+      if (d < si) si = d;
+    }
+    if (si > best) {
+      best = si;
+      bi = i;
+    }
+  }
+  edgeOut[0] = bi;
+  return best;
+}
+
+/** Convex polygon (or box) vs convex polygon (or box). Normal from A to B. */
+export function collidePolys(A: Body, B: Body, out: [Contact, Contact] = tmp): number {
+  if (A.shape.kind === "circle" || B.shape.kind === "circle") return 0;
+  const sepA = maxSeparation(A, B);
+  if (sepA > PHYS.margin) return 0;
+  const edgeA = edgeOut[0];
+  const sepB = maxSeparation(B, A);
+  if (sepB > PHYS.margin) return 0;
+  const edgeB = edgeOut[0];
+  let ref = A, inc = B, refEdge = edgeA;
+  let flip = false;
+  if (sepB > sepA + 0.0008) {
+    ref = B;
+    inc = A;
+    refEdge = edgeB;
+    flip = true;
+  }
+  const rn = ref.wn;
+  const rnx = rn[2 * refEdge], rny = rn[2 * refEdge + 1];
+  // Incident edge: the one on the other polygon most facing the reference face.
+  let incEdge = 0;
+  let minDot = Infinity;
+  for (let j = 0; j < inc.nv; j++) {
+    const d = rnx * inc.wn[2 * j] + rny * inc.wn[2 * j + 1];
+    if (d < minDot) {
+      minDot = d;
+      incEdge = j;
+    }
+  }
+  const i2 = (incEdge + 1) % inc.nv;
+  clipIn[0] = inc.wv[2 * incEdge];
+  clipIn[1] = inc.wv[2 * incEdge + 1];
+  clipIn[2] = inc.wv[2 * i2];
+  clipIn[3] = inc.wv[2 * i2 + 1];
+  const r2 = (refEdge + 1) % ref.nv;
+  const v1x = ref.wv[2 * refEdge], v1y = ref.wv[2 * refEdge + 1];
+  const v2x = ref.wv[2 * r2], v2y = ref.wv[2 * r2 + 1];
+  let tx = v2x - v1x;
+  let ty = v2y - v1y;
+  const tl = Math.hypot(tx, ty) || 1;
+  tx /= tl;
+  ty /= tl;
+  if (clipLine(clipA, clipIn, -tx, -ty, -(tx * v1x + ty * v1y)) < 2) return 0;
+  if (clipLine(clipB, clipA, tx, ty, tx * v2x + ty * v2y) < 2) return 0;
+  const front = rnx * v1x + rny * v1y;
+  let n = 0;
+  for (let k = 0; k < 2; k++) {
+    const px = clipB[2 * k], py = clipB[2 * k + 1];
+    const sep = rnx * px + rny * py - front;
+    if (sep <= PHYS.margin) {
+      const c = out[n++];
+      c.sep = sep;
+      c.nx = flip ? -rnx : rnx;
+      c.ny = flip ? -rny : rny;
+      c.x = px - sep * rnx;
+      c.y = py - sep * rny;
+      c.feature = (flip ? 4096 : 0) | (refEdge << 8) | (incEdge << 4) | k;
+    }
+  }
+  return n;
+}
+
+/** Clip a 2-point segment to the half-plane dot(n, p) <= offset. Returns the number of points kept. */
+function clipLine(out: number[], inp: number[], nx: number, ny: number, offset: number): number {
+  let n = 0;
+  const d0 = nx * inp[0] + ny * inp[1] - offset;
+  const d1 = nx * inp[2] + ny * inp[3] - offset;
+  if (d0 <= 0) {
+    out[0] = inp[0];
+    out[1] = inp[1];
+    n++;
+  }
+  if (d1 <= 0) {
+    out[2 * n] = inp[2];
+    out[2 * n + 1] = inp[3];
+    n++;
+  }
+  if (d0 * d1 < 0 && n < 2) {
+    const t = d0 / (d0 - d1);
+    out[2 * n] = inp[0] + t * (inp[2] - inp[0]);
+    out[2 * n + 1] = inp[1] + t * (inp[3] - inp[1]);
+    n++;
+  }
+  return n;
+}
+
+/** Convex polygon (A) vs circle (B). Normal from A to B. */
+export function collidePolyCircle(A: Body, B: Body, out: [Contact, Contact] = tmp): number {
+  if (A.shape.kind === "circle" || B.shape.kind !== "circle") return 0;
+  const r = B.shape.r;
+  const { wv, wn, nv } = A;
+  let best = -Infinity;
+  let bi = 0;
+  for (let i = 0; i < nv; i++) {
+    const s = wn[2 * i] * (B.x - wv[2 * i]) + wn[2 * i + 1] * (B.y - wv[2 * i + 1]);
+    if (s > r + PHYS.margin) return 0;
+    if (s > best) {
+      best = s;
+      bi = i;
+    }
+  }
+  const j = (bi + 1) % nv;
+  const ax = wv[2 * bi], ay = wv[2 * bi + 1], bx = wv[2 * j], by = wv[2 * j + 1];
+  const k = out[0];
+  k.feature = bi;
+  if (best < 1e-9) {
+    // Centre inside the polygon: push out through the nearest face.
+    k.nx = wn[2 * bi];
+    k.ny = wn[2 * bi + 1];
+    k.sep = best - r;
+    k.x = B.x - k.nx * (r + best / 2);
+    k.y = B.y - k.ny * (r + best / 2);
+    return 1;
+  }
+  const u1 = (B.x - ax) * (bx - ax) + (B.y - ay) * (by - ay);
+  const u2 = (B.x - bx) * (ax - bx) + (B.y - by) * (ay - by);
+  if (u1 <= 0 || u2 <= 0) {
+    const cx = u1 <= 0 ? ax : bx;
+    const cy = u1 <= 0 ? ay : by;
+    const dx = B.x - cx, dy = B.y - cy;
+    const d2 = dx * dx + dy * dy;
+    const rm = r + PHYS.margin;
+    if (d2 > rm * rm) return 0;
+    const d = Math.sqrt(d2) || 1e-9;
+    k.nx = dx / d;
+    k.ny = dy / d;
+    k.sep = d - r;
+    k.x = cx;
+    k.y = cy;
+    k.feature = 100 + (u1 <= 0 ? bi : j);
+    return 1;
+  }
+  k.nx = wn[2 * bi];
+  k.ny = wn[2 * bi + 1];
+  k.sep = best - r;
+  k.x = B.x - k.nx * (r + k.sep / 2);
+  k.y = B.y - k.ny * (r + k.sep / 2);
+  return 1;
+}
+
 /** Collide any two bodies; normal from a to b. */
 export function collide(a: Body, b: Body, out: [Contact, Contact] = tmp): number {
   const ka = a.shape.kind;
   const kb = b.shape.kind;
-  if (ka === "box" && kb === "box") return collideBoxes(a, b, out);
   if (ka === "circle" && kb === "circle") return collideCircles(a, b, out);
-  if (ka === "box") return collideBoxCircle(a, b, out);
-  const n = collideBoxCircle(b, a, out);
-  for (let i = 0; i < n; i++) {
-    out[i].nx = -out[i].nx;
-    out[i].ny = -out[i].ny;
+  if (ka === "box" && kb === "box") return collideBoxes(a, b, out);
+  if (ka === "box" && kb === "circle") return collideBoxCircle(a, b, out);
+  if (ka === "circle" || kb === "circle") {
+    if (ka === "circle") {
+      const n = kb === "box" ? collideBoxCircle(b, a, out) : collidePolyCircle(b, a, out);
+      for (let i = 0; i < n; i++) {
+        out[i].nx = -out[i].nx;
+        out[i].ny = -out[i].ny;
+      }
+      return n;
+    }
+    return collidePolyCircle(a, b, out);
   }
-  return n;
+  return collidePolys(a, b, out);
 }
 
 // ---------------------------------------------------------------- the world
@@ -532,6 +817,12 @@ export class World {
     for (const b of this.bodies) {
       if (!isDynamic(b) || !b.awake) continue;
       b.vy += this.gravity * dt;
+      const sp2 = b.vx * b.vx + b.vy * b.vy;
+      if (sp2 > PHYS.maxSpeed * PHYS.maxSpeed) {
+        const k = PHYS.maxSpeed / Math.sqrt(sp2);
+        b.vx *= k;
+        b.vy *= k;
+      }
       b.vx *= 1 / (1 + dt * b.linearDamping);
       b.vy *= 1 / (1 + dt * b.linearDamping);
       b.w *= 1 / (1 + dt * b.angularDamping);
@@ -547,14 +838,19 @@ export class World {
         if (arb.impact > this.impactThreshold) this.impacts.push(arb);
       }
     }
+    for (const b of this.bodies) {
+      b.bvx = 0;
+      b.bvy = 0;
+      b.bw = 0;
+    }
     for (let it = 0; it < this.iterations; it++) for (let i = 0; i < act.length; i++) applyImpulse(act[i]);
 
     for (const b of this.bodies) {
       if (!isDynamic(b) || !b.awake) continue;
-      b.x += b.vx * dt;
-      b.y += b.vy * dt;
-      if (b.w !== 0) {
-        b.a += b.w * dt;
+      b.x += (b.vx + b.bvx) * dt;
+      b.y += (b.vy + b.bvy) * dt;
+      if (b.w !== 0 || b.bw !== 0) {
+        b.a += (b.w + b.bw) * dt;
         b.cos = Math.cos(b.a);
         b.sin = Math.sin(b.a);
       }
@@ -564,7 +860,7 @@ export class World {
 
   private broadPhase() {
     const s = this.sorted;
-    for (const b of s) if (b.awake || !isDynamic(b)) computeAABB(b);
+    for (const b of s) if (b.awake && isDynamic(b)) computeAABB(b);
     // Insertion sort by minX: nearly sorted from the last step, so this is cheap.
     for (let i = 1; i < s.length; i++) {
       const b = s[i];
@@ -605,7 +901,7 @@ export class World {
     if (isDynamic(b) && !b.awake) this.wake(b);
     if (!arb) {
       arb = {
-        a, b, contacts: [newContact(), newContact()], n: 0, stamp: 0, impact: 0,
+        a, b, contacts: [newContact(), newContact()], n: 0, stamp: 0, impact: 0, block: false, k11: 0, k12: 0, k22: 0, i11: 0, i12: 0, i22: 0,
         friction: Math.sqrt(a.friction * b.friction), restitution: Math.max(a.restitution, b.restitution),
       };
       this.arbiters.set(key, arb);
@@ -708,73 +1004,86 @@ function preStep(arb: Arbiter, invDt: number) {
   const a = arb.a;
   const b = arb.b;
   arb.impact = 0;
+  arb.block = false;
   for (let i = 0; i < arb.n; i++) {
     const c = arb.contacts[i];
     const nx = c.nx;
     const ny = c.ny;
     const r1x = c.x - a.x, r1y = c.y - a.y, r2x = c.x - b.x, r2y = c.y - b.y;
     c.r1x = r1x; c.r1y = r1y; c.r2x = r2x; c.r2y = r2y;
-    const rn1 = r1x * nx + r1y * ny;
-    const rn2 = r2x * nx + r2y * ny;
-    const kN = a.invMass + b.invMass + a.invI * (r1x * r1x + r1y * r1y - rn1 * rn1) + b.invI * (r2x * r2x + r2y * r2y - rn2 * rn2);
+    const rn1 = r1x * ny - r1y * nx;
+    const rn2 = r2x * ny - r2y * nx;
+    c.rn1 = rn1;
+    c.rn2 = rn2;
+    const kN = a.invMass + b.invMass + a.invI * rn1 * rn1 + b.invI * rn2 * rn2;
     c.massN = 1 / kN;
     const tx = ny;
     const ty = -nx;
-    const rt1 = r1x * tx + r1y * ty;
-    const rt2 = r2x * tx + r2y * ty;
-    const kT = a.invMass + b.invMass + a.invI * (r1x * r1x + r1y * r1y - rt1 * rt1) + b.invI * (r2x * r2x + r2y * r2y - rt2 * rt2);
+    const rt1 = r1x * ty - r1y * tx;
+    const rt2 = r2x * ty - r2y * tx;
+    const kT = a.invMass + b.invMass + a.invI * rt1 * rt1 + b.invI * rt2 * rt2;
     c.massT = 1 / kT;
 
     const dvx = b.vx - b.w * r2y - a.vx + a.w * r1y;
     const dvy = b.vy + b.w * r2x - a.vy - a.w * r1x;
     const vn = dvx * nx + dvy * ny;
-    c.impact = vn < 0 ? -vn * c.massN : 0;
+    const closing = vn < -PHYS.impactSpeed && (c.sep <= 0 || -vn / invDt > c.sep);
+    c.impact = closing ? (-vn - PHYS.impactSpeed) * c.massN : 0;
     arb.impact += c.impact;
 
     let bias = -PHYS.baumgarte * invDt * Math.min(0, c.sep + PHYS.slop);
     if (bias > PHYS.maxBias) bias = PHYS.maxBias;
-    if (vn < -PHYS.restitutionThreshold) bias = Math.max(bias, -arb.restitution * vn);
     c.bias = bias;
-
-    // Warm start with last step's impulses.
-    const px = c.pn * nx + c.pt * tx;
-    const py = c.pn * ny + c.pt * ty;
+    c.bounce = c.sep > 0 ? -c.sep * invDt : vn < -PHYS.restitutionThreshold ? -arb.restitution * vn : 0;
+    c.pnb = 0;
+  }
+  if (arb.n === 2) {
+    // The two normal constraints are solved together (a 2x2 block) so boxes sit flat instead of rocking.
+    const c0 = arb.contacts[0];
+    const c1 = arb.contacts[1];
+    const mS = a.invMass + b.invMass;
+    const k11 = mS + a.invI * c0.rn1 * c0.rn1 + b.invI * c0.rn2 * c0.rn2;
+    const k22 = mS + a.invI * c1.rn1 * c1.rn1 + b.invI * c1.rn2 * c1.rn2;
+    const k12 = mS + a.invI * c0.rn1 * c1.rn1 + b.invI * c0.rn2 * c1.rn2;
+    if (k11 * k11 < 1000 * (k11 * k22 - k12 * k12)) {
+      const det = 1 / (k11 * k22 - k12 * k12);
+      arb.k11 = k11;
+      arb.k12 = k12;
+      arb.k22 = k22;
+      arb.i11 = k22 * det;
+      arb.i12 = -k12 * det;
+      arb.i22 = k11 * det;
+      arb.block = true;
+    }
+  }
+  // Warm start with last step's impulses.
+  for (let i = 0; i < arb.n; i++) {
+    const c = arb.contacts[i];
+    const nx = c.nx;
+    const ny = c.ny;
+    const px = c.pn * nx + c.pt * ny;
+    const py = c.pn * ny - c.pt * nx;
     a.vx -= a.invMass * px;
     a.vy -= a.invMass * py;
-    a.w -= a.invI * (r1x * py - r1y * px);
+    a.w -= a.invI * (c.r1x * py - c.r1y * px);
     b.vx += b.invMass * px;
     b.vy += b.invMass * py;
-    b.w += b.invI * (r2x * py - r2y * px);
+    b.w += b.invI * (c.r2x * py - c.r2y * px);
   }
 }
 
 function applyImpulse(arb: Arbiter) {
   const a = arb.a;
   const b = arb.b;
-  for (let i = 0; i < arb.n; i++) {
+  const n = arb.n;
+  // Friction first, limited by the normal impulses from the previous iteration.
+  for (let i = 0; i < n; i++) {
     const c = arb.contacts[i];
     const nx = c.nx;
     const ny = c.ny;
     const r1x = c.r1x, r1y = c.r1y, r2x = c.r2x, r2y = c.r2y;
-
-    let dvx = b.vx - b.w * r2y - a.vx + a.w * r1y;
-    let dvy = b.vy + b.w * r2x - a.vy - a.w * r1x;
-    const vn = dvx * nx + dvy * ny;
-    let dPn = c.massN * (-vn + c.bias);
-    const pn0 = c.pn;
-    c.pn = Math.max(pn0 + dPn, 0);
-    dPn = c.pn - pn0;
-    let px = dPn * nx;
-    let py = dPn * ny;
-    a.vx -= a.invMass * px;
-    a.vy -= a.invMass * py;
-    a.w -= a.invI * (r1x * py - r1y * px);
-    b.vx += b.invMass * px;
-    b.vy += b.invMass * py;
-    b.w += b.invI * (r2x * py - r2y * px);
-
-    dvx = b.vx - b.w * r2y - a.vx + a.w * r1y;
-    dvy = b.vy + b.w * r2x - a.vy - a.w * r1x;
+    const dvx = b.vx - b.w * r2y - a.vx + a.w * r1y;
+    const dvy = b.vy + b.w * r2x - a.vy - a.w * r1x;
     const tx = ny;
     const ty = -nx;
     const vt = dvx * tx + dvy * ty;
@@ -783,13 +1092,101 @@ function applyImpulse(arb: Arbiter) {
     const pt0 = c.pt;
     c.pt = Math.max(-maxPt, Math.min(maxPt, pt0 + dPt));
     dPt = c.pt - pt0;
-    px = dPt * tx;
-    py = dPt * ty;
+    const px = dPt * tx;
+    const py = dPt * ty;
     a.vx -= a.invMass * px;
     a.vy -= a.invMass * py;
     a.w -= a.invI * (r1x * py - r1y * px);
     b.vx += b.invMass * px;
     b.vy += b.invMass * py;
     b.w += b.invI * (r2x * py - r2y * px);
+  }
+
+  if (arb.block) {
+    const c0 = arb.contacts[0];
+    const c1 = arb.contacts[1];
+    const nx = c0.nx;
+    const ny = c0.ny;
+    const a0 = c0.pn;
+    const a1 = c1.pn;
+    const vn0 = (b.vx - b.w * c0.r2y - a.vx + a.w * c0.r1y) * nx + (b.vy + b.w * c0.r2x - a.vy - a.w * c0.r1x) * ny;
+    const vn1 = (b.vx - b.w * c1.r2y - a.vx + a.w * c1.r1y) * nx + (b.vy + b.w * c1.r2x - a.vy - a.w * c1.r1x) * ny;
+    const { k11, k12, k22, i11, i12, i22 } = arb;
+    const b0 = vn0 - c0.bounce - (k11 * a0 + k12 * a1);
+    const b1 = vn1 - c1.bounce - (k12 * a0 + k22 * a1);
+    let x0 = -(i11 * b0 + i12 * b1);
+    let x1 = -(i12 * b0 + i22 * b1);
+    let ok = x0 >= 0 && x1 >= 0;
+    if (!ok) {
+      x0 = -c0.massN * b0;
+      x1 = 0;
+      ok = x0 >= 0 && k12 * x0 + b1 >= 0;
+    }
+    if (!ok) {
+      x0 = 0;
+      x1 = -c1.massN * b1;
+      ok = x1 >= 0 && k12 * x1 + b0 >= 0;
+    }
+    if (!ok) {
+      x0 = 0;
+      x1 = 0;
+      ok = b0 >= 0 && b1 >= 0;
+    }
+    if (ok) {
+      const d0 = x0 - a0;
+      const d1 = x1 - a1;
+      c0.pn = x0;
+      c1.pn = x1;
+      const p0x = d0 * nx, p0y = d0 * ny, p1x = d1 * nx, p1y = d1 * ny;
+      a.vx -= a.invMass * (p0x + p1x);
+      a.vy -= a.invMass * (p0y + p1y);
+      a.w -= a.invI * (c0.r1x * p0y - c0.r1y * p0x + c1.r1x * p1y - c1.r1y * p1x);
+      b.vx += b.invMass * (p0x + p1x);
+      b.vy += b.invMass * (p0y + p1y);
+      b.w += b.invI * (c0.r2x * p0y - c0.r2y * p0x + c1.r2x * p1y - c1.r2y * p1x);
+    }
+  } else {
+    for (let i = 0; i < n; i++) {
+      const c = arb.contacts[i];
+      const nx = c.nx;
+      const ny = c.ny;
+      const dvx = b.vx - b.w * c.r2y - a.vx + a.w * c.r1y;
+      const dvy = b.vy + b.w * c.r2x - a.vy - a.w * c.r1x;
+      const vn = dvx * nx + dvy * ny;
+      let dPn = c.massN * (-vn + c.bounce);
+      const pn0 = c.pn;
+      c.pn = Math.max(pn0 + dPn, 0);
+      dPn = c.pn - pn0;
+      const px = dPn * nx;
+      const py = dPn * ny;
+      a.vx -= a.invMass * px;
+      a.vy -= a.invMass * py;
+      a.w -= a.invI * (c.r1x * py - c.r1y * px);
+      b.vx += b.invMass * px;
+      b.vy += b.invMass * py;
+      b.w += b.invI * (c.r2x * py - c.r2y * px);
+    }
+  }
+
+  // Split impulse: push out of penetration with pseudo-velocities that never become real momentum.
+  for (let i = 0; i < n; i++) {
+    const c = arb.contacts[i];
+    if (c.bias <= 0) continue;
+    const nx = c.nx;
+    const ny = c.ny;
+    const bvx = b.bvx - b.bw * c.r2y - a.bvx + a.bw * c.r1y;
+    const bvy = b.bvy + b.bw * c.r2x - a.bvy - a.bw * c.r1x;
+    let dPb = c.massN * (c.bias - (bvx * nx + bvy * ny));
+    const pb0 = c.pnb;
+    c.pnb = Math.max(pb0 + dPb, 0);
+    dPb = c.pnb - pb0;
+    const px = dPb * nx;
+    const py = dPb * ny;
+    a.bvx -= a.invMass * px;
+    a.bvy -= a.invMass * py;
+    a.bw -= a.invI * (c.r1x * py - c.r1y * px);
+    b.bvx += b.invMass * px;
+    b.bvy += b.invMass * py;
+    b.bw += b.invI * (c.r2x * py - c.r2y * px);
   }
 }

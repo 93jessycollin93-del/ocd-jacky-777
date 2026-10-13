@@ -593,7 +593,7 @@ export default function CheckersGame({ touch, best, submitScore }: GameProps) {
         </div>
       )}
       {S > 0 && !landscape && (
-        <div style={{ position: "absolute", left: (w - S) / 2, top: pad, width: S, height: h - pad * 2, display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ position: "absolute", left: (w - S) / 2, top: pad, width: S, height: h - pad * 2, display: "flex", flexDirection: "column", justifyContent: "center", gap: 6 }}>
           {oppStrip}
           {board}
           {myStrip}
