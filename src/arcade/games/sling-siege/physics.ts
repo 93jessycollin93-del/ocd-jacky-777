@@ -104,6 +104,8 @@ export interface Contact {
   /** r × n for each body, for the block solver. */
   rn1: number;
   rn2: number;
+  /** Closing speed along the normal at the start of the step (positive = approaching). */
+  closing: number;
   /** Estimated impact impulse at this point this step (approach speed × effective mass). */
   impact: number;
 }
@@ -148,7 +150,7 @@ export const PHYS = {
 };
 
 const newContact = (): Contact => ({
-  x: 0, y: 0, nx: 0, ny: 0, sep: 0, feature: 0, pn: 0, pt: 0, pnb: 0, pr: 0, massN: 0, massT: 0, bounce: 0, bias: 0, r1x: 0, r1y: 0, r2x: 0, r2y: 0, rn1: 0, rn2: 0, impact: 0,
+  x: 0, y: 0, nx: 0, ny: 0, sep: 0, feature: 0, pn: 0, pt: 0, pnb: 0, pr: 0, massN: 0, massT: 0, bounce: 0, bias: 0, r1x: 0, r1y: 0, r2x: 0, r2y: 0, rn1: 0, rn2: 0, closing: 0, impact: 0,
 });
 
 /** Area of a shape in square metres. */
@@ -1033,14 +1035,14 @@ function preStep(arb: Arbiter, invDt: number) {
     const dvx = b.vx - b.w * r2y - a.vx + a.w * r1y;
     const dvy = b.vy + b.w * r2x - a.vy - a.w * r1x;
     const vn = dvx * nx + dvy * ny;
-    const closing = vn < -PHYS.impactSpeed && (c.sep <= 0 || -vn / invDt > c.sep);
-    c.impact = closing ? (-vn - PHYS.impactSpeed) * c.massN : 0;
-    arb.impact += c.impact;
+    const closing = vn < -PHYS.impactSpeed && (c.sep <= 0 || -vn / invDt > c.sep) ? -vn - PHYS.impactSpeed : 0;
+    c.closing = closing;
+    c.impact = closing * c.massN;
 
     let bias = -PHYS.baumgarte * invDt * Math.min(0, c.sep + PHYS.slop);
     if (bias > PHYS.maxBias) bias = PHYS.maxBias;
     c.bias = bias;
-    c.bounce = c.sep > 0 ? -c.sep * invDt : vn < -PHYS.restitutionThreshold ? -arb.restitution * vn : 0;
+    c.bounce = vn < -PHYS.restitutionThreshold ? -arb.restitution * vn : c.sep > 0 ? -c.sep * invDt : 0;
     c.pnb = 0;
     c.pr = 0;
   }
@@ -1061,7 +1063,16 @@ function preStep(arb: Arbiter, invDt: number) {
       arb.i12 = -k12 * det;
       arb.i22 = k11 * det;
       arb.block = true;
+      // The impulse that stops both closing speeds together (a flat landing is mass × speed, not twice that).
+      const c0c = c0.closing;
+      const c1c = c1.closing;
+      const x0 = arb.i11 * c0c + arb.i12 * c1c;
+      const x1 = arb.i12 * c0c + arb.i22 * c1c;
+      arb.impact = Math.max(0, x0) + Math.max(0, x1);
     }
+  }
+  if (!arb.block) {
+    for (let i = 0; i < arb.n; i++) arb.impact = Math.max(arb.impact, arb.contacts[i].impact);
   }
   // Warm start with last step's impulses.
   for (let i = 0; i < arb.n; i++) {

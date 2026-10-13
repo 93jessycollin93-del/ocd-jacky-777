@@ -59,7 +59,7 @@ const DIRS = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
 const crownRow = (player: Player) => (player === RED ? 0 : 7);
 
 function jumpsFrom(board: Board, start: number, sq: number, piece: number, captured: number[], path: number[], out: Move[]) {
-  const player = Math.sign(piece);
+  const player = Math.sign(piece) as Player;
   const king = Math.abs(piece) === 2;
   const r = sq >> 3;
   const c = sq & 7;

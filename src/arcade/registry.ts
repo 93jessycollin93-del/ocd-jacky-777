@@ -3,21 +3,21 @@
 import type { ComponentType } from "react";
 import { CATEGORIES, type GameMeta, type GameProps } from "./types";
 
-// Games still being built are left out of the Arcade (and the production bundle) until they pass their checks.
-// Remove an id from both lists when its game is finished.
-const metas = import.meta.glob<{ meta: GameMeta }>(
-  [
-    "./games/*/meta.ts",
-    "!./games/chess/**", "!./games/checkers/**", "!./games/four-in-a-row/**", "!./games/klondike/**",
-    "!./games/word-guess/**", "!./games/slither-arena/**", "!./games/sling-siege/**",
-  ],
-  { eager: true },
-);
-const loaders = import.meta.glob<{ default: ComponentType<GameProps> }>([
-  "./games/*/index.tsx",
-  "!./games/chess/**", "!./games/checkers/**", "!./games/four-in-a-row/**", "!./games/klondike/**",
-  "!./games/word-guess/**", "!./games/slither-arena/**", "!./games/sling-siege/**",
-]);
+// Games still being built are left out of production builds (so out of the published Arcade, and their code
+// can't break a deploy) until they pass their checks, but are listed in development so they can be played and
+// tested. When a game ships, remove its id from all four brace lists below (they must be literal strings).
+const metas = {
+  ...import.meta.glob<{ meta: GameMeta }>(["./games/*/meta.ts", "!./games/{word-guess,mahjong-tiles,sea-battle,crazy-eights,sling-siege,rope-snip,eight-ball,mini-golf,slither-arena,blob-arena,territory,night-survivors,garden-defense,balloon-defense,tower-clash,missile-defense}/**"], { eager: true }),
+  ...(import.meta.env.DEV
+    ? import.meta.glob<{ meta: GameMeta }>("./games/{word-guess,mahjong-tiles,sea-battle,crazy-eights,sling-siege,rope-snip,eight-ball,mini-golf,slither-arena,blob-arena,territory,night-survivors,garden-defense,balloon-defense,tower-clash,missile-defense}/meta.ts", { eager: true })
+    : {}),
+};
+const loaders = {
+  ...import.meta.glob<{ default: ComponentType<GameProps> }>(["./games/*/index.tsx", "!./games/{word-guess,mahjong-tiles,sea-battle,crazy-eights,sling-siege,rope-snip,eight-ball,mini-golf,slither-arena,blob-arena,territory,night-survivors,garden-defense,balloon-defense,tower-clash,missile-defense}/**"]),
+  ...(import.meta.env.DEV
+    ? import.meta.glob<{ default: ComponentType<GameProps> }>("./games/{word-guess,mahjong-tiles,sea-battle,crazy-eights,sling-siege,rope-snip,eight-ball,mini-golf,slither-arena,blob-arena,territory,night-survivors,garden-defense,balloon-defense,tower-clash,missile-defense}/index.tsx")
+    : {}),
+};
 
 export const GAMES: GameMeta[] = Object.values(metas)
   .map((m) => m.meta)

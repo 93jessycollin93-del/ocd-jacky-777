@@ -32,11 +32,11 @@ const run = (s: World, seconds: number) => {
 describe("slither arena", () => {
   it("body segments follow the path the head took", () => {
     const s = arena();
-    const w = place(s, 0, 0, 0, 0, 40);
+    const w = place(s, 0, 0, 0, 0, 80);
     const sp = segSpacing(w.mass);
     run(s, 1); // straight along +x
     w.targetAng = Math.PI / 2; // then turn to head down the screen (+y)
-    run(s, 1.2);
+    run(s, 0.7);
     expect(w.ang).toBeCloseTo(Math.PI / 2, 1);
     // The segments just behind the head are still on the old straight line: same y as the earlier path (about 0) until the bend catches up.
     const tailEnd = w.n - 1;
@@ -140,8 +140,8 @@ describe("slither arena", () => {
     const g0 = w.g;
     const n0 = w.n;
     for (let i = 0; i < 60; i++) s.orbs.add(40 + i * 8, 0, 3, 1, false);
-    run(s, 1);
-    expect(w.mass).toBeGreaterThan(10 + 60);
+    run(s, 4);
+    expect(w.mass).toBeCloseTo(10 + 60 * 3, 0);
     expect(w.g).toBeGreaterThan(g0);
     expect(w.n).toBeGreaterThan(n0);
     expect(w.g).toBeCloseTo(girth(w.mass), 5);
@@ -182,7 +182,9 @@ describe("slither arena", () => {
     const s = newWorld(5, { bots: 1, orbs: 0 });
     const w = s.worms[0];
     expect(w.shield).toBeGreaterThan(1);
-    w.x = WORLD_R + 50; // outside the wall, but the shield protects it
+    w.x = WORLD_R + 50; // outside the wall and heading further out, but the shield protects it
+    w.ang = 0;
+    w.targetAng = 0;
     step(s, 1 / 60);
     expect(w.alive).toBe(true);
     run(s, 2);
