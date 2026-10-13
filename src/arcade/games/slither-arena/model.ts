@@ -60,6 +60,8 @@ export interface Brain {
   mode: string;
   /** Danger of the arc it chose at its last think (0..1), for tests and debugging. */
   danger: number;
+  /** Fraction of the maximum turn rate it chose last time (a little hysteresis stops dithering). */
+  lastTurn: number;
 }
 
 export interface Worm {
@@ -72,6 +74,8 @@ export interface Worm {
   y: number;
   ang: number;
   targetAng: number;
+  /** Bots steer by a turn command instead of a target angle: -1..1 of the max turn rate, or null. */
+  turnCmd: number | null;
   wantBoost: boolean;
   boosting: boolean;
   mass: number;

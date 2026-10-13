@@ -7,7 +7,7 @@ import { BASE_SPEED, BODY_HIT, BOOST_MULT, HEAD_HIT, MIN_BOOST_MASS, WORLD_R, an
 const MARGIN = 34;
 /** Fractions of the maximum turn rate to try. */
 const TURNS = [0, 0.25, -0.25, 0.55, -0.55, 1, -1];
-const SAMPLES = 5;
+const SAMPLES = 7;
 const whiskX = new Float64Array(12);
 const whiskY = new Float64Array(12);
 const whiskG = new Float64Array(12);
@@ -111,7 +111,7 @@ export function think(s: World, wi: number) {
     const o = s.worms[b.prey];
     if (!o.alive || b.preyT <= 0 || o.mass > w.mass * 1.05) b.prey = -1;
   }
-  if (b.prey < 0 && nearestPrey >= 0 && rng() < b.aggr * 0.3) {
+  if (b.prey < 0 && nearestPrey >= 0 && rng() < b.aggr * 0.5) {
     b.prey = nearestPrey;
     b.preyT = 3 + rng() * 5;
     b.circleDir = rng() < 0.5 ? 1 : -1;
@@ -195,7 +195,7 @@ export function think(s: World, wi: number) {
 
   // ---- probe a fan of turning arcs (so the turning circle is respected) and keep the safest that heads for the goal
   const v = BASE_SPEED * (wantBoost && w.mass > MIN_BOOST_MASS ? BOOST_MULT : 1);
-  const horizon = 0.5 + 0.5 * skill;
+  const horizon = 0.55 + 0.75 * skill;
   const dtp = horizon / SAMPLES;
   const omega = turnRate(w.mass);
   // Where the nearby heads will be soon: they are dangerous even before their bodies get there.
@@ -213,10 +213,10 @@ export function think(s: World, wi: number) {
       nWhisk++;
     }
   }
-  const careless = rng() < (1 - skill) * 0.035;
-  let bestA = w.ang;
+  const careless = rng() < (1 - skill) * 0.09;
   let bestSc = -1e9;
   let bestDanger = 0;
+  let bestC = 0;
   for (let k = 0; k < TURNS.length; k++) {
     const c = TURNS[k];
     let a = w.ang;
@@ -241,14 +241,15 @@ export function think(s: World, wi: number) {
         }
       }
     }
-    const sc = Math.cos(angDiff(a, ta)) - (careless ? 0 : 6 * dg) - 0.12 * Math.abs(c);
+    const sc = Math.cos(angDiff(a, ta)) - (careless ? 0 : 6 * dg) - 0.12 * Math.abs(c) + (c === b.lastTurn ? 0.12 : 0);
     if (sc > bestSc) {
       bestSc = sc;
-      bestA = w.ang + c * omega * horizon;
       bestDanger = dg;
+      bestC = c;
     }
   }
-  w.targetAng = bestA;
+  b.lastTurn = bestC;
+  w.turnCmd = bestC;
   if (bestDanger > 0.25) wantBoost = false;
   if (w.mass < MIN_BOOST_MASS + 10) wantBoost = false;
   w.wantBoost = wantBoost;

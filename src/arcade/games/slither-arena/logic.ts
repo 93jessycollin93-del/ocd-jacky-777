@@ -61,12 +61,13 @@ function makeBrain(rng: Rng): Brain {
     circleDir: rng() < 0.5 ? 1 : -1,
     mode: "forage",
     danger: 0,
+    lastTurn: 0,
   };
 }
 
 function makeWorm(id: number, rng: Rng, isPlayer: boolean): Worm {
   return {
-    id, name: isPlayer ? "You" : "", skin: id % SKIN_COUNT, isPlayer, alive: false, x: 0, y: 0, ang: 0, targetAng: 0, wantBoost: false,
+    id, name: isPlayer ? "You" : "", skin: id % SKIN_COUNT, isPlayer, alive: false, x: 0, y: 0, ang: 0, targetAng: 0, turnCmd: null, wantBoost: false,
     boosting: false, mass: START_MASS, g: girth(START_MASS), n: 0, sx: new Float32Array(MAX_SEGS), sy: new Float32Array(MAX_SEGS),
     minX: 0, maxX: 0, minY: 0, maxY: 0, kills: 0, peak: START_MASS, shield: 0, dropAcc: 0, killedBy: "", deadFor: 0,
     brain: makeBrain(rng),
@@ -168,6 +169,7 @@ export function spawnWorm(s: World, wi: number, mass: number, x?: number, y?: nu
   w.y = y;
   w.ang = a;
   w.targetAng = a;
+  w.turnCmd = null;
   w.wantBoost = false;
   w.boosting = false;
   w.mass = mass;
@@ -260,9 +262,9 @@ function resizeBody(w: Worm) {
 export const canBoost = (w: Worm) => w.alive && w.mass > MIN_BOOST_MASS;
 
 function moveWorm(s: World, w: Worm, dt: number) {
-  const diff = angDiff(w.ang, w.targetAng);
   const maxT = turnRate(w.mass) * dt;
-  w.ang += clamp(diff, -maxT, maxT);
+  if (w.turnCmd !== null) w.ang += clamp(w.turnCmd, -1, 1) * maxT;
+  else w.ang += clamp(angDiff(w.ang, w.targetAng), -maxT, maxT);
   if (w.ang > Math.PI) w.ang -= TAU;
   else if (w.ang < -Math.PI) w.ang += TAU;
   w.boosting = w.wantBoost && canBoost(w);
@@ -481,6 +483,7 @@ export function advance(s: World, dt: number): SlitherEvent[] {
 /** Set a worm's wished heading and boost. */
 export function steer(w: Worm, angle: number, boost: boolean) {
   w.targetAng = angle;
+  w.turnCmd = null;
   w.wantBoost = boost;
 }
 
