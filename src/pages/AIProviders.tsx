@@ -7,13 +7,14 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Zap, Cpu, Cloud, HardDrive, ExternalLink, KeyRound, Play, Loader2, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Zap, Cpu, Cloud, HardDrive, ExternalLink, KeyRound, Play, Loader2, CheckCircle2, Smartphone } from "lucide-react";
 
 const ICONS: Record<ProviderId, typeof Zap> = {
   lovable: Cloud,
   groq: Zap,
   openrouter: Cpu,
   ollama: HardDrive,
+  device: Smartphone,
 };
 
 export default function AIProviders() {
@@ -92,10 +93,10 @@ export default function AIProviders() {
               <p className="text-xs text-muted-foreground">{provider.description}</p>
             </div>
             {provider.helpUrl && (
-              <a href={provider.helpUrl} target="_blank" rel="noreferrer">
+              <a href={provider.helpUrl} {...(provider.helpUrl.startsWith("/") ? {} : { target: "_blank", rel: "noreferrer" })}>
                 <Button variant="outline" size="sm" className="gap-1.5">
                   <ExternalLink className="w-3.5 h-3.5" />
-                  Get {provider.requiresSecret ?? "docs"}
+                  {provider.id === "device" ? "Open Pocket AI" : `Get ${provider.requiresSecret ?? "docs"}`}
                 </Button>
               </a>
             )}
