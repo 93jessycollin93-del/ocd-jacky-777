@@ -93,6 +93,15 @@ Governing docs (read before changing behavior): `CORE_IDENTITY.md`, `BEHAVIOR_RU
 - `.env` is committed and holds only Supabase **public/publishable** values (`VITE_SUPABASE_*`). Never add private keys or service-role secrets to it or to client code.
 - Lovable commits to this repo automatically; keep changes small and mergeable so they don't conflict with Lovable edits.
 
+## Working preferences (owner)
+
+Efficiency first for research, coding and orchestration:
+
+- Pick the cheapest path that still gets a correct, complete result: targeted `grep`/`git` over broad reads, batched independent tool calls, partial reads of large files.
+- Don't spawn subagents or multi-agent workflows unless the task can't be done well inline; when one is justified, keep it to the fewest agents and the cheapest effort tier that works.
+- Don't repeat work: reuse facts already established, and don't re-read files you just edited.
+- Keep replies short: results and decisions, no narration of steps or options you won't pursue.
+
 ## Git workflow
 
 - Develop on the branch assigned to the session; commit with clear messages and push with `git push -u origin <branch>`. Do not open a PR unless asked.
