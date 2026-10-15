@@ -51,6 +51,10 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Games & Worlds",
     items: [
       { label: "⚔️ Play Game", href: "/play" },
+      { label: "📱 Pocket AI", href: "/pocket", title: "Private AI that runs on this device, offline" },
+      { label: "🕹️ Arcade", href: "/arcade", title: "Every game in one place" },
+      { label: "🧟 Dead Hours", href: "/zombies", title: "Round-based zombie survival shooter" },
+      { label: "🦖 Primal Isle", href: "/survival", title: "Survival game: gather, craft, build, tame and ride dinosaurs" },
       { label: "🐉 Realm Accord ↗", href: "https://dragon-chaos-wars.lovable.app", title: "Realm Accord — strategy game", external: true },
       { label: "🌐 Horizon Network ↗", href: "https://jadelounge.lovable.app", title: "Horizon Network — social network", external: true },
       { label: "👑 Emperors of the Last Kingdom ↗", href: "https://chaos-dragon-emperor.lovable.app", title: "Emperors of the Last Kingdom — fantasy strategy", external: true },

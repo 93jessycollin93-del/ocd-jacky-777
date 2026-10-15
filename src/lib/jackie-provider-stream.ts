@@ -25,6 +25,7 @@ export async function streamProviderChat({
 }) {
   const def = findProvider(provider);
   if (!def) return onError(`Unknown provider: ${provider}`);
+  if (provider === "device") return streamOnDevice({ model, messages, system, onDelta, onDone, onError });
 
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return onError("Not signed in.");
@@ -76,5 +77,47 @@ export async function streamProviderChat({
     onDone();
   } catch (e) {
     onError(e instanceof Error ? e.message : "Connection failed");
+  }
+}
+
+/** Pocket AI: the reply is generated in this browser by a downloaded model; nothing is sent to a server. */
+async function streamOnDevice({
+  model,
+  messages,
+  system,
+  onDelta,
+  onDone,
+  onError,
+}: {
+  model: string;
+  messages: ChatMessage[];
+  system?: string;
+  onDelta: (t: string) => void;
+  onDone: () => void;
+  onError: (e: string) => void;
+}) {
+  try {
+    // Loaded on demand so the WebAssembly engine stays out of the main bundle.
+    const [{ allModels }, engine] = await Promise.all([import("./pocket/catalog"), import("./pocket/engine")]);
+    const m = allModels().find((x) => x.id === model) ?? allModels()[0];
+    if (!(await engine.cachedModels()).get(m.url)?.valid) {
+      return onError(`${m.name} isn't on this device yet. Open Pocket AI (/pocket) to download it.`);
+    }
+    await engine.loadModel(m, { preferGpu: true });
+    let shown = "";
+    await engine.chat([...(system ? [{ role: "system" as const, content: system }] : []), ...messages], {
+      sampling: m.sampling,
+      maxTokens: 1024,
+      signal: new AbortController().signal,
+      onText: (text) => {
+        if (text.length > shown.length && text.startsWith(shown)) {
+          onDelta(text.slice(shown.length));
+          shown = text;
+        }
+      },
+    });
+    onDone();
+  } catch (e) {
+    onError(e instanceof Error ? e.message : String(e));
   }
 }
