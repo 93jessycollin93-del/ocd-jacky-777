@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import ModelQueue from "@/pages/ModelQueue";
-import { QUEUE, modelsInPhase } from "@/lib/model-queue";
+import { QUEUE, modelsInPhase, modelsInCollection } from "@/lib/model-queue";
 
 const showAllPhases = () =>
   fireEvent.click(within(screen.getByRole("group", { name: "Phase" })).getByRole("button", { name: /^All/ }));
@@ -46,6 +46,14 @@ describe("ModelQueue page", () => {
     fireEvent.click(screen.getByRole("button", { name: /Corrections to the original list/ }));
     const table = screen.getByRole("table");
     expect(within(table).getAllByRole("row")).toHaveLength(QUEUE.models.filter((m) => m.requested_as).length + 1);
+  });
+
+  it("lists the tiny powerhouses collection with its download command", () => {
+    renderPage();
+    fireEvent.click(within(screen.getByRole("group", { name: "Phase" })).getByRole("button", { name: /Tiny powerhouses/ }));
+    const names = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
+    expect(names).toEqual(modelsInCollection("powerhouses").map((m) => m.name));
+    expect(screen.getByText("python scripts/download_models.py --check --collection powerhouses")).toBeInTheDocument();
   });
 
   it("shows the manifest when a row is expanded", () => {

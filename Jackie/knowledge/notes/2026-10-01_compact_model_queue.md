@@ -83,6 +83,25 @@ repo as untrusted:
 
 Tests: `python -m unittest discover -s scripts -p "test_*.py"` (fake Hub, no network).
 
+**Tiny powerhouses collection (2026-11-05).** `collections.powerhouses` in the catalog is a
+curated cross-phase set: the strongest small model for each job. It adds 29 newer models
+(Qwen3 0.6B/1.7B/4B-2507, Gemma 3 270M and 3n E2B, Phi-4-mini, LFM2, Granite 4.0,
+EmbeddingGemma, Qwen3 embedding/reranker, potion-base-8M, Llama Prompt Guard 2 and Protect AI
+prompt-injection classifiers, Moonshine, Kokoro (ONNX build), RT-DETRv2, SigLIP2,
+SmolVLM2, moondream2, granite-docling) to existing standouts. Each repo and license was
+confirmed on its huggingface.co model page on 2026-11-05. Select it with
+`--collection powerhouses` or the "Tiny powerhouses" button on /models.
+
+`raw_bin` on a model lists `.bin` files that are raw arrays, not pickles (Kokoro's voices),
+so the safety filter keeps them.
+
+**Weak Wi-Fi (2026-11-05).** `--steady` swaps snapshot_download for a standard-library
+fetcher: one file at a time, resume from `<file>.part` with an HTTP Range request,
+backoff of 5 s doubling to 5 min, and no giving up on network errors (401/403/404 still
+stop that file). `--max-rate 300K` caps the speed. `--smallest-first` lists every repo
+first and downloads in size order. The Hugging Face token is only sent to huggingface.co,
+never to the CDN a download redirects to.
+
 **About file sizes.** A repo's size depends on its format, precision and quantization, and on extra encoders. "Q4" isn't one fixed size either: Q4_K_M, Q4_K_S, GPTQ and AWQ all differ. The catalog therefore records no download sizes. Use `--check`, which totals the exact bytes of the files that would be fetched.
 
 ## License and safety flags

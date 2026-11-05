@@ -86,9 +86,11 @@ class DownloaderSafetyTest(unittest.TestCase):
     def tearDown(self):
         dm._hub = self._orig_hub
 
+    collections: dict = {}
+
     def run_main(self, hub: FakeHub, models: list[dict], *args: str) -> tuple[int, str]:
         path = self.tmp / "catalog.json"
-        path.write_text(json.dumps(catalog(models)))
+        path.write_text(json.dumps({**catalog(models), "collections": self.collections}))
         dm._hub = lambda: (hub, hub.snapshot_download, GatedRepoError, RepositoryNotFoundError, HfHubHTTPError)
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
@@ -131,6 +133,27 @@ class DownloaderSafetyTest(unittest.TestCase):
 
         code, _ = self.run_main(hub, [model], "--allow-code")
         self.assertIn("modeling_custom.py", self.manifest("text/llm", "st")["artifacts"][0]["files"])
+
+    def test_catalog_vouched_raw_bin_is_kept(self):
+        hub = FakeHub({"o/tts": {"onnx/model.onnx": b"graph", "voices/af.bin": b"\x80floats", "other.bin": b"\x80pickle"}})
+        model = {"id": "tts", "repo": "o/tts", "folder": "audio/asr", "formats": ["onnx"],
+                 "include": ["onnx/model.onnx", "voices/*.bin", "other.bin"], "raw_bin": ["voices/*.bin"]}
+        code, _ = self.run_main(hub, [model])
+        self.assertEqual(code, 0)
+        art = self.manifest("audio/asr", "tts")["artifacts"][0]
+        self.assertEqual(sorted(art["files"]), ["onnx/model.onnx", "voices/af.bin"])
+        self.assertEqual(art["skipped_for_safety"], ["other.bin"])
+
+    def test_collection_selects_only_its_models(self):
+        hub = FakeHub({"o/a": {"model.safetensors": b"a"}, "o/b": {"model.safetensors": b"b"}})
+        models = [{"id": "a", "repo": "o/a", "folder": "text/llm", "formats": ["safetensors"]},
+                  {"id": "b", "repo": "o/b", "folder": "text/llm", "formats": ["safetensors"]}]
+        self.collections = {"best": {"label": "Best", "blurb": "", "models": ["b"]}}
+        code, out = self.run_main(hub, models, "--collection", "best")
+        self.assertEqual(code, 0)
+        self.assertEqual([d["repo"] for d in hub.downloads], ["o/b"])
+        with self.assertRaises(SystemExit):
+            self.run_main(hub, models, "--collection", "nope")
 
     def test_ggml_bin_is_not_treated_as_pickle(self):
         hub = FakeHub({"o/whisper": {"ggml-tiny.bin": b"lmgg-weights"}})
@@ -178,6 +201,164 @@ class DownloaderSafetyTest(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("skipped for safety: 1", out)
         self.assertEqual(hub.downloads, [])
+
+
+class FakeResponse:
+    def __init__(self, data: bytes, status: int = 200, drop_after: int | None = None):
+        self.data, self.status, self.drop_after, self.pos = data, status, drop_after, 0
+
+    def read(self, n: int) -> bytes:
+        if self.drop_after is not None and self.pos >= self.drop_after:
+            raise ConnectionResetError("wifi dropped")
+        chunk = self.data[self.pos:self.pos + n]
+        self.pos += len(chunk)
+        return chunk
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+class FakeOpener:
+    """Serves files by URL, honours Range, and can drop the connection once per URL."""
+
+    def __init__(self, files: dict[str, bytes], drop_once_after: int | None = None):
+        self.files, self.drop_once_after, self.requests, self.dropped = files, drop_once_after, [], set()
+
+    def open(self, req, timeout=None):
+        self.requests.append(req)
+        url = req.full_url
+        if url not in self.files:
+            raise dm.urllib.error.HTTPError(url, 404, "Not Found", {}, None)
+        data = self.files[url]
+        rng = req.get_header("Range")
+        start = int(rng.split("=")[1].rstrip("-")) if rng else 0
+        drop = None
+        if self.drop_once_after is not None and url not in self.dropped:
+            self.dropped.add(url)
+            drop = self.drop_once_after
+        return FakeResponse(data[start:], 206 if rng else 200, drop)
+
+
+class FakeTime:
+    def __init__(self):
+        self.now, self.sleeps = 0.0, []
+
+    def clock(self) -> float:
+        return self.now
+
+    def sleep(self, seconds: float) -> None:
+        self.sleeps.append(seconds)
+        self.now += seconds
+
+
+def url(repo: str, name: str) -> str:
+    return f"https://huggingface.co/{repo}/resolve/{COMMIT}/{name}"
+
+
+def sibling(name: str, data: bytes):
+    return SimpleNamespace(rfilename=name, size=len(data), blob_id=blob_sha1(data),
+                           lfs=SimpleNamespace(sha256=hashlib.sha256(data).hexdigest()))
+
+
+class SteadyFetcherTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.time = FakeTime()
+
+    def fetcher(self, opener, **kw):
+        return dm.SteadyFetcher(opener=opener, sleep=self.time.sleep, clock=self.time.clock, **kw)
+
+    def quiet(self, fn, *args):
+        with contextlib.redirect_stdout(io.StringIO()) as buf:
+            fn(*args)
+        return buf.getvalue()
+
+    def test_speed_cap_spreads_the_download_out(self):
+        data = b"x" * (256 * 1024)
+        f = self.fetcher(FakeOpener({url("o/m", "w.safetensors"): data}), max_rate=64 * 1024)
+        self.quiet(f, "o/m", COMMIT, self.tmp, ["w.safetensors"], {"w.safetensors": sibling("w.safetensors", data)})
+        self.assertEqual((self.tmp / "w.safetensors").read_bytes(), data)
+        self.assertAlmostEqual(sum(self.time.sleeps), 4.0)  # 256 KB at 64 KB/s
+
+    def test_resumes_after_a_drop_from_the_last_byte(self):
+        data = bytes(range(256)) * 1024  # 256 KB
+        opener = FakeOpener({url("o/m", "w.safetensors"): data}, drop_once_after=128 * 1024)
+        f = self.fetcher(opener)
+        out = self.quiet(f, "o/m", COMMIT, self.tmp, ["w.safetensors"], {"w.safetensors": sibling("w.safetensors", data)})
+        self.assertEqual((self.tmp / "w.safetensors").read_bytes(), data)
+        self.assertFalse((self.tmp / "w.safetensors.part").exists())
+        self.assertEqual([r.get_header("Range") for r in opener.requests], [None, f"bytes={128 * 1024}-"])
+        self.assertEqual(self.time.sleeps, [5])
+        self.assertIn("resuming in 5s", out)
+
+    def test_backoff_grows_and_caps(self):
+        f = self.fetcher(FakeOpener({}))
+        self.assertEqual([f.backoff(n) for n in (1, 2, 3, 7, 20)], [5, 10, 20, 300, 300])
+
+    def test_skips_a_file_that_already_matches(self):
+        data = b"weights"
+        (self.tmp / "w.safetensors").write_bytes(data)
+        opener = FakeOpener({})
+        out = self.quiet(self.fetcher(opener), "o/m", COMMIT, self.tmp, ["w.safetensors"],
+                         {"w.safetensors": sibling("w.safetensors", data)})
+        self.assertEqual(opener.requests, [])
+        self.assertIn("have w.safetensors already", out)
+
+    def test_missing_file_and_login_errors_stop_that_file(self):
+        f = self.fetcher(FakeOpener({}))
+        with self.assertRaises(dm.urllib.error.HTTPError):
+            self.quiet(f, "o/m", COMMIT, self.tmp, ["nope.json"], {"nope.json": sibling("nope.json", b"{}")})
+
+        class Denied(FakeOpener):
+            def open(self, req, timeout=None):
+                raise dm.urllib.error.HTTPError(req.full_url, 401, "Unauthorized", {}, None)
+
+        with self.assertRaisesRegex(RuntimeError, "hf auth login"):
+            self.quiet(self.fetcher(Denied({})), "o/m", COMMIT, self.tmp, ["a.json"], {"a.json": sibling("a.json", b"{}")})
+
+    def test_token_never_follows_a_redirect_to_another_host(self):
+        f = self.fetcher(FakeOpener({}), token="hf_secret")
+        handler = dm._AuthRedirect("hf_secret", "huggingface.co")
+        req = dm.urllib.request.Request("https://huggingface.co/o/m/resolve/x/w.safetensors")
+        req.add_unredirected_header("Authorization", "Bearer hf_secret")
+        req.add_header("Range", "bytes=10-")
+        cdn = handler.redirect_request(req, None, 302, "Found", {}, "https://cdn-lfs.hf.co/signed")
+        self.assertIsNone(cdn.get_header("Authorization"))
+        self.assertEqual(cdn.get_header("Range"), "bytes=10-")
+        same = handler.redirect_request(req, None, 307, "Temporary Redirect", {}, "https://huggingface.co/api/resolve-cache/x")
+        self.assertEqual(same.get_header("Authorization"), "Bearer hf_secret")
+        self.assertEqual(f.host, "huggingface.co")
+
+    def test_steady_run_downloads_smallest_first_and_verifies(self):
+        big, small = b"B" * 5000, b"s" * 10
+        hub = FakeHub({"o/big": {"model.safetensors": big}, "o/small": {"model.safetensors": small}})
+        opener = FakeOpener({url("o/big", "model.safetensors"): big, url("o/small", "model.safetensors"): small})
+        orig = dm._hub
+        dm._hub = lambda: (hub, hub.snapshot_download, GatedRepoError, RepositoryNotFoundError, HfHubHTTPError)
+        try:
+            jobs = [j for mid in ("big", "small") for j in dm.plan_jobs(
+                {"id": mid, "repo": f"o/{mid}", "folder": "text/llm", "formats": ["safetensors"]}, self.tmp, None)]
+            self.quiet(dm.run, jobs, "download", "fp32", False, False, self.fetcher(opener), True)
+        finally:
+            dm._hub = orig
+        self.assertEqual([j.status for j in jobs], ["downloaded", "downloaded"])
+        self.assertEqual([r.full_url for r in opener.requests], [url("o/small", "model.safetensors"), url("o/big", "model.safetensors")])
+        self.assertEqual(hub.downloads, [], "steady mode must not use snapshot_download")
+
+
+class RateTest(unittest.TestCase):
+    def test_parse(self):
+        self.assertEqual(dm.parse_rate("300K"), 300 * 1024)
+        self.assertEqual(dm.parse_rate("1M"), 1024 ** 2)
+        self.assertEqual(dm.parse_rate("2mb"), 2 * 1024 ** 2)
+        self.assertEqual(dm.parse_rate("1.5M/s"), int(1.5 * 1024 ** 2))
+        self.assertEqual(dm.parse_rate("4096"), 4096)
+        for bad in ("0", "fast", "-1M"):
+            with self.assertRaises(dm.argparse.ArgumentTypeError):
+                dm.parse_rate(bad)
 
 
 class PickleRuleTest(unittest.TestCase):

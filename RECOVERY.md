@@ -73,9 +73,18 @@ Download them again rather than copying them off the backup drive. The catalog i
 
 ```
 pip install "huggingface_hub>=0.23"
-python scripts/download_models.py --check --phase 1,2,3    # what it will fetch, and how big
-python scripts/download_models.py --phase 1,2,3            # 49 models; drop --phase for all 164
+python scripts/download_models.py --check --collection powerhouses    # what it will fetch, and how big
+python scripts/download_models.py --collection powerhouses --steady --max-rate 300K --smallest-first
 ```
+
+`--collection powerhouses` is the curated set of 42 "tiny powerhouses": the strongest small
+model for each job. Use `--phase 1,2,3` for the 49 phased models, or no filter for all 193.
+
+On weak Wi-Fi use `--steady`: one file at a time, and when the connection drops it waits
+and resumes from the last byte instead of starting over. `--max-rate 300K` caps it at about
+300 KB/s so the rest of the house still has internet. `--smallest-first` gets the small,
+useful models done before the big ones. Stop it any time with Ctrl+C; running the same
+command again picks up where it left off.
 
 It is safe by default:
 

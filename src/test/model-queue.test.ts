@@ -10,6 +10,8 @@ import {
   paramsInMillions,
   buildManifest,
   runtimeTargets,
+  COLLECTIONS,
+  modelsInCollection,
 } from "@/lib/model-queue";
 
 const REPO_ID = /^[A-Za-z0-9][\w.-]*\/[\w.-]+$/;
@@ -92,6 +94,31 @@ describe("model queue catalog", () => {
     const repos = new Set(QUEUE.models.map((m) => m.repo));
     for (const bad of ["microsoft/Florence-2-small", "allenai/OLMo-300M", "stabilityai/stablelm-2-1.6b", "BAAI/Emu3-Vision"]) {
       expect(repos.has(bad), bad).toBe(false);
+    }
+  });
+});
+
+describe("model queue collections", () => {
+  it("only lists real models, each once", () => {
+    expect(COLLECTIONS.length).toBeGreaterThan(0);
+    for (const c of COLLECTIONS) {
+      expect(new Set(c.models).size, c.id).toBe(c.models.length);
+      for (const id of c.models) expect(getModel(id), `${c.id}: ${id}`).toBeDefined();
+      expect(modelsInCollection(c.id).map((m) => m.id)).toEqual(c.models);
+    }
+    expect(modelsInCollection("no-such-collection")).toEqual([]);
+  });
+
+  it("covers every job in the tiny powerhouses set", () => {
+    const folders = new Set(modelsInCollection("powerhouses").map((m) => m.folder));
+    for (const f of ["text/tiny", "text/reasoning", "embeddings/rerankers", "text/classification", "audio/asr", "audio/tts", "vision/detection", "multimodal/vlm", "multimodal/documents"]) {
+      expect(folders.has(f), f).toBe(true);
+    }
+  });
+
+  it("only vouches for raw .bin files", () => {
+    for (const m of QUEUE.models.filter((x) => x.raw_bin)) {
+      for (const pattern of m.raw_bin!) expect(pattern, m.id).toMatch(/\.bin$/);
     }
   });
 });
