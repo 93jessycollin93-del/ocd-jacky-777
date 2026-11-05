@@ -68,14 +68,28 @@ Then open http://localhost:8080.
 
 ## 6. On-device models
 
-Copy them back from the scanned backup drive, or download them again. The catalog is
-`src/data/model-queue.json`:
+Download them again rather than copying them off the backup drive. The catalog is
+`src/data/model-queue.json`; the downloader only talks to huggingface.co:
 
 ```
 pip install "huggingface_hub>=0.23"
-python scripts/download_models.py --plan --phase 1
-python scripts/download_models.py --phase 1
+python scripts/download_models.py --check --phase 1,2,3    # what it will fetch, and how big
+python scripts/download_models.py --phase 1,2,3            # 49 models; drop --phase for all 164
 ```
+
+It is safe by default:
+
+- It skips files that can run code when loaded: PyTorch pickle checkpoints (`.bin`, `.pt`,
+  `.pth`, `.ckpt`) and a repo's own `.py` files. Models that only ship those show as
+  `skipped`. Add `--allow-pickle` or `--allow-code` only for a repo you have decided to trust.
+- Each model is pinned to one commit, and every file is checked against the fingerprint
+  Hugging Face publishes. A file that doesn't match fails with "fingerprint check failed";
+  don't use it.
+- Each model's `manifest.json` records those fingerprints. To re-check the files on disk
+  later, offline: `python scripts/download_models.py --verify`.
+
+If you do copy models from the backup drive, run the download command afterwards: it
+re-checks every file against Hugging Face and replaces what doesn't match.
 
 Gated models need a Hugging Face login with your **new** token (`hf auth login`).
 Models go to `%JACKIE_MODELS_DIR%`, or `~/jackie-models` by default.

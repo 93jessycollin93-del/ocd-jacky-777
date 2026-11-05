@@ -68,6 +68,21 @@ python scripts/download_models.py --phase 1 --formats gguf,onnx --onnx-quant q4
 python scripts/download_models.py --skip-flag non-commercial --skip-flag agpl
 ```
 
+**Safe by default (2026-11-05).** After the October compromise the downloader treats every
+repo as untrusted:
+
+- It skips PyTorch pickle checkpoints (`.bin`/`.pt`/`.pth`/`.ckpt`/`.pkl`/`.nemo`) and repo
+  `.py` files, because both can run code when a model is loaded. Safetensors, ONNX, GGUF,
+  ggml and CTranslate2 files are plain data and still download. Opt in per run with
+  `--allow-pickle` or `--allow-code`.
+- It pins each repo to the commit it listed, so listing and download see the same files.
+- It checks every file against the Hub's SHA-256 (weights) or git blob hash (small
+  files), and fails the job on any mismatch.
+- `manifest.json` records the commit and each file's SHA-256. `--verify` re-hashes the
+  files on disk offline.
+
+Tests: `python -m unittest discover -s scripts -p "test_*.py"` (fake Hub, no network).
+
 **About file sizes.** A repo's size depends on its format, precision and quantization, and on extra encoders. "Q4" isn't one fixed size either: Q4_K_M, Q4_K_S, GPTQ and AWQ all differ. The catalog therefore records no download sizes. Use `--check`, which totals the exact bytes of the files that would be fetched.
 
 ## License and safety flags
