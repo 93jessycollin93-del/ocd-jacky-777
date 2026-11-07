@@ -159,6 +159,26 @@
         "gemma-3n-e2b-it",
         "granite-docling-258m"
       ]
+    },
+    "drones": {
+      "label": "SANDI drones",
+      "blurb": "Micro specialists Jackie sends out for one precise job each: compress memory, recall, rerank, route concepts, pull out names, read tone, detect language, stop prompt injections, and check answers for harm and moral problems",
+      "models": [
+        "llmlingua-2-bert-multilingual",
+        "potion-base-8m",
+        "jina-reranker-v1-tiny-en",
+        "deberta-v3-xsmall-zeroshot",
+        "multilingual-minilmv2-l6-mnli-xnli",
+        "gliner-small-v2.1",
+        "roberta-go-emotions",
+        "xlm-roberta-language-detection",
+        "prompt-guard-2-22m",
+        "deberta-prompt-injection-v2",
+        "llama-guard-3-1b",
+        "granite-guardian-3.2-3b-a800m",
+        "gemma-3-270m-it",
+        "silero-vad"
+      ]
     }
   },
   "models": [
@@ -2394,6 +2414,104 @@
       "formats": ["safetensors"],
       "fallbacks": ["florence-2-base"],
       "note": "Apache-2.0. Works with the Docling library."
+    },
+    {
+      "id": "llmlingua-2-bert-multilingual",
+      "name": "LLMLingua-2 (BERT multilingual)",
+      "repo": "microsoft/llmlingua-2-bert-base-multilingual-cased-meetingbank",
+      "task": "Compresses prompts and memories 2-5x by dropping low-value words",
+      "folder": "text/classification",
+      "params": "178M",
+      "priority": "high",
+      "formats": ["safetensors", "onnx"],
+      "flags": ["custom-license"],
+      "note": "Microsoft LLMLingua-2: keeps the words that carry meaning so long context fits small models. The card now says Apache-2.0; older revisions said CC-BY-NC-SA-4.0, so check before shipping. Use it with the llmlingua package."
+    },
+    {
+      "id": "deberta-v3-xsmall-zeroshot",
+      "name": "deberta-v3-xsmall-zeroshot-v1.1",
+      "repo": "MoritzLaurer/deberta-v3-xsmall-zeroshot-v1.1-all-33",
+      "task": "Sorts any text into labels you choose, no training (English)",
+      "folder": "text/classification",
+      "params": "71M",
+      "priority": "high",
+      "formats": ["safetensors", "onnx"],
+      "fallbacks": ["multilingual-minilmv2-l6-mnli-xnli"],
+      "note": "MIT. Built for edge devices and in-browser use."
+    },
+    {
+      "id": "gliner-small-v2.1",
+      "name": "GLiNER small v2.1",
+      "repo": "urchade/gliner_small-v2.1",
+      "task": "Pulls out any kind of name or concept you ask for (zero-shot entity extraction)",
+      "folder": "text/classification",
+      "params": "166M",
+      "priority": "normal",
+      "formats": ["pytorch", "onnx"],
+      "note": "Apache-2.0. Ships PyTorch weights only, which the downloader skips unless you pass --allow-pickle for this repo."
+    },
+    {
+      "id": "roberta-go-emotions",
+      "name": "roberta-base-go_emotions",
+      "repo": "SamLowe/roberta-base-go_emotions",
+      "task": "Reads emotional tone (28 emotions)",
+      "folder": "text/classification",
+      "params": "125M",
+      "priority": "high",
+      "formats": ["safetensors", "onnx"],
+      "variants": {"onnx": {"repo": "SamLowe/roberta-base-go_emotions-onnx"}},
+      "note": "MIT. The ONNX build is from the same author."
+    },
+    {
+      "id": "xlm-roberta-language-detection",
+      "name": "xlm-roberta-base-language-detection",
+      "repo": "papluca/xlm-roberta-base-language-detection",
+      "task": "Tells which of 20 languages a text is in",
+      "folder": "text/classification",
+      "params": "278M",
+      "priority": "normal",
+      "formats": ["safetensors", "onnx"],
+      "note": "MIT."
+    },
+    {
+      "id": "jina-reranker-v1-tiny-en",
+      "name": "jina-reranker-v1-tiny-en",
+      "repo": "jinaai/jina-reranker-v1-tiny-en",
+      "task": "Tiny reranker for long passages (8k tokens)",
+      "folder": "embeddings/rerankers",
+      "params": "33M",
+      "priority": "high",
+      "formats": ["safetensors", "onnx"],
+      "memory_tier": "fast",
+      "flags": ["remote-code"],
+      "fallbacks": ["ms-marco-minilm-l6-v2"],
+      "note": "Apache-2.0. Uses Jina's JinaBERT code, so it needs --allow-code after you read it."
+    },
+    {
+      "id": "granite-guardian-3.2-3b-a800m",
+      "name": "granite-guardian-3.2-3b-a800m",
+      "repo": "ibm-granite/granite-guardian-3.2-3b-a800m",
+      "task": "Checks prompts and answers for harm, bias, unethical behavior, jailbreaks and made-up facts",
+      "folder": "text/classification",
+      "params": "3B",
+      "priority": "high",
+      "formats": ["safetensors", "gguf"],
+      "flags": ["large"],
+      "fallbacks": ["llama-guard-3-1b"],
+      "note": "Apache-2.0. Mixture of experts: 3B parameters but about 800M active per word, so it runs like a 1B model."
+    },
+    {
+      "id": "llama-guard-3-1b",
+      "name": "Llama-Guard-3-1B",
+      "repo": "meta-llama/Llama-Guard-3-1B",
+      "task": "Classifies chats against 13 hazard categories (MLCommons)",
+      "folder": "text/classification",
+      "params": "1B",
+      "priority": "normal",
+      "formats": ["safetensors", "gguf"],
+      "flags": ["gated", "custom-license"],
+      "fallbacks": ["prompt-guard-2-22m"],
+      "note": "Llama 3.2 Community License. Accept Meta's terms on the Hub first."
     }
   ]
 }

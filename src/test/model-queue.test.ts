@@ -116,6 +116,13 @@ describe("model queue collections", () => {
     }
   });
 
+  it("has the SANDI drones: one micro specialist per job", () => {
+    const drones = modelsInCollection("drones");
+    expect(drones.length).toBeGreaterThanOrEqual(10);
+    expect(COLLECTIONS.find((c) => c.id === "drones")?.label).toBe("SANDI drones");
+    for (const m of drones) expect(m.params, m.id).toBeTruthy();
+  });
+
   it("only vouches for raw .bin files", () => {
     for (const m of QUEUE.models.filter((x) => x.raw_bin)) {
       for (const pattern of m.raw_bin!) expect(pattern, m.id).toMatch(/\.bin$/);

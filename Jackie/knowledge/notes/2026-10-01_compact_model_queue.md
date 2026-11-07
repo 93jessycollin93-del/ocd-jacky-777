@@ -149,3 +149,19 @@ never to the CDN a download redirects to.
 | `PaddlePaddle/PaddleOCR mobile models` | `https://github.com/PaddlePaddle/PaddleOCR` | PP-OCR mobile det/rec models are distributed from PaddleOCR's model list. Convert them with paddle2onnx. |
 
 Rows are generated from the catalog's `requested_as` and `note` fields. If you edit one side, update the other.
+
+**SANDI drones (2026-11-07).** `collections.drones`: 14 micro specialists, one job each,
+complementary to the powerhouses. New: LLMLingua-2 (prompt/memory compression),
+deberta-v3-xsmall zero-shot (routing), GLiNER small v2.1 (entity/concept extraction),
+go_emotions (tone), xlm-roberta language ID, jina-reranker-v1-tiny-en, Granite Guardian 3.2
+3B-A800M (harm, bias, unethical behavior, groundedness) and Llama Guard 3 1B. Reused:
+potion-base-8M, multilingual MiniLM NLI, Prompt Guard 2 22M, Protect AI injection v2,
+gemma-3-270m-it (blank drone to fine-tune) and Silero VAD. Repos and licenses confirmed on
+huggingface.co on 2026-11-07.
+
+**Cleanup (2026-11-07).** `scripts/model_cleanup.py` finds duplicate files over a size (1 GB
+default; same size, then head/tail hash, then full SHA-256; hard links are not duplicates)
+and AI model files outside app folders. It only moves files, into `jackie-quarantine` on the
+same drive with a manifest, and `--restore` puts them back without overwriting. App stores and
+system folders are never touched, and the quarantine itself is never scanned. Tests:
+`scripts/test_model_cleanup.py`.
