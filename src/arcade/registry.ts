@@ -3,21 +3,11 @@
 import type { ComponentType } from "react";
 import { CATEGORIES, type GameMeta, type GameProps } from "./types";
 
-// Games still being built are left out of production builds (so out of the published Arcade, and their code
-// can't break a deploy) until they pass their checks, but are listed in development so they can be played and
-// tested. When a game ships, remove its id from all four brace lists below (they must be literal strings).
-const metas = {
-  ...import.meta.glob<{ meta: GameMeta }>(["./games/*/meta.ts", "!./games/{rope-snip,eight-ball,mini-golf,night-survivors,balloon-defense,tower-clash}/**"], { eager: true }),
-  ...(import.meta.env.DEV
-    ? import.meta.glob<{ meta: GameMeta }>("./games/{rope-snip,eight-ball,mini-golf,night-survivors,balloon-defense,tower-clash}/meta.ts", { eager: true })
-    : {}),
-};
-const loaders = {
-  ...import.meta.glob<{ default: ComponentType<GameProps> }>(["./games/*/index.tsx", "!./games/{rope-snip,eight-ball,mini-golf,night-survivors,balloon-defense,tower-clash}/**"]),
-  ...(import.meta.env.DEV
-    ? import.meta.glob<{ default: ComponentType<GameProps> }>("./games/{rope-snip,eight-ball,mini-golf,night-survivors,balloon-defense,tower-clash}/index.tsx")
-    : {}),
-};
+// Every game here has shipped. To keep an unfinished game out of production builds (and the published
+// Arcade) while still playing it in development, exclude its folder from both globs below, e.g.
+// ["./games/*/meta.ts", "!./games/my-game/**"], and add a second glob for it behind import.meta.env.DEV.
+const metas = import.meta.glob<{ meta: GameMeta }>("./games/*/meta.ts", { eager: true });
+const loaders = import.meta.glob<{ default: ComponentType<GameProps> }>("./games/*/index.tsx");
 
 export const GAMES: GameMeta[] = Object.values(metas)
   .map((m) => m.meta)
