@@ -262,7 +262,7 @@ export default function TowerClash({ touch, submitScore }: GameProps) {
     // Placement zones while a card is picked.
     const selCard = u.sel !== null ? s.hands[0][u.sel] : null;
     if (selCard && CARDS[selCard].kind !== "spell") {
-      ctx.fillStyle = "rgba(220,38,38,0.22)";
+      ctx.fillStyle = "rgba(220,38,38,0.34)";
       for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (!canDeploy(s, 0, selCard, c + 0.5, r + 0.5)) ctx.fillRect(c * T, r * T, T, T);
     }
     // Pending spells.
