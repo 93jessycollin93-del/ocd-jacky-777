@@ -68,6 +68,40 @@ python scripts/download_models.py --phase 1 --formats gguf,onnx --onnx-quant q4
 python scripts/download_models.py --skip-flag non-commercial --skip-flag agpl
 ```
 
+**Safe by default (2026-11-05).** After the October compromise the downloader treats every
+repo as untrusted:
+
+- It skips PyTorch pickle checkpoints (`.bin`/`.pt`/`.pth`/`.ckpt`/`.pkl`/`.nemo`) and repo
+  `.py` files, because both can run code when a model is loaded. Safetensors, ONNX, GGUF,
+  ggml and CTranslate2 files are plain data and still download. Opt in per run with
+  `--allow-pickle` or `--allow-code`.
+- It pins each repo to the commit it listed, so listing and download see the same files.
+- It checks every file against the Hub's SHA-256 (weights) or git blob hash (small
+  files), and fails the job on any mismatch.
+- `manifest.json` records the commit and each file's SHA-256. `--verify` re-hashes the
+  files on disk offline.
+
+Tests: `python -m unittest discover -s scripts -p "test_*.py"` (fake Hub, no network).
+
+**Tiny powerhouses collection (2026-11-05).** `collections.powerhouses` in the catalog is a
+curated cross-phase set: the strongest small model for each job. It adds 29 newer models
+(Qwen3 0.6B/1.7B/4B-2507, Gemma 3 270M and 3n E2B, Phi-4-mini, LFM2, Granite 4.0,
+EmbeddingGemma, Qwen3 embedding/reranker, potion-base-8M, Llama Prompt Guard 2 and Protect AI
+prompt-injection classifiers, Moonshine, Kokoro (ONNX build), RT-DETRv2, SigLIP2,
+SmolVLM2, moondream2, granite-docling) to existing standouts. Each repo and license was
+confirmed on its huggingface.co model page on 2026-11-05. Select it with
+`--collection powerhouses` or the "Tiny powerhouses" button on /models.
+
+`raw_bin` on a model lists `.bin` files that are raw arrays, not pickles (Kokoro's voices),
+so the safety filter keeps them.
+
+**Weak Wi-Fi (2026-11-05).** `--steady` swaps snapshot_download for a standard-library
+fetcher: one file at a time, resume from `<file>.part` with an HTTP Range request,
+backoff of 5 s doubling to 5 min, and no giving up on network errors (401/403/404 still
+stop that file). `--max-rate 300K` caps the speed. `--smallest-first` lists every repo
+first and downloads in size order. The Hugging Face token is only sent to huggingface.co,
+never to the CDN a download redirects to.
+
 **About file sizes.** A repo's size depends on its format, precision and quantization, and on extra encoders. "Q4" isn't one fixed size either: Q4_K_M, Q4_K_S, GPTQ and AWQ all differ. The catalog therefore records no download sizes. Use `--check`, which totals the exact bytes of the files that would be fetched.
 
 ## License and safety flags
@@ -115,3 +149,19 @@ python scripts/download_models.py --skip-flag non-commercial --skip-flag agpl
 | `PaddlePaddle/PaddleOCR mobile models` | `https://github.com/PaddlePaddle/PaddleOCR` | PP-OCR mobile det/rec models are distributed from PaddleOCR's model list. Convert them with paddle2onnx. |
 
 Rows are generated from the catalog's `requested_as` and `note` fields. If you edit one side, update the other.
+
+**SANDI drones (2026-11-07).** `collections.drones`: 14 micro specialists, one job each,
+complementary to the powerhouses. New: LLMLingua-2 (prompt/memory compression),
+deberta-v3-xsmall zero-shot (routing), GLiNER small v2.1 (entity/concept extraction),
+go_emotions (tone), xlm-roberta language ID, jina-reranker-v1-tiny-en, Granite Guardian 3.2
+3B-A800M (harm, bias, unethical behavior, groundedness) and Llama Guard 3 1B. Reused:
+potion-base-8M, multilingual MiniLM NLI, Prompt Guard 2 22M, Protect AI injection v2,
+gemma-3-270m-it (blank drone to fine-tune) and Silero VAD. Repos and licenses confirmed on
+huggingface.co on 2026-11-07.
+
+**Cleanup (2026-11-07).** `scripts/model_cleanup.py` finds duplicate files over a size (1 GB
+default; same size, then head/tail hash, then full SHA-256; hard links are not duplicates)
+and AI model files outside app folders. It only moves files, into `jackie-quarantine` on the
+same drive with a manifest, and `--restore` puts them back without overwriting. App stores and
+system folders are never touched, and the quarantine itself is never scanned. Tests:
+`scripts/test_model_cleanup.py`.

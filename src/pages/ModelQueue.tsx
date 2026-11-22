@@ -3,8 +3,10 @@ import { Link } from "react-router-dom";
 import {
   QUEUE,
   PHASES,
+  COLLECTIONS,
   FLAG_LABELS,
   modelsInPhase,
+  modelsInCollection,
   queueOrder,
   categoryOf,
   phaseOf,
@@ -22,7 +24,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Copy, ExternalLink, ChevronDown, ChevronRight, AlertTriangle, Search } from "lucide-react";
+import { ArrowLeft, Copy, ExternalLink, ChevronDown, ChevronRight, AlertTriangle, Search, Zap } from "lucide-react";
 
 const CATEGORIES: { id: ModelCategory | "all"; label: string }[] = [
   { id: "all", label: "All" },
@@ -130,14 +132,19 @@ function ModelRow({ model, position }: { model: QueueModel; position: number }) 
   );
 }
 
+type View = QueuePhase | "all" | `collection:${string}`;
+
+const collectionOf = (view: View) => (view.startsWith("collection:") ? COLLECTIONS.find((c) => `collection:${c.id}` === view) : undefined);
+
 export default function ModelQueue() {
-  const [phase, setPhase] = useState<QueuePhase | "all">("1");
+  const [phase, setPhase] = useState<View>("1");
   const [category, setCategory] = useState<ModelCategory | "all">("all");
   const [query, setQuery] = useState("");
   const [showCorrections, setShowCorrections] = useState(false);
 
   const models = useMemo(() => {
-    const base = phase === "all" ? queueOrder() : modelsInPhase(phase);
+    const collection = collectionOf(phase);
+    const base = collection ? modelsInCollection(collection.id) : phase === "all" ? queueOrder() : modelsInPhase(phase as QueuePhase);
     const q = query.trim().toLowerCase();
     return base.filter(
       (m) =>
@@ -148,7 +155,12 @@ export default function ModelQueue() {
 
   const corrections = QUEUE.models.filter((m) => m.requested_as);
   const flagged = QUEUE.models.filter((m) => m.flags?.some((f) => f === "non-commercial" || f === "agpl"));
-  const phaseCommand = phase === "all" ? "--check" : `--check --phase ${phase}`;
+  const activeCollection = collectionOf(phase);
+  const phaseCommand = activeCollection
+    ? `--check --collection ${activeCollection.id}`
+    : phase === "all"
+      ? "--check"
+      : `--check --phase ${phase}`;
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
@@ -185,6 +197,20 @@ export default function ModelQueue() {
                 <span className="ml-1.5 text-[10px] opacity-70">{p.id === "all" ? QUEUE.models.length : modelsInPhase(p.id).length}</span>
               </Button>
             ))}
+            {COLLECTIONS.map((c) => (
+              <Button
+                key={c.id}
+                size="sm"
+                variant={phase === `collection:${c.id}` ? "default" : "outline"}
+                onClick={() => setPhase(`collection:${c.id}`)}
+                title={c.blurb}
+                className="gap-1"
+              >
+                <Zap className="w-3.5 h-3.5" />
+                {c.label}
+                <span className="ml-0.5 text-[10px] opacity-70">{c.models.length}</span>
+              </Button>
+            ))}
           </div>
           <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Category">
             {CATEGORIES.map((c) => (
@@ -198,7 +224,7 @@ export default function ModelQueue() {
             </div>
           </div>
           {phase !== "all" && (
-            <p className="text-xs text-muted-foreground">{PHASES.find((p) => p.id === phase)?.blurb}</p>
+            <p className="text-xs text-muted-foreground">{activeCollection?.blurb ?? PHASES.find((p) => p.id === phase)?.blurb}</p>
           )}
         </div>
 

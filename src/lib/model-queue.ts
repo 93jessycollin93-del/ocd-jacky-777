@@ -35,7 +35,15 @@ export interface QueueModel {
   fallbacks?: string[];
   /** The id from the original queue when it was wrong or ambiguous. */
   requested_as?: string;
+  /** `.bin` files the catalog vouches are raw arrays, not PyTorch pickles (e.g. Kokoro voices). */
+  raw_bin?: string[];
   note?: string;
+}
+
+export interface QueueCollection {
+  label: string;
+  blurb: string;
+  models: string[];
 }
 
 export interface QueueCatalog {
@@ -45,6 +53,7 @@ export interface QueueCatalog {
   format_runtimes: Record<ModelFormat, string[]>;
   folders: string[];
   phases: Record<"1" | "2" | "3", string[]>;
+  collections?: Record<string, QueueCollection>;
   models: QueueModel[];
 }
 
@@ -62,6 +71,15 @@ export const PHASES: { id: QueuePhase; label: string; blurb: string }[] = [
   { id: "3", label: "Phase 3", blurb: "Specialized experimentation" },
   { id: "backlog", label: "Backlog", blurb: "Everything else, by category" },
 ];
+
+/** Curated cross-phase sets, e.g. "powerhouses": the strongest small model per job. */
+export const COLLECTIONS: ({ id: string } & QueueCollection)[] = Object.entries(QUEUE.collections ?? {}).map(
+  ([id, c]) => ({ id, ...c }),
+);
+
+export function modelsInCollection(id: string): QueueModel[] {
+  return (QUEUE.collections?.[id]?.models ?? []).map((mid) => BY_ID.get(mid)!).filter(Boolean);
+}
 
 export const FLAG_LABELS: Record<ModelFlag, string> = {
   gated: "Gated: accept the license on the Hub first",

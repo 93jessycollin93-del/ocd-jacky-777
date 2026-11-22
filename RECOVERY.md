@@ -68,14 +68,39 @@ Then open http://localhost:8080.
 
 ## 6. On-device models
 
-Copy them back from the scanned backup drive, or download them again. The catalog is
-`src/data/model-queue.json`:
+Download them again rather than copying them off the backup drive. The catalog is
+`src/data/model-queue.json`; the downloader only talks to huggingface.co:
 
 ```
 pip install "huggingface_hub>=0.23"
-python scripts/download_models.py --plan --phase 1
-python scripts/download_models.py --phase 1
+python scripts/download_models.py --check --collection powerhouses    # what it will fetch, and how big
+python scripts/download_models.py --collection powerhouses --steady --max-rate 300K --smallest-first
 ```
+
+`--collection powerhouses` is the curated set of 42 "tiny powerhouses": the strongest small
+model for each job. `--collection drones` is the 14 "SANDI drones": micro specialists for one
+job each (compress memory, route, extract, read tone, block prompt injections, safety and
+moral checks). Use `--phase 1,2,3` for the 49 phased models, or no filter for all 201.
+
+On weak Wi-Fi use `--steady`: one file at a time, and when the connection drops it waits
+and resumes from the last byte instead of starting over. `--max-rate 300K` caps it at about
+300 KB/s so the rest of the house still has internet. `--smallest-first` gets the small,
+useful models done before the big ones. Stop it any time with Ctrl+C; running the same
+command again picks up where it left off.
+
+It is safe by default:
+
+- It skips files that can run code when loaded: PyTorch pickle checkpoints (`.bin`, `.pt`,
+  `.pth`, `.ckpt`) and a repo's own `.py` files. Models that only ship those show as
+  `skipped`. Add `--allow-pickle` or `--allow-code` only for a repo you have decided to trust.
+- Each model is pinned to one commit, and every file is checked against the fingerprint
+  Hugging Face publishes. A file that doesn't match fails with "fingerprint check failed";
+  don't use it.
+- Each model's `manifest.json` records those fingerprints. To re-check the files on disk
+  later, offline: `python scripts/download_models.py --verify`.
+
+If you do copy models from the backup drive, run the download command afterwards: it
+re-checks every file against Hugging Face and replaces what doesn't match.
 
 Gated models need a Hugging Face login with your **new** token (`hf auth login`).
 Models go to `%JACKIE_MODELS_DIR%`, or `~/jackie-models` by default.
@@ -90,3 +115,21 @@ Treat the backups as possibly infected until scanned.
   Don't run old `.exe`, `.msi`, `.bat`, `.cmd`, `.ps1`, `.vbs` or `.js` files from backups.
   Download programs again from their official sites.
 - Restore files dated around the infection **last**, after everything else is scanned.
+
+## 7. Clean up duplicates and stray models (optional)
+
+Finds files of 1 GB or more that exist twice, and AI model files sitting outside any app's
+model folder (for example in Downloads). It never deletes: it moves extras into a
+`jackie-quarantine` folder on the same drive and can put them all back.
+
+```
+python scripts/model_cleanup.py                                   # report only, changes nothing
+python scripts/model_cleanup.py --roots C:\ D:\ --keep "%USERPROFILE%\Desktop\SAS-Jacky-HUB"
+python scripts/model_cleanup.py --quarantine --loose              # move extras and stray models
+python scripts/model_cleanup.py --restore                         # undo
+```
+
+It never moves anything inside an app's own folder (Ollama, LM Studio, Hugging Face cache,
+`jackie-models`, GPT4All, ComfyUI, SAS-Jacky-HUB, Program Files, AppData, ...) or a folder you
+name with `--keep`. Of two identical copies it keeps the one an app uses. Use your apps for a
+day, then delete the `jackie-quarantine` folder yourself.

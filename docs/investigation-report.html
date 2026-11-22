@@ -1,0 +1,247 @@
+<title>Trojan.Kill.AV Investigation</title>
+<meta name="description" content="Forensic source and git-history audit of 8 repositories for the reported trojan.kill.av.exe PC incident.">
+<style>
+  /* Layout: single reading column; a BLUF verdict banner; ranked finding cards keyed by severity stripe. */
+  :root{
+    --bg:#f4f5f7; --surface:#ffffff; --ink:#15181d; --muted:#5b636e; --faint:#8a929d;
+    --line:#e2e5ea; --line-strong:#cfd4db;
+    --accent:#2f6f6b;            /* desaturated teal — investigative, calm */
+    --accent-ink:#1d4b48;
+    --crit:#b4232a; --high:#c0552a; --med:#b08320; --low:#4f7a4a; --info:#3f6b96;
+    --crit-bg:#fbecec; --high-bg:#fbefe7; --med-bg:#faf4e3; --low-bg:#eef5ed; --info-bg:#eaf1f8;
+    --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --serif:"Newsreader",Georgia,"Times New Roman",serif;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#101317; --surface:#181c22; --ink:#e9ecf0; --muted:#a3abb6; --faint:#79828d;
+    --line:#262c34; --line-strong:#333b45;
+    --accent:#4fa39c; --accent-ink:#8fd0c9;
+    --crit:#ef6a70; --high:#e0885a; --med:#d7b14e; --low:#86c07e; --info:#78a8d6;
+    --crit-bg:#2a1718; --high-bg:#271b14; --med-bg:#241f12; --low-bg:#17231a; --info-bg:#151f2b;
+    color-scheme:dark;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#101317; --surface:#181c22; --ink:#e9ecf0; --muted:#a3abb6; --faint:#79828d;
+    --line:#262c34; --line-strong:#333b45;
+    --accent:#4fa39c; --accent-ink:#8fd0c9;
+    --crit:#ef6a70; --high:#e0885a; --med:#d7b14e; --low:#86c07e; --info:#78a8d6;
+    --crit-bg:#2a1718; --high-bg:#271b14; --med-bg:#241f12; --low-bg:#17231a; --info-bg:#151f2b;
+    color-scheme:dark;
+  }
+  @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,500&display=swap");
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.6;margin:0}
+  .wrap{max-width:860px;margin:0 auto;padding-block:clamp(28px,6vw,64px);padding-inline:16px}
+  header.doc{border-bottom:2px solid var(--accent);padding-bottom:22px;margin-bottom:8px}
+  .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-ink);font-weight:600;margin:0 0 10px}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(28px,5.5vw,44px);line-height:1.08;margin:0 0 14px;text-wrap:balance;letter-spacing:-.01em}
+  .meta{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:13px;color:var(--muted)}
+  .meta b{color:var(--ink);font-weight:600}
+  .meta code{font-family:var(--mono);font-size:12px}
+  h2{font-family:var(--serif);font-weight:600;font-size:clamp(20px,3.4vw,27px);margin:48px 0 4px;letter-spacing:-.005em;scroll-margin-top:16px}
+  .rule{height:1px;background:var(--line);border:0;margin:8px 0 20px}
+  h3{font-size:16px;font-weight:600;margin:26px 0 8px}
+  p{margin:12px 0}
+  a{color:var(--accent-ink)}
+  code{font-family:var(--mono);font-size:.86em;background:color-mix(in srgb,var(--accent) 12%,transparent);padding:.08em .4em;border-radius:4px;word-break:break-word}
+  strong{font-weight:600}
+  /* Verdict banner */
+  .verdict{background:var(--surface);border:1px solid var(--line-strong);border-left:5px solid var(--low);border-radius:12px;padding:22px 22px;margin:26px 0;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .verdict .tag{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--low);margin-bottom:8px}
+  .verdict h2{margin:0 0 6px;font-size:22px}
+  .verdict p{margin:10px 0 0;color:var(--ink)}
+  .verdict p.sub{color:var(--muted);font-size:14.5px}
+  /* Stat row */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:22px 0}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .stat .n{font-family:var(--serif);font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--accent-ink);line-height:1}
+  .stat .l{font-size:12px;color:var(--muted);margin-top:6px}
+  /* Tables */
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:0}
+  th,td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:color-mix(in srgb,var(--accent) 7%,var(--surface));font-weight:600;font-size:12px;letter-spacing:.03em;color:var(--muted);text-transform:uppercase}
+  tr:last-child td{border-bottom:0}
+  td.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:12.5px}
+  .yes{color:var(--low);font-weight:600}.no{color:var(--muted)}
+  /* Findings */
+  .finding{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:14px 0;border-left:5px solid var(--sev)}
+  .finding.crit{--sev:var(--crit)}.finding.high{--sev:var(--high)}.finding.med{--sev:var(--med)}
+  .finding.low{--sev:var(--low)}.finding.info{--sev:var(--info)}
+  .fhead{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-bottom:4px}
+  .fid{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--sev)}
+  .sev{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:2px 8px;border-radius:999px;color:var(--sev);background:var(--sev-bg)}
+  .finding.crit .sev{--sev-bg:var(--crit-bg)}.finding.high .sev{--sev-bg:var(--high-bg)}
+  .finding.med .sev{--sev-bg:var(--med-bg)}.finding.low .sev{--sev-bg:var(--low-bg)}.finding.info .sev{--sev-bg:var(--info-bg)}
+  .ftitle{font-weight:600;font-size:15.5px;flex:1 1 auto;min-width:0}
+  .finding p{margin:8px 0;font-size:14.5px;color:var(--muted)}
+  .finding p strong{color:var(--ink)}
+  ul{margin:10px 0;padding-left:20px}li{margin:6px 0;font-size:14.5px;color:var(--muted)}
+  li strong{color:var(--ink)}
+  ol.rec{counter-reset:r;list-style:none;padding-left:0}
+  ol.rec li{counter-increment:r;position:relative;padding-left:40px;margin:12px 0;color:var(--ink)}
+  ol.rec li::before{content:counter(r);position:absolute;left:0;top:-2px;width:26px;height:26px;border-radius:7px;background:var(--accent);color:#fff;font-size:13px;font-weight:600;display:grid;place-items:center;font-variant-numeric:tabular-nums}
+  .group{font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);margin:22px 0 2px}
+  footer{margin-top:52px;padding-top:18px;border-top:1px solid var(--line);font-size:12.5px;color:var(--faint)}
+  .pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 9px;border-radius:999px;background:var(--low-bg);color:var(--low);border:1px solid color-mix(in srgb,var(--low) 30%,transparent)}
+</style>
+
+<div class="wrap">
+  <header class="doc">
+    <p class="eyebrow">Forensic Investigation Report</p>
+    <h1>The "trojan.kill.av.exe" PC Incident</h1>
+    <div class="meta">
+      <span><b>Prepared</b> 2026-10-06</span>
+      <span><b>Analyst</b> Claude Code — source &amp; metadata forensics</span>
+      <span><b>Scope</b> 8 repositories</span>
+      <span><b>Branch</b> <code>claude/trojan-kill-av-investigation-h2yl1i</code></span>
+    </div>
+  </header>
+
+  <div class="verdict">
+    <span class="tag">● Verdict — No malware present</span>
+    <h2>There is no <code>trojan.kill.av.exe</code>, and no virus of any kind.</h2>
+    <p>No file by that name — and no trojan, dropper, antivirus-killer, or Windows malware — exists in any working tree, on any branch, or anywhere in the full commit history of the eight repositories examined. <code>trojan-kill-av</code> is only this investigation's branch name.</p>
+    <p class="sub">The investigation did surface one <strong>high-severity design/configuration risk</strong>: the "Jacky / SAS" project is built to expose the PC's shell and filesystem over an API and an optional public tunnel, and that access is <strong>unauthenticated by default</strong>. That — not a virus — is what to check on the actual machine.</p>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="n">8</div><div class="l">repositories audited</div></div>
+    <div class="stat"><div class="n">~587</div><div class="l">commits reviewed</div></div>
+    <div class="stat"><div class="n">~5,283</div><div class="l">history blobs scanned</div></div>
+    <div class="stat"><div class="n">0</div><div class="l">malware / trojans found</div></div>
+  </div>
+
+  <h2 id="malware">1 · The malware question, answered</h2>
+  <hr class="rule">
+  <p>Every direct check for the reported file and for Windows malware came back negative.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Check</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>File named <code>trojan.kill.av.exe</code> (any case), anywhere/ever</td><td class="no">Not found</td></tr>
+        <tr><td>Any <code>.exe .dll .scr .msi .vbs .hta .lnk .jar .zip .iso</code> in tree or history</td><td class="no">None</td></tr>
+        <tr><td>Malware droppers / loaders (scripts that download &amp; run)</td><td class="no">None</td></tr>
+        <tr><td>Obfuscated payloads (base64-exec, <code>IEX</code> of remote, <code>certutil</code>/<code>bitsadmin</code> fetch)</td><td class="no">None</td></tr>
+        <tr><td>Code that disables or "kills" antivirus</td><td class="yes">None — opposite is true (§2)</td></tr>
+        <tr><td>Known-malicious npm versions in any lockfile</td><td class="yes">0 hits</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>The only binaries present are two <code>favicon.ico</code> files and Bun lockfiles — all benign.</p>
+
+  <h2 id="why">2 · Why "trojan" and "AV" appear — all benign</h2>
+  <hr class="rule">
+  <ul>
+    <li><strong>SOC threat catalog</strong> — <code>VeilOps.tsx</code> embeds a MITRE ATT&amp;CK reference dataset (TrickBot, Dridex descriptions). Read-only analyst reference data, not code.</li>
+    <li><strong>Cyber-ethics rulebook</strong> — <code>CyberSecurityRulebookApp.tsx</code>'s "T — Trojan Payload Distribution" entry describes a technique alongside its legal consequence and ethical alternative. Awareness content.</li>
+    <li><strong>"AV" = Avast, and the code keeps it running</strong> — <code>SECRETS.md</code> / <code>cloud_client.py</code> use <code>truststore</code> to make HTTPS work <em>through</em> Avast's interception <strong>with TLS verification left ON</strong> ("no <code>CERT_NONE</code> … Avast keeps protecting the machine"). Nothing attempts to disable AV.</li>
+    <li><strong>Cosmetic string</strong> — a retro fake window titled "Gemini Prompt.exe". Just a UI label.</li>
+  </ul>
+
+  <h2 id="system">3 · What the project actually is</h2>
+  <hr class="rule">
+  <p>An AI-assistant / "PC operator" fleet called <strong>Jacky / SAS</strong>, built with Lovable and several AI coding agents. <code>jacky</code> is a Python Flask engine running on the owner's Windows PC that can run whitelisted PowerShell; <code>pc</code> is a browser "virtual computer" with a Node backend that runs whitelisted shell commands and a sandboxed filesystem; <code>ocd-jacky-777</code> is the public web UI plus Supabase functions that relay to the engine. The security weight is entirely in how that remote-control surface is exposed.</p>
+
+  <h2 id="scope">4 · Repositories examined</h2>
+  <hr class="rule">
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Repository</th><th>Visibility</th><th class="num">Files</th><th class="num">Commits</th></tr></thead>
+      <tbody>
+        <tr><td><code>ocd-jacky-777</code></td><td>public</td><td class="num">1,033</td><td class="num">275</td></tr>
+        <tr><td><code>pc</code></td><td>public</td><td class="num">384</td><td class="num">190</td></tr>
+        <tr><td><code>jacky</code></td><td>public</td><td class="num">177</td><td class="num">53</td></tr>
+        <tr><td><code>93jessycollin93-del-PC</code></td><td>public</td><td class="num">93</td><td class="num">4</td></tr>
+        <tr><td><code>bot-squad-dynamics</code></td><td>public</td><td class="num">85</td><td class="num">39</td></tr>
+        <tr><td><code>apex-intelligence-hub</code></td><td>public</td><td class="num">81</td><td class="num">4</td></tr>
+        <tr><td><code>my-pc-companion</code></td><td>private</td><td class="num">80</td><td class="num">3</td></tr>
+        <tr><td><code>AI-Data-Analist</code></td><td>public</td><td class="num">18</td><td class="num">19</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Coverage included working trees, every remote branch, and full object history. Repos <code>pc</code>, <code>jacky</code> and <code>my-pc-companion</code> were added during the investigation because the five original repos reference them as the engine / PC side of the system.</p>
+
+  <h2 id="findings">5 · Findings, ranked</h2>
+  <hr class="rule">
+
+  <div class="finding high">
+    <div class="fhead"><span class="fid">F1</span><span class="sev">High</span><span class="ftitle">Remote PowerShell/shell surface is unauthenticated by default</span></div>
+    <p><code>jacky/jacky_api.py</code> exposes <code>POST /api/shell</code>, running <code>powershell -NonInteractive -Command</code> via subprocess. Auth is opt-in — on only when <code>SAS_ACCESS_TOKEN</code> is set — and the route has an explicit "Open SAS — allow" path, so with no token set it executes commands with <strong>no authentication</strong>. <code>pc/server.ts</code> has the same shape: <code>/api/shell/exec</code> and <code>/api/term-fs/{read,write,rm}</code>, where <code>requireAuth()</code> returns <em>allow</em> when the token is unset, bound to <code>0.0.0.0</code>.</p>
+    <p><strong>Mitigations present:</strong> command allowlists; <code>pc</code> uses <code>execFile</code> with an argument array (not a shell string), blocks metacharacters and <code>..</code>, enforces a workspace root with symlink checks, plus a lockdown flag and rate limiter. An approval/transaction framework exists in <code>jacky</code> but is <strong>not wired into</strong> the live <code>/api/shell</code> route.</p>
+  </div>
+
+  <div class="finding high">
+    <div class="fhead"><span class="fid">F2</span><span class="sev">High</span><span class="ftitle">A one-command launcher puts the PC on the public internet</span></div>
+    <p><code>jacky/Start_SAS_Public.ps1</code> opens a <strong>Cloudflare quick tunnel</strong> to the local server and prints a public URL for the dashboard and API. With no token set it prints a warning but <strong>does not refuse to start</strong>. Combined with F1, running it without a token exposes an unauthenticated remote-shell API. No evidence of a currently-live exposure (the intended domain does not resolve and quick-tunnel URLs are ephemeral), but the one-click path exists.</p>
+  </div>
+
+  <div class="finding med">
+    <div class="fhead"><span class="fid">F3</span><span class="sev">Medium</span><span class="ftitle">Committed Supabase config (anon key) in a non-ignored .env</span></div>
+    <p><code>ocd-jacky-777/.env</code> holds the Supabase URL and the <strong>anon/publishable</strong> key (tracked since 2026-04-12, ~548 historical blobs). The anon key is designed to ship to browsers and is only safe with Row-Level Security enforced. The real defect is that <code>.env</code> is not git-ignored in any of the five original repos — so a service-role key committed later would leak silently. Confirm RLS; move secrets to the platform; add <code>.env</code> to <code>.gitignore</code>; rotate if desired.</p>
+  </div>
+
+  <div class="finding med">
+    <div class="fhead"><span class="fid">F4</span><span class="sev">Medium</span><span class="ftitle">PC internals disclosed in public repos</span></div>
+    <p>Public repos document the PC's drive map (<code>E:/G:/V:/H:</code>), hardware ("GODZILLA", RTX 3090, 128 GB RAM), a Windows user path, the intended domain, and the full tunnel setup. No credentials, but useful reconnaissance in aggregate. Consider moving the operational runbooks to a private repo.</p>
+  </div>
+
+  <div class="finding low">
+    <div class="fhead"><span class="fid">F5</span><span class="sev">Low</span><span class="ftitle">"Secrets" found are placeholders / test fixtures — not real keys</span></div>
+    <p>These matched secret patterns but are intentional, listed so they are not mistaken for leaks: the literal AWS docs example key <code>AKIAIOSFODNN7EXAMPLE</code> and a sample <code>sk-proj-…</code> in a scanner-demo app; <code>sk-live-…</code> and a dummy RSA key in <code>Jackie</code> test fixtures; <code>sk-ant-PASTE_YOUR…</code> and Telegram <em>env-var names</em> in templates; and a Firebase <strong>web</strong> API key (public by design). <strong>No real AWS secret, OpenAI/Anthropic key, GitHub token, bot token, or private key was found in any tree or full history.</strong></p>
+  </div>
+
+  <div class="finding low">
+    <div class="fhead"><span class="fid">F6</span><span class="sev">Low</span><span class="ftitle">Model downloader can fall back to pickled checkpoints</span></div>
+    <p><code>scripts/download_models.py</code> prefers <code>safetensors</code> but will fall back to pickled PyTorch weights — a known code-execution vector for untrusted model repos. Prefer <code>safetensors</code> only, or load with <code>weights_only=True</code>.</p>
+  </div>
+
+  <div class="finding info">
+    <div class="fhead"><span class="fid">F7</span><span class="sev">Info</span><span class="ftitle">Comment-triggered CI workflow with write permission</span></div>
+    <p><code>jacky</code>'s <code>agent-tasks.yml</code> runs on <code>@OmniAgent</code> issue comments with <code>contents: write</code>. It passes the comment body through an environment variable (a safe pattern) and runs on GitHub-hosted runners. Low risk as written; noted for periodic review.</p>
+  </div>
+
+  <div class="finding info">
+    <div class="fhead"><span class="fid">F8</span><span class="sev">Info</span><span class="ftitle">The Supabase relay is the correct pattern — a positive finding</span></div>
+    <p><code>jacky-proxy</code> relays the browser to the engine behind a strict path allowlist, mandatory auth, and an admin gate on the master switch — and <strong>deliberately excludes</strong> <code>/api/shell</code> from the allowlist, with comments calling it out as dangerous. <code>PARITY_MATRIX.md</code> openly documents the open-by-default behaviour as a known risk. The team is aware; the gap is that the <em>default</em> is open rather than closed.</p>
+  </div>
+
+  <h2 id="supply">6 · Supply chain — clean</h2>
+  <hr class="rule">
+  <p><span class="pill">0 compromised packages</span> All lockfiles resolve from the npm registry (plus Lovable's own GCP mirror). Zero matches against the 2025 <code>chalk</code>/<code>debug</code>, "Shai-Hulud", <code>eslint-config-prettier</code> "Scavenger", and Nx "s1ngularity" compromises. No <code>install</code>/<code>postinstall</code> lifecycle scripts. The one external tool referenced (<code>free-claude-code</code>, pinned to commit <code>478e9665</code>) was verified genuine against its upstream project, and a red-flag scan of that snapshot found nothing malicious.</p>
+
+  <h2 id="timeline">7 · Metadata &amp; timeline</h2>
+  <hr class="rule">
+  <p>Authors are the owner (<code>93jessycollin93-del</code>, and the PC's local identity <code>Jacky AI</code>) plus legitimate tooling (Lovable's <code>gpt-engineer-app</code>, Claude, Copilot, CodeRabbit, Replit, Vercel). Real activity runs 2026-04 → 2026-10-05, US timezones for human commits, evening/late-night clustering — consistent with a single developer plus hosted agents. <strong>No anomalous author, timestamp, or committer identity.</strong> The internet-exposure features landed <strong>2026-06-28 → 06-29</strong> ("SAS v2 — internet-accessible PWA … Cloudflare tunnel," then the <code>/api/shell</code> endpoint) — the window to anchor any machine-side timeline to.</p>
+
+  <h2 id="recs">8 · Recommendations</h2>
+  <hr class="rule">
+  <p class="group">On the PC itself — where real evidence would live</p>
+  <ol class="rec">
+    <li>Review Windows Event Viewer, Avast history, and Defender history from 2026-06-28 onward.</li>
+    <li>Inspect <code>jacky</code>'s runtime artifacts — <code>sas_serve.log</code>, <code>tunnel.log</code>, <code>CURRENT_PUBLIC_URL.txt</code> — to see whether a public tunnel was ever opened, and when.</li>
+    <li>Check current listeners on <code>:5000</code>/<code>:11434</code> and Task Scheduler (the project's own <code>JackyAutoSave</code> task is expected and benign).</li>
+    <li>Confirm whether the access tokens were ever set when the public launcher ran.</li>
+  </ol>
+  <p class="group">In the code — close the open-by-default gap (F1/F2)</p>
+  <ol class="rec">
+    <li>Make auth fail-closed: refuse to start shell/filesystem endpoints, and refuse to bind beyond <code>127.0.0.1</code>, unless a token is explicitly set.</li>
+    <li>Wire the existing approval/transaction framework into the live <code>/api/shell</code> route.</li>
+    <li>Default <code>SAS_HOST</code> to <code>127.0.0.1</code> in <code>serve.py</code>.</li>
+  </ol>
+  <p class="group">Hygiene (F3–F6)</p>
+  <ol class="rec">
+    <li>Add <code>.env</code> to <code>.gitignore</code>; move real secrets to platform stores; confirm Supabase RLS; rotate the key if warranted.</li>
+    <li>Move operational runbooks (drive maps, hardware, tunnel setup) to a private repo.</li>
+    <li>Prefer <code>safetensors</code> in the model downloader; avoid the pickled-weight fallback.</li>
+  </ol>
+
+  <h2 id="conclusion">9 · Conclusion</h2>
+  <hr class="rule">
+  <p>The "trojan.kill.av.exe" does not exist in any of these repositories or their history, and no malware, antivirus-killer, or hostile payload was found. "Trojan" is defensive/educational catalog content, and the Avast references show the code is written to <strong>keep</strong> antivirus running. The genuine risk is architectural: a system <strong>designed</strong> to expose the owner's PC to remote shell and filesystem control, with authentication <strong>off by default</strong> and a one-click public-tunnel launcher. There is no evidence of a currently-live exposure, but if that launcher was ever run without a token, a remote-control surface was on the internet during that window. The forensic answer moves from "find the virus" to "check the PC's logs and the server/tunnel runtime artifacts for the 2026-06-28-onward window, and close the open-by-default auth gap."</p>
+
+  <footer>
+    Every claim is grounded in files and git history in the listed repositories; no finding is inferred beyond the evidence. Full written report: <code>docs/TROJAN_KILL_AV_INVESTIGATION.md</code> on branch <code>claude/trojan-kill-av-investigation-h2yl1i</code>.
+  </footer>
+</div>

@@ -12,10 +12,30 @@ const corsHeaders = {
  * Returns: { valid: boolean, user?: object }
  */
 
+// Offline by default: this function lets Telegram users in, so it only runs
+// when the owner turns its group on in the ONLINE_FEATURES secret
+// (comma-separated, e.g. "cloud_ai,pc_bridge", or "all"). Empty or unset = offline.
+function offlineResponse(group: string): Response | null {
+  const on = (Deno.env.get('ONLINE_FEATURES') ?? '').split(',').map((g) => g.trim().toLowerCase());
+  if (on.includes('all') || on.includes(group)) return null;
+  return new Response(
+    JSON.stringify({
+      ok: false,
+      error: 'offline_mode',
+      group,
+      message: `Offline mode: "${group}" is turned off. The owner can add it to the ONLINE_FEATURES secret.`,
+    }),
+    { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+  );
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
+
+  const offline = offlineResponse('telegram')
+  if (offline) return offline
 
   try {
     const TELEGRAM_API_KEY = Deno.env.get('TELEGRAM_API_KEY')
