@@ -264,9 +264,9 @@ export default function BalloonDefense({ touch, best, submitScore }: GameProps) 
     }
     play("place");
     fx.current.particles.burst(x, y, 12, { color: ["#fde68a", "#fff"], speed: 90, size: 3, life: 0.4, gravity: 0 });
+    // Keep the shop open after building; click the tower to upgrade it.
     u.placing = null;
     u.ghost = null;
-    u.sel = t.uid;
     return true;
   };
 

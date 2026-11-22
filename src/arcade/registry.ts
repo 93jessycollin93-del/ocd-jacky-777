@@ -5,17 +5,17 @@ import { CATEGORIES, type GameMeta, type GameProps } from "./types";
 
 // Games still being built are left out of production builds (so out of the published Arcade, and their code
 // can't break a deploy) until they pass their checks, but are listed in development so they can be played and
-// tested. When a game ships, remove its id from all four brace lists below (they must be literal strings).
+// tested. When a game ships, remove its id from all four lists below (literal strings; use {a,b} braces for several ids).
 const metas = {
-  ...import.meta.glob<{ meta: GameMeta }>(["./games/*/meta.ts", "!./games/{balloon-defense,tower-clash}/**"], { eager: true }),
+  ...import.meta.glob<{ meta: GameMeta }>(["./games/*/meta.ts", "!./games/tower-clash/**"], { eager: true }),
   ...(import.meta.env.DEV
-    ? import.meta.glob<{ meta: GameMeta }>("./games/{balloon-defense,tower-clash}/meta.ts", { eager: true })
+    ? import.meta.glob<{ meta: GameMeta }>("./games/tower-clash/meta.ts", { eager: true })
     : {}),
 };
 const loaders = {
-  ...import.meta.glob<{ default: ComponentType<GameProps> }>(["./games/*/index.tsx", "!./games/{balloon-defense,tower-clash}/**"]),
+  ...import.meta.glob<{ default: ComponentType<GameProps> }>(["./games/*/index.tsx", "!./games/tower-clash/**"]),
   ...(import.meta.env.DEV
-    ? import.meta.glob<{ default: ComponentType<GameProps> }>("./games/{balloon-defense,tower-clash}/index.tsx")
+    ? import.meta.glob<{ default: ComponentType<GameProps> }>("./games/tower-clash/index.tsx")
     : {}),
 };
 
