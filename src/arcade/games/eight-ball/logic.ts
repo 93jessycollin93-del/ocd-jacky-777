@@ -291,9 +291,9 @@ export function placeCue(s: PoolState, x: number, y: number): boolean {
 }
 
 /** Run a shot to rest without rendering (for the AI and tests). */
-export function simulate(s: PoolState, maxT = 15) {
+export function simulate(s: PoolState, maxT = 15, dt = 1 / 120) {
   const events: PoolEvent[] = [];
-  for (let t = 0; t < maxT && moving(s); t += 1 / 120) events.push(...step(s, 1 / 120));
+  for (let t = 0; t < maxT && moving(s); t += dt) events.push(...step(s, dt));
   return events;
 }
 
@@ -352,11 +352,14 @@ export function aiShot(s: PoolState, level: Difficulty): { angle: number; power:
   }
   let best = candidates[0] ?? { angle: 0, power: 0.5 };
   let bestScore = -Infinity;
-  const budget = level === "hard" ? 120 : level === "normal" ? 70 : 30;
+  // Rank candidates by how straight the cut is, so a small budget still tries the best-looking shots first.
+  candidates.sort((a, b) => cutCost(base, a.angle) - cutCost(base, b.angle));
+  const budget = level === "hard" ? 36 : level === "normal" ? 20 : 12;
   for (const cand of candidates.slice(0, budget)) {
     const t = clone(base);
     strike(t, cand.angle, cand.power);
-    simulate(t);
+    // A coarser step is plenty for judging a shot; the table itself always runs at full precision.
+    simulate(t, 8, 1 / 60);
     const shot = t.shot!;
     let score = 0;
     const mine = t.groups[me];
@@ -372,6 +375,21 @@ export function aiShot(s: PoolState, level: Difficulty): { angle: number; power:
       best = cand;
     }
   }
-  const err = level === "hard" ? 0.004 : level === "normal" ? 0.015 : 0.045;
+  const err = level === "hard" ? 0.004 : level === "normal" ? 0.012 : 0.028;
   return { angle: best.angle + (s.rng() - 0.5) * 2 * err, power: best.power, place };
+}
+
+/** How far the cue ball travels to its target along this angle: shorter, straighter shots rank first. */
+function cutCost(s: PoolState, angle: number): number {
+  const c = cue(s);
+  let bestD = Infinity;
+  for (const b of s.balls) {
+    if (b.potted || b.n === 0) continue;
+    const dx = b.x - c.x;
+    const dy = b.y - c.y;
+    const along = dx * Math.cos(angle) + dy * Math.sin(angle);
+    const off = Math.abs(-dx * Math.sin(angle) + dy * Math.cos(angle));
+    if (along > 0 && off < 2 * R && along < bestD) bestD = along;
+  }
+  return bestD;
 }
