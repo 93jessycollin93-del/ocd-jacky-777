@@ -1,4 +1,4 @@
-// Primal Isle: a first-person survival game — gather, craft, build, and knock out and tame dinosaurs.
+// Colin Craft: a first-person survival game — gather, craft, build, and knock out and tame dinosaurs.
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
 import { Link } from "react-router-dom";
 import { Canvas, useFrame } from "@react-three/fiber";
@@ -415,7 +415,7 @@ export default function Survival() {
       <div className="mx-auto max-w-lg space-y-5 pt-10">
         <Link to="/" className="text-xs text-white/60 hover:text-white">← Back</Link>
         <div>
-          <h1 className="text-4xl font-black tracking-tight">🦖 Primal Isle</h1>
+          <h1 className="text-4xl font-black tracking-tight">🦖 Colin Craft</h1>
           <p className="mt-2 text-sm text-white/75">
             Wash up on an island full of dinosaurs. Gather, craft tools, build a base, survive the night, then knock out
             dinos with a club and feed them until they're yours to ride.

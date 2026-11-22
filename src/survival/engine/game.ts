@@ -1,4 +1,4 @@
-// Primal Isle game state and simulation. Pure TypeScript: no React, no three.js, so it can be tested
+// Colin Craft game state and simulation. Pure TypeScript: no React, no three.js, so it can be tested
 // headless. The scene reads this state every frame; the HUD samples it a few times a second.
 import {
   SPECIES, makeCreature, updateCreature, damageCreature, feedCreature, sedateCreature, isDown, creatureDamage,

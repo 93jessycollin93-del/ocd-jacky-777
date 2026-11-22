@@ -1,4 +1,4 @@
-// Deterministic randomness for Primal Isle: the same seed always builds the same island.
+// Deterministic randomness for Colin Craft: the same seed always builds the same island.
 
 export type Rng = () => number;
 

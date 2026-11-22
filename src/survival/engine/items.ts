@@ -1,4 +1,4 @@
-// Items, tools, structures and crafting recipes for Primal Isle.
+// Items, tools, structures and crafting recipes for Colin Craft.
 //
 // Everything here is data. To add an item: give it an entry in ITEMS (with a real-world weight and a
 // one-line description). To make it craftable: add one line to RECIPES. The crafting UI, queue, stations,
