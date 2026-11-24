@@ -1,4 +1,4 @@
-// three.js scene for Primal Isle. Everything here reads the mutable GameState held in a ref and
+// three.js scene for Colin Craft. Everything here reads the mutable GameState held in a ref and
 // redraws in useFrame; React only re-renders when the set of creatures or structures changes.
 import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { useFrame, useThree } from "@react-three/fiber";

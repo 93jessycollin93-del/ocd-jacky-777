@@ -1,4 +1,4 @@
-// Primal Isle sound effects, synthesised with Web Audio so there are no audio files to ship.
+// Colin Craft sound effects, synthesised with Web Audio so there are no audio files to ship.
 import type { Sfx } from "./engine/game";
 
 let ctx: AudioContext | null = null;

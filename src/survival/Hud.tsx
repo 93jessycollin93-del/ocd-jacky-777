@@ -1,4 +1,4 @@
-// Primal Isle on-screen UI: vitals, compass, hotbar, prompts, crafting/inventory, storage, tames, death screen.
+// Colin Craft on-screen UI: vitals, compass, hotbar, prompts, crafting/inventory, storage, tames, death screen.
 import type { MutableRefObject } from "react";
 import { ITEMS, RECIPES } from "./engine/items";
 import {

@@ -23,7 +23,7 @@ const FEATURED: Featured[] = [
     tags: ["3D shooter", "Waves"],
   },
   {
-    title: "Primal Isle", emoji: "🦖", href: "/survival", accent: "#15803d",
+    title: "Colin Craft", emoji: "🦖", href: "/survival", accent: "#15803d",
     blurb: "Survive an island of dinosaurs in 3D: gather, craft, build with blocks, knock out dinos and tame them to ride.",
     tags: ["3D survival", "Crafting"],
   },
